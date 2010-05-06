@@ -4,21 +4,21 @@ ffi-rzmq
 
 == DESCRIPTION:
 
-This gem wraps the zeromq networking library using the ruby FFI (foreign 
+This gem wraps the ZeroMQ networking library using the ruby FFI (foreign 
 function interface). It's a pure ruby wrapper so this gem can be loaded
 and run by any ruby runtime that supports FFI.
 
-The impetus behind this library was to provide support for zeromq in
+The impetus behind this library was to provide support for ZeroMQ in
 JRuby which has native threads. Unlike MRI, MacRuby, IronRuby and
 Rubinius which all have a GIL, JRuby allows for threaded access to ruby
-code from outside extensions. Zeromq is heavily threaded, so until the
+code from outside extensions. ZeroMQ is heavily threaded, so until the
 other runtimes remove their GIL, JRuby will likely be the best
 environment to run this library.
 
 == PERFORMANCE
 
 Using FFI introduces significant and measurable overhead. When comparing
-the performance of the zeromq library using that project's official
+the performance of the ZeroMQ library using that project's official
 ruby bindings running under MRI 1.9.1-p378 to this project running under
 JRuby 1.5RC3, the results showed the FFI bindings to be consistently 
 slower in a single-threaded test.
@@ -119,12 +119,12 @@ puts "mean latency: %.3f [us]" % latency
 
 == REQUIREMENTS:
 
-The Zeromq library must be installed on your system in a well-known location
-like /usr/local/lib. This is the default for new zeromq installs.
+The ZeroMQ library must be installed on your system in a well-known location
+like /usr/local/lib. This is the default for new ZeroMQ installs.
 
 == INSTALL:
 
-Make sure the zeromq library is already installed on your system.
+Make sure the ZeroMQ library is already installed on your system.
 
  % gem build ffi-rzmq.gemspec
  % gem install ffi-rzmq-0.1.0.gem
