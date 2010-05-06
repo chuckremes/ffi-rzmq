@@ -12,6 +12,6 @@ Bones {
   name  'ffi-rzmq'
   authors  'Chuck Remes'
   email    'cremes@mac.com'
-  url      'FIXME (project homepage)'
+  url      'http://github.com/chuckremes/ffi-rzmq'
 }
 

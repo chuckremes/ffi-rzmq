@@ -1,6 +1,6 @@
 ffi-rzmq
     by Chuck Remes
-    FIXME (url)
+    http://github.com/chuckremes/ffi-rzmq
 
 == DESCRIPTION:
 
