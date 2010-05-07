@@ -2,10 +2,10 @@ require 'ffi' # external gem
 
 module LibZMQ
   extend FFI::Library
-  OSX = ["libzmq.dylib", "/usr/local/lib/libzmq.dylib", "/opt/local/lib/libzmq.dylib"]
   LINUX = ["libzmq.so", "/usr/local/lib/libzmq.so", "/opt/local/lib/libzmq.so"]
+  OSX = ["libzmq.dylib", "/usr/local/lib/libzmq.dylib", "/opt/local/lib/libzmq.dylib"]
   WINDOWS = []
-  ffi_lib(OSX + LINUX + WINDOWS)
+  ffi_lib(LINUX + OSX + WINDOWS)
 
   # Context and misc api
   attach_function :zmq_init, [:int, :int, :int], :pointer
@@ -25,12 +25,18 @@ module LibZMQ
 
   attach_function :zmq_msg_init, [:pointer], :int
   attach_function :zmq_msg_init_size, [:pointer, :size_t], :int
-  attach_function :zmq_msg_init_data, [:pointer, :pointer, :size_t, :pointer, :pointer], :int
+  callback :message_deallocator, [:pointer, :pointer], :void
+  attach_function :zmq_msg_init_data, [:pointer, :pointer, :size_t, :message_deallocator, :pointer], :int
   attach_function :zmq_msg_close, [:pointer], :int
   attach_function :zmq_msg_data, [:pointer], :pointer
   attach_function :zmq_msg_size, [:pointer], :size_t
   attach_function :zmq_msg_copy, [:pointer, :pointer], :int
   attach_function :zmq_msg_move, [:pointer, :pointer], :int
+  
+  MessageDeallocator = Proc.new do |data_ptr, hint_ptr|
+    #puts "msg_callback: freed data [#{data_ptr}]"
+    data_ptr.free
+  end
 
   # Socket api
 

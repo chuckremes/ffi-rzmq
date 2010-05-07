@@ -34,22 +34,26 @@ module ZMQ
     # invalid +option_name+.
     #
     def setsockopt option_name, option_value, size = nil
-      case option_name
-      when HWM, LWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP
-        option_value_ptr = FFI::MemoryPointer.new :long
-        option_value_ptr.write_long option_value
+      begin
+        case option_name
+        when HWM, LWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP
+          option_value_ptr = FFI::MemoryPointer.new :long
+          option_value_ptr.write_long option_value
 
-      when IDENTITY, SUBSCRIBE, UNSUBSCRIBE
-        option_value_ptr = FFI::MemoryPointer.from_string option_value
+        when IDENTITY, SUBSCRIBE, UNSUBSCRIBE
+          option_value_ptr = FFI::MemoryPointer.from_string option_value
 
-      else
-        # we didn't understand the passed option argument
-        # will force a raise due to EINVAL being non-zero
-        error_check ZMQ_SETSOCKOPT_STR, EINVAL
+        else
+          # we didn't understand the passed option argument
+          # will force a raise due to EINVAL being non-zero
+          error_check ZMQ_SETSOCKOPT_STR, EINVAL
+        end
+
+        result_code = LibZMQ.zmq_setsockopt @socket, option_name, option_value_ptr, size || option_value.size
+        error_check ZMQ_SETSOCKOPT_STR, result_code
+      ensure
+        option_value_ptr.free
       end
-
-      result_code = LibZMQ.zmq_setsockopt @socket, option_name, option_value_ptr, size || option_value.size
-      error_check ZMQ_SETSOCKOPT_STR, result_code
     end
 
     def bind address
@@ -85,8 +89,9 @@ module ZMQ
         queued = flags.zero? ? error_check(ZMQ_SEND_STR, result_code) : error_check_nonblock(result_code)
       ensure
         message.close
+        message = nil
       end
-      
+
       queued # true if sent, false if failed/EAGAIN
     end
 
@@ -113,8 +118,9 @@ module ZMQ
       ensure
         # duplicate the data content before closing/releasing the message
         #data = message.data.dup if dequeued
-        data = message.data.dup if dequeued
+        data = message.data if dequeued
         message.close
+        message = nil
       end
 
       data
