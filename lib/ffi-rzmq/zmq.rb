@@ -37,6 +37,10 @@ module ZMQ
   POLLOUT = 2
   POLLERR = 4
 
+  #  Socket errors
+  EAGAIN = Errno::EAGAIN::Errno
+  EINVAL = Errno::EINVAL::Errno
+
   module Util
     # these methods don't belong to any specific context
     def errno
@@ -51,8 +55,20 @@ module ZMQ
     private
 
     def error_check source, result_code
-      raise RuntimeError, "ZMQ: #{source} failed with message: #{error_string}" unless result_code.zero?
+      raise ZeroMQError, "ZMQ: #{source} failed with message: #{error_string}" unless result_code.zero?
+      true # used by Socket::send/recv
     end
+
+    # 
+    def error_check_nonblock result_code
+      queue_operation = eagain? && !result_code.zero? ? false : true
+      queue_operation
+    end
+
+    def eagain?
+      EAGAIN == errno
+    end
+
   end # module Util
 
 end # module ZMQ

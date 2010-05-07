@@ -71,15 +71,19 @@ module ZMQ
     end
 
     def data
-      # FIXME: is this right? I think sometimes it will return content and other
-      # times it may return :vsm_data depending on the value of :vsm_size;
-      # ask on the ML
-      @struct[:content]
+      data_ptr.read_string(size)
     end
 
     def close
       result_code = LibZMQ.zmq_msg_close @struct
       error_check ZMQ_MSG_CLOSE_STR, result_code
+      @struct = nil
+    end
+    
+    private
+    
+    def data_ptr
+      LibZMQ.zmq_msg_data @struct
     end
   end
 

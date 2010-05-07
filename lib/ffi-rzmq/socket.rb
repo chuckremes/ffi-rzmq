@@ -14,17 +14,40 @@ module ZMQ
       @socket = LibZMQ.zmq_socket context_ptr, type
     end
 
+    # Set the queue options on this socket.
+    #
+    # Valid +option_name+ values that take a numeric +option_value+ are:
+    #  ZMQ::HWM
+    #  ZMQ::LWM
+    #  ZMQ::SWAP
+    #  ZMQ::AFFINITY
+    #  ZMQ::RATE
+    #  ZMQ::RECOVERY_IVL
+    #  ZMQ::MCAST_LOOP
+    #
+    # Valid +option_name+ values that take a string +option_value+ are:
+    #  ZMQ::IDENTITY
+    #  ZMQ::SUBSCRIBE
+    #  ZMQ::UNSUBSCRIBE
+    #
+    # May raise a ZeroMQError when the operation fails or when passed an
+    # invalid +option_name+.
+    #
     def setsockopt option_name, option_value, size = nil
-      case option_value
-      when String
+      case option_name
+      when HWM, LWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP
+        option_value_ptr = FFI::MemoryPointer.new :long
+        option_value_ptr.write_long option_value
+
+      when IDENTITY, SUBSCRIBE, UNSUBSCRIBE
         option_value_ptr = FFI::MemoryPointer.from_string option_value
-      when Numeric
-        option_value_ptr = FFI::MemoryPointer.new :int
-        option_value_ptr.write_int option_value
+
+      else
+        # we didn't understand the passed option argument
+        # will force a raise due to EINVAL being non-zero
+        error_check ZMQ_SETSOCKOPT_STR, EINVAL
       end
 
-      # FIXME: need to catch the case where the +type+ arg is invalid and raise an
-      # EINVAL exception
       result_code = LibZMQ.zmq_setsockopt @socket, option_name, option_value_ptr, size || option_value.size
       error_check ZMQ_SETSOCKOPT_STR, result_code
     end
@@ -39,22 +62,62 @@ module ZMQ
       error_check ZMQ_CONNECT_STR, result_code
     end
 
-    def send message, flags
+    # Queues the message for transmission.
+    #
+    # +flags+ may take two values:
+    #  0 (default) - blocking operation
+    #  ZMQ::NOBLOCK - non-blocking operation
+    #
+    # Returns true when the message was successfully enqueued.
+    # Returns false when the message could not be enqueued *and* +flags+ is set
+    # with ZMQ::NOBLOCK
+    #
+    # May raise a ZeroMQError for other failure modes. The exception will
+    # contain a string describing the problem.
+    #
+    def send message, flags = 0
       message = Message.new message
       result_code = LibZMQ.zmq_send @socket, message.address, flags
-      # FIXME: need to catch the case where +errno+ is EAGAIN; that should *NOT*
-      # raise an exception but be returned as a result code for the upstream
-      # application logic to handle
-      error_check ZMQ_SEND_STR, result_code
-      message.close
+
+      # when the flag isn't set, do a normal error check
+      # when set, check to see if the message was successfully queued
+      begin
+        queued = flags.zero? ? error_check(ZMQ_SEND_STR, result_code) : error_check_nonblock(result_code)
+      ensure
+        message.close
+      end
+      
+      queued # true if sent, false if failed/EAGAIN
     end
 
-
-    def recv flags
+    # Dequeues a message from the underlying queue. By default, this is a blocking operation.
+    #
+    # +flags+ may take two values:
+    #  0 (default) - blocking operation
+    #  ZMQ::NOBLOCK - non-blocking operation
+    #
+    # Returns a message when it successfully dequeues one from the queue.
+    # Returns nil when a message could not be dequeued *and* +flags+ is set
+    # with ZMQ::NOBLOCK
+    #
+    # May raise a ZeroMQError for other failure modes. The exception will
+    # contain a string describing the problem.
+    #
+    def recv flags = 0
       message = Message.new
       result_code = LibZMQ.zmq_recv @socket, message.address, flags
-      # FIXME: same situation as send; EAGAIN needs to be propogated up
-      error_check ZMQ_RECV_STR, result_code
+      data = nil
+
+      begin
+        dequeued = flags.zero? ? error_check(ZMQ_RECV_STR, result_code) : error_check_nonblock(result_code)
+      ensure
+        # duplicate the data content before closing/releasing the message
+        #data = message.data.dup if dequeued
+        data = message.data.dup if dequeued
+        message.close
+      end
+
+      data
     end
 
   end
