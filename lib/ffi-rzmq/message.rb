@@ -42,9 +42,7 @@ module ZMQ
         #        end
 
         data = FFI::MemoryPointer.from_string message.to_s
-        result_code = LibZMQ.zmq_msg_init_size @struct, message.size
-        error_check ZMQ_MSG_INIT_SIZE_STR, result_code
-
+        
         result_code = LibZMQ.zmq_msg_init_data @struct, data, message.size, LibZMQ::MessageDeallocator, nil
         error_check ZMQ_MSG_INIT_DATA_STR, result_code
       else
