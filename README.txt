@@ -37,85 +37,89 @@ This gem is brand new and has no tests at all. I'm certain there are a
 ton of bugs, so please open issues for them here or fork this project,
 fix them, and send me a pull request.
 
+All features are implemented with the exception of #zmq_poll and
+#zmq_version. I'll add both as soon as I am able.
+
 == SYNOPSIS:
 
 Client code:
-#
-#    Copyright (c) 2007-2010 iMatix Corporation
-#
-#    This file is part of 0MQ.
-#
-#    0MQ is free software; you can redistribute it and/or modify it under
-#    the terms of the Lesser GNU General Public License as published by
-#    the Free Software Foundation; either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    0MQ is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    Lesser GNU General Public License for more details.
-#
-#    You should have received a copy of the Lesser GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-require 'ffi-rzmq'
-
-if ARGV.length != 3
-	puts "usage: local_lat <bind-to> <message-size> <roundtrip-count>"
-	Process.exit
-end
-    
-bind_to = ARGV[0]
-message_size = ARGV[1].to_i
-roundtrip_count = ARGV[2].to_i
-			
-ctx = ZMQ::Context.new(1, 1, 0)
-s = ctx.socket(ZMQ::REP);
-s.setsockopt(ZMQ::HWM, 100);
-s.bind(bind_to);
-
-for i in 0...roundtrip_count do
-    msg = s.recv(0)
-    s.send(msg, 0)
-end
-
-sleep 1
-
+  #
+  #    Copyright (c) 2007-2010 iMatix Corporation
+  #
+  #    This file is part of 0MQ.
+  #
+  #    0MQ is free software; you can redistribute it and/or modify it under
+  #    the terms of the Lesser GNU General Public License as published by
+  #    the Free Software Foundation; either version 3 of the License, or
+  #    (at your option) any later version.
+  #
+  #    0MQ is distributed in the hope that it will be useful,
+  #    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  #    Lesser GNU General Public License for more details.
+  #
+  #    You should have received a copy of the Lesser GNU General Public License
+  #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  
+  require 'rubygems'
+  require 'ffi-rzmq'
+  
+  if ARGV.length != 3
+  	puts "usage: local_lat <bind-to> <message-size> <roundtrip-count>"
+  	Process.exit
+  end
+      
+  bind_to = ARGV[0]
+  message_size = ARGV[1].to_i
+  roundtrip_count = ARGV[2].to_i
+  			
+  ctx = ZMQ::Context.new(1, 1, 0)
+  s = ctx.socket(ZMQ::REP)
+  s.setsockopt(ZMQ::HWM, 100)
+  s.setsockopt(ZMQ::LWM, 90) # level to restart when congestion is relieved
+  s.bind(bind_to)
+  
+  roundtrip_count.times do
+      msg = s.recv(0)
+      s.send(msg, 0)
+  end
+  
 
 Server code:
 
-require 'ffi-rzmq'
-
-if ARGV.length != 3
-	puts "usage: remote_lat <connect-to> <message-size> <roundtrip-count>"
-    Process.exit
-end
-
-connect_to = ARGV[0]
-message_size = ARGV[1].to_i
-roundtrip_count = ARGV[2].to_i
-					
-ctx = ZMQ::Context.new(1, 1, 0)
-s = ctx.socket(ZMQ::REQ);
-s.connect(connect_to);
-
-msg = "#{'0'*message_size}"
-
-start_time = Time.now
-
-for i in 0...roundtrip_count do
-    s.send(msg, 0)
-    msg = s.recv(0)
-end
-
-end_time = Time.now
-
-elapsed = (end_time.to_f - start_time.to_f) * 1000000
-latency = elapsed / roundtrip_count / 2
-
-puts "message size: %i [B]" % message_size
-puts "roundtrip count: %i" % roundtrip_count
-puts "mean latency: %.3f [us]" % latency
+  require 'rubygems'
+  require 'ffi-rzmq'
+  
+  if ARGV.length != 3
+  	puts "usage: remote_lat <connect-to> <message-size> <roundtrip-count>"
+      Process.exit
+  end
+  
+  connect_to = ARGV[0]
+  message_size = ARGV[1].to_i
+  roundtrip_count = ARGV[2].to_i
+  					
+  ctx = ZMQ::Context.new(1, 1, 0)
+  s = ctx.socket(ZMQ::REQ)
+  s.connect(connect_to)
+  
+  msg = "#{'0'*message_size}"
+  
+  start_time = Time.now
+  
+  roundtrip_count.times do
+      s.send(msg, 0)
+      msg = s.recv(0)
+  end
+  
+  end_time = Time.now
+  
+  elapsed = (end_time.to_f - start_time.to_f) * 1000000
+  latency = elapsed / roundtrip_count / 2
+  
+  puts "message size: %i [B]" % message_size
+  puts "roundtrip count: %i" % roundtrip_count
+  puts "mean latency: %.3f [us]" % latency
 
 == REQUIREMENTS:
 
@@ -127,7 +131,7 @@ like /usr/local/lib. This is the default for new ZeroMQ installs.
 Make sure the ZeroMQ library is already installed on your system.
 
  % gem build ffi-rzmq.gemspec
- % gem install ffi-rzmq-0.1.0.gem
+ % gem install ffi-rzmq-0.2.0.gem
  
 
 == LICENSE:
