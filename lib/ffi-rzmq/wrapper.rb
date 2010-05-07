@@ -1,14 +1,20 @@
-require 'ffi'
+require 'ffi' # external gem
 
 module LibZMQ
   extend FFI::Library
-  ffi_lib "libzmq.so"
+  OSX = ["libzmq.dylib", "/usr/local/lib/libzmq.dylib", "/opt/local/lib/libzmq.dylib"]
+  LINUX = ["libzmq.so", "/usr/local/lib/libzmq.so", "/opt/local/lib/libzmq.so"]
+  WINDOWS = []
+  ffi_lib(OSX + LINUX + WINDOWS)
 
-  # initialize, socket
+  # Context and misc api
   attach_function :zmq_init, [:int, :int, :int], :pointer
   attach_function :zmq_socket, [:pointer, :int], :pointer
+  attach_function :zmq_term, [:pointer], :int
+  attach_function :zmq_errno, [], :int
+  attach_function :zmq_strerror, [:int], :pointer
 
-  # message api
+  # Message api
   class Msg_t < FFI::Struct
     layout :content,  :pointer,
     :flags,    :uint8,
@@ -26,7 +32,7 @@ module LibZMQ
   attach_function :zmq_msg_copy, [:pointer, :pointer], :int
   attach_function :zmq_msg_move, [:pointer, :pointer], :int
 
-  # setsockopt, bind, connect, send, recv, close
+  # Socket api
 
   attach_function :zmq_setsockopt, [:pointer, :int, :pointer, :int], :int
   attach_function :zmq_bind, [:pointer, :string], :int
@@ -34,43 +40,7 @@ module LibZMQ
   attach_function :zmq_send, [:pointer, :pointer, :int], :int
   attach_function :zmq_recv, [:pointer, :pointer, :int], :int
   attach_function :zmq_close, [:pointer], :int
-
-
-  # Constants
   
-  #  Socket types
-  PAIR = 0
-  PUB = 1
-  SUB = 2
-  REQ = 3
-  REP = 4
-  XREQ = 5
-  XREP = 6
-  UPSTREAM = 7
-  DOWNSTREAM = 8
+  # Poll api
 
-  #  Socket options
-  HWM = 1
-  LWM = 2
-  SWAP = 3
-  AFFINITY = 4
-  IDENTITY = 5
-  SUBSCRIBE = 6
-  UNSUBSCRIBE = 7
-  RATE = 8
-  RECOVERY_IVL = 9
-  MCAST_LOOP = 10
-  SNDBUF = 11
-  RCVBUF = 12
-  RCVMORE = 13
-
-  #  Send/recv options
-  NOBLOCK = 1
-  SNDMORE = 2
-
-  #  I/O multiplexing
-
-  POLLIN = 1
-  POLLOUT = 2
-  POLLERR = 4
 end # module ZMQ

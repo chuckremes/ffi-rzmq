@@ -54,12 +54,15 @@ module ZMQ
   def self.require_all_libs_relative_to( fname, dir = nil )
     dir ||= ::File.basename(fname, '.*')
     search_me = ::File.expand_path(
-        ::File.join(::File.dirname(fname), dir, '**', '*.rb'))
+    ::File.join(::File.dirname(fname), dir, '**', '*.rb'))
 
     Dir.glob(search_me).sort.each {|rb| require rb}
   end
 
 end  # module ZMQ
 
-ZMQ.require_all_libs_relative_to(__FILE__)
 
+# the order of files is important
+%w(wrapper zmq exceptions context message socket).each do |file|
+  require ZMQ.libpath(['ffi-rzmq', file])
+end
