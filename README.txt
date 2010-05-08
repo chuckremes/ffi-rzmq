@@ -71,7 +71,7 @@ Client code:
   
   if ARGV.length != 2
   	puts "usage: local_lat <bind-to> <roundtrip-count>"
-  	Process.exit
+  	exit
   end
       
   bind_to = ARGV[0]
@@ -96,7 +96,7 @@ Server code:
   
   if ARGV.length != 3
   	puts "usage: remote_lat <connect-to> <message-size> <roundtrip-count>"
-      Process.exit
+      exit
   end
   
   connect_to = ARGV[0]
@@ -116,9 +116,7 @@ Server code:
       msg = s.recv(0)
   end
   
-  end_time = Time.now
-  
-  elapsed = (end_time.to_f - start_time.to_f) * 1000000
+  elapsed = (Time.now.to_f - start_time.to_f) * 1000000
   latency = elapsed / roundtrip_count / 2
   
   puts "message size: %i [B]" % message_size
