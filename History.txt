@@ -1,4 +1,24 @@
-== 0.1.0 / 2010-05-06
+== 0.3.0 / 20100507
+* ZMQ::Socket#send and ZMQ::Socket#recv semantics changed
+  * The official 0mq ruby bindings utilize strings for #send and #recv.
+    However, to do so requires lots of copying to and from buffers which
+    greatly impacts performance. These methods now return a ZMQ::Message
+    object which can be subclassed to do lazy evaluation of the buffer.
+    
+  * Added ZMQ::Socket#send_string and ZMQ::Socket#recv_string. They
+    automatically convert the messages to strings just like the official
+    0mq ruby bindings.
+
+  * Fixed bug in ZMQ::Util#error_string
+  
+  * Split the ZMQ::Message class into two classes. The base class called
+    UnmanagedMessage requires manual memory management. The Message
+    class (used by default by Socket) has a finalizer defined to
+    automatically release memory when the message object gets garbage
+    collected.
+  
+  
+== 0.2.0 / 20100505
 
 * 1 major enhancement
   * Birthday!

@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{ffi-rzmq}
-  s.version = "0.2.0"
+  s.version = "0.3.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Chuck Remes"]
@@ -25,7 +25,7 @@ environment to run this library.}
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{ffi-rzmq}
   s.rubygems_version = %q{1.3.6}
-  s.summary = %q{This gem wraps the ZeroMQ networking library using the ruby FFI (foreign  function interface)}
+  s.summary = %q{This gem wraps the ZeroMQ networking library using the ruby FFI (foreign function interface)}
 
   s.add_dependency 'ffi'
 

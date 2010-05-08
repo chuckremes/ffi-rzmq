@@ -4,7 +4,7 @@ ffi-rzmq
 
 == DESCRIPTION:
 
-This gem wraps the ZeroMQ networking library using the ruby FFI (foreign 
+This gem wraps the ZeroMQ networking library using the ruby FFI (foreign
 function interface). It's a pure ruby wrapper so this gem can be loaded
 and run by any ruby runtime that supports FFI.
 
@@ -26,7 +26,12 @@ slower in a single-threaded test.
 Using the example code from below, MRI to MRI with a 2048 byte message
 would average around 49 usec. The same test using JRuby would average
 around 55 usec. These values would fluctuate depending on the size and
-number of messages used in the test.
+number of messages used in the test. Unfortunately it isn't an apples
+to apples comparison because these bindings change the semantics of
+the #send and #recv methods to use zero-copy whereas the official bindings
+work with strings. In other words, FFI is even slower when converting
+all messages to/from strings. Look at the docs for the ZMQ::Message
+class for hints on how to do zero-copy buffer processing.
 
 The hope is that in a multi-threaded environment that JRuby's native
 threads and lack of GIL will compensate for the FFI overhead.
@@ -64,14 +69,13 @@ Client code:
   require 'rubygems'
   require 'ffi-rzmq'
   
-  if ARGV.length != 3
-  	puts "usage: local_lat <bind-to> <message-size> <roundtrip-count>"
+  if ARGV.length != 2
+  	puts "usage: local_lat <bind-to> <roundtrip-count>"
   	Process.exit
   end
       
   bind_to = ARGV[0]
-  message_size = ARGV[1].to_i
-  roundtrip_count = ARGV[2].to_i
+  roundtrip_count = ARGV[1].to_i
   			
   ctx = ZMQ::Context.new(1, 1, 0)
   s = ctx.socket(ZMQ::REP)
@@ -103,7 +107,7 @@ Server code:
   s = ctx.socket(ZMQ::REQ)
   s.connect(connect_to)
   
-  msg = "#{'0'*message_size}"
+  msg = ZMQ::Message.new "#{'0'*message_size}"
   
   start_time = Time.now
   
@@ -126,12 +130,15 @@ Server code:
 The ZeroMQ library must be installed on your system in a well-known location
 like /usr/local/lib. This is the default for new ZeroMQ installs.
 
+Future releases may include the library as a C extension built at
+time of installation.
+
 == INSTALL:
 
 Make sure the ZeroMQ library is already installed on your system.
 
  % gem build ffi-rzmq.gemspec
- % gem install ffi-rzmq-0.2.0.gem
+ % gem install ffi-rzmq-*.gem
  
 
 == LICENSE:
