@@ -66,7 +66,8 @@ module ZMQ
       error_check ZMQ_CONNECT_STR, result_code
     end
 
-    # Queues the message for transmission.
+    # Queues the message for transmission. Message is assumed to be an instance or
+    # subclass of +Message+.
     #
     # +flags+ may take two values:
     #  0 (default) - blocking operation
@@ -80,7 +81,6 @@ module ZMQ
     # contain a string describing the problem.
     #
     def send message, flags = 0
-      message = Message.new message
       result_code = LibZMQ.zmq_send @socket, message.address, flags
 
       # when the flag isn't set, do a normal error check
@@ -88,11 +88,17 @@ module ZMQ
       begin
         queued = flags.zero? ? error_check(ZMQ_SEND_STR, result_code) : error_check_nonblock(result_code)
       ensure
-        message.close
         message = nil
       end
 
       queued # true if sent, false if failed/EAGAIN
+    end
+
+    # Helper method to make a new +Message+ instance out of the +message_string+ passed
+    # in for transmission.
+    def send_string message_string, flags
+      message = Message.new message_string
+      send message, flags
     end
 
     # Dequeues a message from the underlying queue. By default, this is a blocking operation.
@@ -111,21 +117,31 @@ module ZMQ
     def recv flags = 0
       message = Message.new
       result_code = LibZMQ.zmq_recv @socket, message.address, flags
-      data = nil
 
       begin
         dequeued = flags.zero? ? error_check(ZMQ_RECV_STR, result_code) : error_check_nonblock(result_code)
+      rescue ZeroMQError
+        dequeued = false
+        raise
       ensure
-        # duplicate the data content before closing/releasing the message
-        #data = message.data.dup if dequeued
-        data = message.data if dequeued
-        message.close
-        message = nil
+        unless dequeued
+          message = nil # may release buffers during next GC run
+        end
       end
 
-      data
+      message
+    end
+    
+    def recv_string flags = 0
+      message = recv flags
+      
+      if message
+        message.data_as_string
+      else
+        nil
+      end
     end
 
-  end
+  end # class Socket
 
 end # module ZMQ

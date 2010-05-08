@@ -48,7 +48,7 @@ module ZMQ
     end
 
     def error_string
-      LibZMQ.zmq_sterror errno
+      LibZMQ.zmq_strerror errno
     end
 
 

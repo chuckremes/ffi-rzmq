@@ -32,7 +32,7 @@ ctx = ZMQ::Context.new(1, 1, 0)
 s = ctx.socket(ZMQ::REQ)
 s.connect(connect_to)
 
-msg = "#{'0'*message_size}"
+msg = ZMQ::Message.new "#{'0'*message_size}"
 
 start_time = Time.now
 

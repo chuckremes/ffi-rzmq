@@ -15,14 +15,6 @@ module LibZMQ
   attach_function :zmq_strerror, [:int], :pointer
 
   # Message api
-  class Msg_t < FFI::Struct
-    layout :content,  :pointer,
-    :flags,    :uint8,
-    :vsm_size, :uint8,
-    :vsm_data, [:uint8, 30]
-
-  end # class Msg_t
-
   attach_function :zmq_msg_init, [:pointer], :int
   attach_function :zmq_msg_init_size, [:pointer, :size_t], :int
   callback :message_deallocator, [:pointer, :pointer], :void
@@ -32,10 +24,27 @@ module LibZMQ
   attach_function :zmq_msg_size, [:pointer], :size_t
   attach_function :zmq_msg_copy, [:pointer, :pointer], :int
   attach_function :zmq_msg_move, [:pointer, :pointer], :int
-  
+
   MessageDeallocator = Proc.new do |data_ptr, hint_ptr|
     data_ptr.free
   end
+
+  module MsgLayout
+    def self.included(base)
+      base.class_eval do
+        layout :content,  :pointer,
+        :flags,    :uint8,
+        :vsm_size, :uint8,
+        :vsm_data, [:uint8, 30]
+      end
+    end
+  end
+
+  # Used for casting pointers back to the struct
+  class Msg < FFI::Struct
+    include MsgLayout
+  end # class Msg
+    
 
   # Socket api
 
@@ -45,7 +54,7 @@ module LibZMQ
   attach_function :zmq_send, [:pointer, :pointer, :int], :int
   attach_function :zmq_recv, [:pointer, :pointer, :int], :int
   attach_function :zmq_close, [:pointer], :int
-  
+
   # Poll api
 
 end # module ZMQ
