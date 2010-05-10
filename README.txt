@@ -1,12 +1,13 @@
 ffi-rzmq
     by Chuck Remes
-    http://github.com/chuckremes/ffi-rzmq
+    http://www.zeromq.org/bindings:ruby-ffi
 
 == DESCRIPTION:
 
 This gem wraps the ZeroMQ networking library using the ruby FFI (foreign
 function interface). It's a pure ruby wrapper so this gem can be loaded
-and run by any ruby runtime that supports FFI.
+and run by any ruby runtime that supports FFI. Right now that means
+MRI 1.8.7, 1.9.1 and JRuby.
 
 The impetus behind this library was to provide support for ZeroMQ in
 JRuby which has native threads. Unlike MRI, MacRuby, IronRuby and
@@ -24,7 +25,8 @@ JRuby 1.5RC3, the results showed the FFI bindings to be consistently
 slower in a single-threaded test.
 
 Using the example code from below, MRI to MRI with a 2048 byte message
-would average around 49 usec. The same test using JRuby would average
+would average around 49 usec (these timings are very tied to a specific
+machine setup). The same test using JRuby would average
 around 55 usec. These values would fluctuate depending on the size and
 number of messages used in the test. Unfortunately it isn't an apples
 to apples comparison because these bindings change the semantics of
@@ -143,7 +145,7 @@ Make sure the ZeroMQ library is already installed on your system.
 
 (The MIT License)
 
-Copyright (c) 2009 Chuck Remes
+Copyright (c) 2010 Chuck Remes
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the

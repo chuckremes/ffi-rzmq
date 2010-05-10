@@ -1,3 +1,30 @@
+== 0.3.1 / 20100509
+  * Modified ZMQ::Message so we have both an UnmanagedMessage where
+  memory management is manual via the #close method, and Message where
+  memory management is automated via a finalizer method run during
+  garbage collection.
+  
+  * Updated ZMQ::Message docs to make it clearer how to use a subclass
+  and FFI::Struct to lazily access the message buffer. This gets us as
+  close to zero-copy as possible for performance.
+  
+  * Fixed a memory leak in Message where the FFI::Struct backing the
+  C struct was not being freed.
+  
+  * Tested the FFI code against MRI 1.8.x and 1.9.x. It works!
+  
+  * Patched a potential problem in LibZMQ::MessageDeallocator. It was
+  crashing under MRI because it complained that FFI::Pointer did not
+  have a free method. It now checks for :free before calling it. 
+  Need to investigate this further because it never happened under
+  JRuby.
+  
+  * Modified the Socket constructor slightly to allow for using
+  unmanaged or managed messages.
+  
+  * Changed the /examples to print a throughput (msgs/s) number upon
+  completion.
+
 == 0.3.0 / 20100507
 * ZMQ::Socket#send and ZMQ::Socket#recv semantics changed
   * The official 0mq ruby bindings utilize strings for #send and #recv.
