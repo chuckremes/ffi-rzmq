@@ -29,7 +29,8 @@ message_size = ARGV[1].to_i
 roundtrip_count = ARGV[2].to_i
 
 ctx = ZMQ::Context.new(1, 1, 0)
-s = ctx.socket(ZMQ::REQ)
+#s = ctx.socket(ZMQ::REQ)
+s = ZMQ::Socket.new ctx.context, ZMQ::REQ#, false
 s.connect(connect_to)
 
 msg = ZMQ::Message.new "#{'0'*message_size}"
@@ -38,14 +39,17 @@ start_time = Time.now
 
 roundtrip_count.times do
   s.send(msg, 0)
+  #msg.close
   msg = s.recv(0)
 end
 
 end_time = Time.now
 
-elapsed = (end_time.to_f - start_time.to_f) * 1000000
-latency = elapsed / roundtrip_count / 2
+elapsed_secs = (end_time.to_f - start_time.to_f)
+elapsed_usecs = elapsed_secs * 1000000
+latency = elapsed_usecs / roundtrip_count / 2
 
 puts "message size: %i [B]" % message_size
 puts "roundtrip count: %i" % roundtrip_count
+puts "throughput (msgs/s): %i" % (roundtrip_count / elapsed_secs)
 puts "mean latency: %.3f [us]" % latency

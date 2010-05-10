@@ -10,7 +10,9 @@ module ZMQ
   class Socket
     include ZMQ::Util
 
-    def initialize context_ptr, type
+    def initialize context_ptr, type, managed = true
+      set_managed managed
+      
       @socket = LibZMQ.zmq_socket context_ptr, type
     end
 
@@ -33,7 +35,7 @@ module ZMQ
     # May raise a ZeroMQError when the operation fails or when passed an
     # invalid +option_name+.
     #
-    def setsockopt option_name, option_value, size = nil
+    def setsockopt option_name, option_value, size = nil      
       begin
         case option_name
         when HWM, LWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP
@@ -97,7 +99,7 @@ module ZMQ
     # Helper method to make a new +Message+ instance out of the +message_string+ passed
     # in for transmission.
     def send_string message_string, flags
-      message = Message.new message_string
+      message = @sender_klass.new message_string
       send message, flags
     end
 
@@ -115,7 +117,7 @@ module ZMQ
     # contain a string describing the problem.
     #
     def recv flags = 0
-      message = Message.new
+      message = @receiver_klass.new
       result_code = LibZMQ.zmq_recv @socket, message.address, flags
 
       begin
@@ -125,7 +127,9 @@ module ZMQ
         raise
       ensure
         unless dequeued
-          message = nil # may release buffers during next GC run
+          # when the message is of type ZMQ::Message, the next GC run may
+          # release the buffers if the finalizers run
+          message = nil
         end
       end
 
@@ -139,6 +143,19 @@ module ZMQ
         message.data_as_string
       else
         nil
+      end
+    end
+    
+    private
+    
+    def set_managed status
+      case status
+      when true
+        @sender_klass = Message
+        @receiver_klass = Message
+      when false
+        @sender_klass = UnmanagedMessage
+        @receiver_klass = UnmanagedMessage
       end
     end
 

@@ -5,7 +5,7 @@ module LibZMQ
   LINUX = ["libzmq.so", "/usr/local/lib/libzmq.so", "/opt/local/lib/libzmq.so"]
   OSX = ["libzmq.dylib", "/usr/local/lib/libzmq.dylib", "/opt/local/lib/libzmq.dylib"]
   WINDOWS = []
-  RUBY_ENGINE == 'jruby' ? ffi_lib(LINUX + OSX + WINDOWS) : ffi_lib(*(LINUX + OSX + WINDOWS))
+  ffi_lib(LINUX + OSX + WINDOWS)
 
   # Context and misc api
   attach_function :zmq_init, [:int, :int, :int], :pointer
@@ -26,7 +26,7 @@ module LibZMQ
   attach_function :zmq_msg_move, [:pointer, :pointer], :int
 
   MessageDeallocator = Proc.new do |data_ptr, hint_ptr|
-    data_ptr.free
+    data_ptr.free if data_ptr.respond_to? :free
   end
 
   module MsgLayout

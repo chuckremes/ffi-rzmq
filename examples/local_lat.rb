@@ -28,7 +28,8 @@ bind_to = ARGV[0]
 roundtrip_count = ARGV[1].to_i
 
 ctx = ZMQ::Context.new(1, 1, 0)
-s = ctx.socket(ZMQ::REP)
+#s = ctx.socket(ZMQ::REP)
+s = ZMQ::Socket.new ctx.context, ZMQ::REP#, false
 s.setsockopt(ZMQ::HWM, 100)
 s.setsockopt(ZMQ::LWM, 90) # level to restart when congestion is relieved
 s.bind(bind_to)
@@ -36,4 +37,5 @@ s.bind(bind_to)
 roundtrip_count.times do
   msg = s.recv(0)
   s.send(msg, 0)
+  #msg.close
 end

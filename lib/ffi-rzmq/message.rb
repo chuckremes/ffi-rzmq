@@ -9,21 +9,39 @@ module ZMQ
   ZMQ_MSG_MOVE_STR = 'zmq_msg_move'.freeze
   ZMQ_MSG_SIZE_STR = 'zmq_msg_size'.freeze
 
-  # By default the Socket class uses the +Message+ class for message handling. Need
-  # a way to swap in this class if there is a desire to handle memory managment 
-  # manually.
+  # Call #close when done with this object to release buffers.
+  #
+  # When passing in a +message+ and +length+, the data is handed off to
+  # to the message structure via a pointer. This provides a zero-copy
+  # transmission facility for data buffers. 
+  #
+  # Note that by handing the message over to this class, it now owns the
+  # buffer and its data. After calling #close on this object, it will
+  # release those buffers; don't try to access the data again or hilarity
+  # will ensue.
+  # (Not really zero-copy yet. See FIXME note in the code.)
   class UnmanagedMessage
     include ZMQ::Util
 
     def initialize message = nil, length = nil
-      @struct = LibZMQ::Msg.new
+      # allocate our own pointer so that we can tell it to *not* zero out
+      # the memory; it's pointless work since the library is going to 
+      # overwrite it anyway.
+      @pointer = FFI::MemoryPointer.new LibZMQ::Msg.size, 1, false
+      @struct = LibZMQ::Msg.new @pointer
 
       if message
+        # FIXME: not really zero-copy since #from_string copies the data to
+        # native memory behind the scenes. The intention of this constructor is to
+        # take in a pointer and its length and just pass it on to the Lib 
+        # directly. Having a hard time getting through the FFI source because it is
+        # really poorly documented. :(
         data = FFI::MemoryPointer.from_string message.to_s
 
         result_code = LibZMQ.zmq_msg_init_data @struct, data, message.size, LibZMQ::MessageDeallocator, nil
         error_check ZMQ_MSG_INIT_DATA_STR, result_code
       else
+        # initialize an empty message structure to receive a message
         result_code = LibZMQ.zmq_msg_init @struct
         error_check ZMQ_MSG_INIT_STR, result_code
       end
@@ -63,7 +81,9 @@ module ZMQ
     
     # Manually release the message struct and its associated buffers.
     def close
-      LibZMQ.zmq_msg_close struct
+      LibZMQ.zmq_msg_close @struct
+      @pointer.free
+      @struct = nil
     end
 
   end # class UnmanagedMessage
@@ -111,7 +131,6 @@ module ZMQ
   #  message = MyMessage.new socket.recv
   #  puts "field1 is #{message.field1}"
   #
-  
   class Message < UnmanagedMessage
     def initialize message = nil, length = nil
       super
@@ -119,13 +138,14 @@ module ZMQ
       define_finalizer
     end
     
-    # Has no effect. This class has automatic memory management.
+    # Has no effect. This class has automatic memory management via a
+    # finalizer.
     def close() end
     
     private
     
     def define_finalizer
-      ObjectSpace.define_finalizer self, self.class.close(@struct)
+      ObjectSpace.define_finalizer self, self.class.close(@struct, @pointer)
     end
 
     # Message finalizer
@@ -133,10 +153,12 @@ module ZMQ
     # This is intentional. Since this code runs as a finalizer, there is no
     # way to catch a raised exception anywhere near where the error actually
     # occurred in the code, so we just ignore deallocation failures here.
-    def self.close struct
+    def self.close struct, pointer
       proc {
         # release the data buffer
         LibZMQ.zmq_msg_close struct
+        pointer.free
+        struct = nil
       }
     end
   end # class Message
