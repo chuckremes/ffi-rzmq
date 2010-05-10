@@ -1,3 +1,17 @@
+== 0.4.0 / 20100510
+  * Changed the Socket#recv method signature to take an optional
+  message object as its first argument. This allows the library
+  user to allocate and pass in their own message object for the 
+  purposes of zero-copy. Original behavior was for the library to
+  *always* allocate a new message object to receive a message into.
+  Hopefully this is the last change required.
+  
+  * Modified the Socket constructor to take an optional hash as its
+  final argument. It honors two keys; :receiver_klass and
+  :sender_klass. Passing in a new constant for either (or both) keys
+  will override the class used by Socket for allocating new
+  Message objects. 
+
 == 0.3.1 / 20100509
   * Modified ZMQ::Message so we have both an UnmanagedMessage where
   memory management is manual via the #close method, and Message where

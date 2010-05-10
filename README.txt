@@ -18,25 +18,15 @@ environment to run this library.
 
 == PERFORMANCE
 
-Using FFI introduces significant and measurable overhead. When comparing
-the performance of the ZeroMQ library using that project's official
-ruby bindings running under MRI 1.9.1-p378 to this project running under
-JRuby 1.5RC3, the results showed the FFI bindings to be consistently 
-slower in a single-threaded test.
-
-Using the example code from below, MRI to MRI with a 2048 byte message
-would average around 49 usec (these timings are very tied to a specific
-machine setup). The same test using JRuby would average
-around 55 usec. These values would fluctuate depending on the size and
-number of messages used in the test. Unfortunately it isn't an apples
-to apples comparison because these bindings change the semantics of
-the #send and #recv methods to use zero-copy whereas the official bindings
-work with strings. In other words, FFI is even slower when converting
-all messages to/from strings. Look at the docs for the ZMQ::Message
-class for hints on how to do zero-copy buffer processing.
+Using FFI introduces some minimal overhead. In my latest benchmarks,
+I was unable to detect any measurable performance drop due to FFI
+regardless of which ruby runtime was tested. JRuby had the best overall
+performance (with --server) once it warmed up. MRI behaved quite well 
+too and has a much lower memory footprint than JRuby.
 
 The hope is that in a multi-threaded environment that JRuby's native
-threads and lack of GIL will compensate for the FFI overhead.
+threads and lack of GIL will provide the best ZeroMQ performance using
+the ruby language.
 
 == FEATURES/PROBLEMS:
 
@@ -44,69 +34,71 @@ This gem is brand new and has no tests at all. I'm certain there are a
 ton of bugs, so please open issues for them here or fork this project,
 fix them, and send me a pull request.
 
-All features are implemented with the exception of #zmq_poll and
-#zmq_version. I'll add both as soon as I am able.
+All features are implemented with the exception of #zmq_poll. I'll add
+it as soon as I am able.
 
 == SYNOPSIS:
 
 Client code:
-  #
-  #    Copyright (c) 2007-2010 iMatix Corporation
-  #
-  #    This file is part of 0MQ.
-  #
-  #    0MQ is free software; you can redistribute it and/or modify it under
-  #    the terms of the Lesser GNU General Public License as published by
-  #    the Free Software Foundation; either version 3 of the License, or
-  #    (at your option) any later version.
-  #
-  #    0MQ is distributed in the hope that it will be useful,
-  #    but WITHOUT ANY WARRANTY; without even the implied warranty of
-  #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  #    Lesser GNU General Public License for more details.
-  #
-  #    You should have received a copy of the Lesser GNU General Public License
-  #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
   
   require 'rubygems'
   require 'ffi-rzmq'
-  
-  if ARGV.length != 2
-  	puts "usage: local_lat <bind-to> <roundtrip-count>"
-  	exit
+
+  if ARGV.length != 4
+    puts "usage: local_lat <connect-to> <message-size> <roundtrip-count> <manual memory mgmt>"
+    exit
   end
-      
+
   bind_to = ARGV[0]
-  roundtrip_count = ARGV[1].to_i
-  			
+  message_size = ARGV[1].to_i
+  roundtrip_count = ARGV[2].to_i
+  auto_mgmt = ARGV[3].to_i.zero?
+
+  if auto_mgmt
+    message_opts = {}
+  else
+    message_opts = {:receiver_class => ZMQ::UnmanagedMessage, :sender_class => ZMQ::UnmanagedMessage}
+  end
+
   ctx = ZMQ::Context.new(1, 1, 0)
-  s = ctx.socket(ZMQ::REP)
+  s = auto_mgmt ? ctx.socket(ZMQ::REP) : ZMQ::Socket.new(ctx.context, ZMQ::REP, message_opts)
   s.setsockopt(ZMQ::HWM, 100)
   s.setsockopt(ZMQ::LWM, 90) # level to restart when congestion is relieved
   s.bind(bind_to)
-  
+
+  msg = ZMQ::Message.new
+
   roundtrip_count.times do
-      msg = s.recv(0)
-      s.send(msg, 0)
+    msg = s.recv msg, 0
+    raise "Message size doesn't match" if message_size != msg.size
+    s.send msg, 0
   end
-  
+
+  msg.close unless auto_mgmt
 
 Server code:
 
   require 'rubygems'
   require 'ffi-rzmq'
   
-  if ARGV.length != 3
-  	puts "usage: remote_lat <connect-to> <message-size> <roundtrip-count>"
-      exit
+  if ARGV.length != 4
+    puts "usage: remote_lat <connect-to> <message-size> <roundtrip-count> <manual memory mgmt>"
+    exit
   end
   
   connect_to = ARGV[0]
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
-  					
+  auto_mgmt = ARGV[3].to_i.zero?
+  
+  if auto_mgmt
+    message_opts = {}
+  else
+    message_opts = {:receiver_class => ZMQ::UnmanagedMessage, :sender_class => ZMQ::UnmanagedMessage}
+  end
+  
   ctx = ZMQ::Context.new(1, 1, 0)
-  s = ctx.socket(ZMQ::REQ)
+  s = auto_mgmt ? ctx.socket(ZMQ::REQ) : ZMQ::Socket.new(ctx.context, ZMQ::REQ, message_opts)
   s.connect(connect_to)
   
   msg = ZMQ::Message.new "#{'0'*message_size}"
@@ -114,16 +106,12 @@ Server code:
   start_time = Time.now
   
   roundtrip_count.times do
-      s.send(msg, 0)
-      msg = s.recv(0)
+    s.send msg, 0
+    msg = s.recv msg, 0
+    raise "Message size doesn't match" if message_size != msg.size
   end
   
-  elapsed = (Time.now.to_f - start_time.to_f) * 1000000
-  latency = elapsed / roundtrip_count / 2
-  
-  puts "message size: %i [B]" % message_size
-  puts "roundtrip count: %i" % roundtrip_count
-  puts "mean latency: %.3f [us]" % latency
+  msg.close unless auto_mgmt
 
 == REQUIREMENTS:
 
