@@ -93,7 +93,10 @@ module ZMQ
   # respectively.
   #
   # It is recommended that this class be subclassed to provide zero-copy
-  # access to the underlying buffer.
+  # access to the underlying buffer. The subclass can then be passed into
+  # to the +ZMQ::Socket++ constructor as part of the +opts+ hash. All 
+  # incoming and outgoing buffers for that socket will be wrapped by 
+  # that subclass for easy access to the data.
   #
   # When you are done using the message object, just let it go out of
   # scope to release the memory. During the next garbage collection run

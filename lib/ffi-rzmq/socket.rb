@@ -10,9 +10,10 @@ module ZMQ
   class Socket
     include ZMQ::Util
 
-    def initialize context_ptr, type, managed = true
-      set_managed managed
-      
+    def initialize context_ptr, type, opts = {}
+      defaults = {:receiver_class => Message, :sender_class => Message}
+      set_managed defaults.merge(opts)
+
       @socket = LibZMQ.zmq_socket context_ptr, type
     end
 
@@ -35,7 +36,7 @@ module ZMQ
     # May raise a ZeroMQError when the operation fails or when passed an
     # invalid +option_name+.
     #
-    def setsockopt option_name, option_value, size = nil      
+    def setsockopt option_name, option_value, size = nil
       begin
         case option_name
         when HWM, LWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP
@@ -82,18 +83,19 @@ module ZMQ
     # May raise a ZeroMQError for other failure modes. The exception will
     # contain a string describing the problem.
     #
+    # The application code is responsible for handling the +message+ object lifecycle
+    # when #send return ZMQ::NOBLOCK or it raises an exception. The #send method
+    # does not take ownership of the +message+ and its associated buffers.
+    #
     def send message, flags = 0
       result_code = LibZMQ.zmq_send @socket, message.address, flags
 
       # when the flag isn't set, do a normal error check
       # when set, check to see if the message was successfully queued
-      begin
-        queued = flags.zero? ? error_check(ZMQ_SEND_STR, result_code) : error_check_nonblock(result_code)
-      ensure
-        message = nil
-      end
+      queued = flags.zero? ? error_check(ZMQ_SEND_STR, result_code) : error_check_nonblock(result_code)
 
-      queued # true if sent, false if failed/EAGAIN
+      # true if sent, false if failed/EAGAIN
+      queued
     end
 
     # Helper method to make a new +Message+ instance out of the +message_string+ passed
@@ -104,6 +106,10 @@ module ZMQ
     end
 
     # Dequeues a message from the underlying queue. By default, this is a blocking operation.
+    #
+    # +message+ can be nil in which case a message object will be allocated for you. For manual
+    # memory management, you may allocate your own message and pass it in. This is necessary to
+    # take better advantage of zero-copy.
     #
     # +flags+ may take two values:
     #  0 (default) - blocking operation
@@ -116,8 +122,12 @@ module ZMQ
     # May raise a ZeroMQError for other failure modes. The exception will
     # contain a string describing the problem.
     #
-    def recv flags = 0
-      message = @receiver_klass.new
+    # The application code is responsible for handling the +message+ object lifecycle
+    # when #recv returns ZMQ::NOBLOCK or it raises an exception. The #recv method
+    # does not take ownership of the +message+ and its associated buffers.
+    #
+    def recv message = nil, flags = 0
+      message = @receiver_klass.new if message.nil?
       result_code = LibZMQ.zmq_recv @socket, message.address, flags
 
       begin
@@ -125,38 +135,26 @@ module ZMQ
       rescue ZeroMQError
         dequeued = false
         raise
-      ensure
-        unless dequeued
-          # when the message is of type ZMQ::Message, the next GC run may
-          # release the buffers if the finalizers run
-          message = nil
-        end
       end
 
-      message
+      dequeued ? message : nil
     end
-    
+
     def recv_string flags = 0
-      message = recv flags
-      
+      message = recv nil, flags
+
       if message
         message.data_as_string
       else
         nil
       end
     end
-    
+
     private
-    
-    def set_managed status
-      case status
-      when true
-        @sender_klass = Message
-        @receiver_klass = Message
-      when false
-        @sender_klass = UnmanagedMessage
-        @receiver_klass = UnmanagedMessage
-      end
+
+    def set_managed opts
+      @sender_klass = opts[:sender_class]
+      @receiver_klass = opts[:receiver_class]
     end
 
   end # class Socket

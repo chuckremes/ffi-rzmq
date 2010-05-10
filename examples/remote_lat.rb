@@ -19,18 +19,24 @@
 require 'rubygems'
 require 'ffi-rzmq'
 
-if ARGV.length != 3
-  puts "usage: remote_lat <connect-to> <message-size> <roundtrip-count>"
-  Process.exit
+if ARGV.length != 4
+  puts "usage: remote_lat <connect-to> <message-size> <roundtrip-count> <manual memory mgmt>"
+  exit
 end
 
 connect_to = ARGV[0]
 message_size = ARGV[1].to_i
 roundtrip_count = ARGV[2].to_i
+auto_mgmt = ARGV[3].to_i.zero?
+
+if auto_mgmt
+  message_opts = {}
+else
+  message_opts = {:receiver_class => ZMQ::UnmanagedMessage, :sender_class => ZMQ::UnmanagedMessage}
+end
 
 ctx = ZMQ::Context.new(1, 1, 0)
-#s = ctx.socket(ZMQ::REQ)
-s = ZMQ::Socket.new ctx.context, ZMQ::REQ#, false
+s = auto_mgmt ? ctx.socket(ZMQ::REQ) : ZMQ::Socket.new(ctx.context, ZMQ::REQ, message_opts)
 s.connect(connect_to)
 
 msg = ZMQ::Message.new "#{'0'*message_size}"
@@ -38,13 +44,14 @@ msg = ZMQ::Message.new "#{'0'*message_size}"
 start_time = Time.now
 
 roundtrip_count.times do
-  s.send(msg, 0)
-  #msg.close
-  msg = s.recv(0)
+  s.send msg, 0
+  msg = s.recv msg, 0
+  raise "Message size doesn't match" if message_size != msg.size
 end
 
-end_time = Time.now
+msg.close unless auto_mgmt
 
+end_time = Time.now
 elapsed_secs = (end_time.to_f - start_time.to_f)
 elapsed_usecs = elapsed_secs * 1000000
 latency = elapsed_usecs / roundtrip_count / 2

@@ -19,23 +19,34 @@
 require 'rubygems'
 require 'ffi-rzmq'
 
-if ARGV.length != 2
-  puts "usage: local_lat <bind-to> <roundtrip-count>"
-  Process.exit
+if ARGV.length != 4
+  puts "usage: local_lat <connect-to> <message-size> <roundtrip-count> <manual memory mgmt>"
+  exit
 end
 
 bind_to = ARGV[0]
-roundtrip_count = ARGV[1].to_i
+message_size = ARGV[1].to_i
+roundtrip_count = ARGV[2].to_i
+auto_mgmt = ARGV[3].to_i.zero?
+
+if auto_mgmt
+  message_opts = {}
+else
+  message_opts = {:receiver_class => ZMQ::UnmanagedMessage, :sender_class => ZMQ::UnmanagedMessage}
+end
 
 ctx = ZMQ::Context.new(1, 1, 0)
-#s = ctx.socket(ZMQ::REP)
-s = ZMQ::Socket.new ctx.context, ZMQ::REP#, false
+s = auto_mgmt ? ctx.socket(ZMQ::REP) : ZMQ::Socket.new(ctx.context, ZMQ::REP, message_opts)
 s.setsockopt(ZMQ::HWM, 100)
 s.setsockopt(ZMQ::LWM, 90) # level to restart when congestion is relieved
 s.bind(bind_to)
 
+msg = ZMQ::Message.new
+
 roundtrip_count.times do
-  msg = s.recv(0)
-  s.send(msg, 0)
-  #msg.close
+  msg = s.recv msg, 0
+  raise "Message size doesn't match" if message_size != msg.size
+  s.send msg, 0
 end
+
+msg.close unless auto_mgmt
