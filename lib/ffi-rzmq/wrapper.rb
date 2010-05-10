@@ -41,7 +41,7 @@ module LibZMQ
         :vsm_data, [:uint8, 30]
       end
     end
-  end
+  end # module MsgLayout
 
   # Used for casting pointers back to the struct
   class Msg < FFI::Struct
@@ -59,5 +59,21 @@ module LibZMQ
   attach_function :zmq_close, [:pointer], :int
 
   # Poll api
+  attach_function :zmq_poll, [:pointer, :int, :long], :int
+  
+  module PollItemLayout
+    def self.included(base)
+      base.class_eval do
+        layout :socket,  :pointer,
+        :fd,    :int,
+        :events, :short,
+        :revents, :short
+      end
+    end
+  end # module PollItemLayout
+  
+  class PollItem < FFI::Struct
+    include PollItemLayout
+  end # class PollItem
 
 end # module ZMQ

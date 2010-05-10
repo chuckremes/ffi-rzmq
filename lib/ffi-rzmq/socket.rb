@@ -10,6 +10,8 @@ module ZMQ
   class Socket
     include ZMQ::Util
 
+    attr_reader :socket
+    
     def initialize context_ptr, type, opts = {}
       defaults = {:receiver_class => Message, :sender_class => Message}
       set_managed defaults.merge(opts)
