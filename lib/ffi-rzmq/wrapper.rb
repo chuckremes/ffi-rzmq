@@ -7,6 +7,9 @@ module LibZMQ
   WINDOWS = []
   ffi_lib(LINUX + OSX + WINDOWS)
 
+  # Misc
+  attach_function :zmq_version, [:pointer, :pointer, :pointer], :void
+  
   # Context and misc api
   attach_function :zmq_init, [:int, :int, :int], :pointer
   attach_function :zmq_socket, [:pointer, :int], :pointer

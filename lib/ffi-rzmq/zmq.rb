@@ -50,6 +50,16 @@ module ZMQ
     def error_string
       LibZMQ.zmq_strerror errno
     end
+    
+    # Returns an array of the form [major, minor, patch] to represent the
+    # version of libzmq.
+    def version
+      major = FFI::MemoryPointer.new :int
+      minor = FFI::MemoryPointer.new :int
+      patch = FFI::MemoryPointer.new :int
+      LibZMQ.zmq_version major, minor, patch
+      [major.read_int, minor.read_int, patch.read_int]
+    end
 
 
     private
