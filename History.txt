@@ -1,3 +1,8 @@
+== 0.4.1 / 20100511
+  * I was misusing all of the FFI memory allocator classes. I now
+  wrap libc and use malloc/free directly for creating buffers
+  used by libzmq.
+
 == 0.4.0 / 20100510
   * Changed the Socket#recv method signature to take an optional
   message object as its first argument. This allows the library
