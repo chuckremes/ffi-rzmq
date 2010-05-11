@@ -102,7 +102,9 @@ module ZMQ
 
     # Helper method to make a new +Message+ instance out of the +message_string+ passed
     # in for transmission.
-    def send_string message_string, flags
+    #
+    # +flags+ are optional
+    def send_string message_string, flags = 0
       message = @sender_klass.new message_string
       send message, flags
     end

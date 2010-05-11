@@ -41,6 +41,14 @@ module ZMQ
   EAGAIN = Errno::EAGAIN::Errno
   EINVAL = Errno::EINVAL::Errno
 
+  # ZMQ errors
+  HAUSNUMERO     = 156384712
+  EMTHREAD       = (HAUSNUMERO + 50)
+  EFSM           = (HAUSNUMERO + 51)
+  ENOCOMPATPROTO = (HAUSNUMERO + 52)
+  ETERM          = (HAUSNUMERO + 53)
+
+
   module Util
     # these methods don't belong to any specific context
     def errno
@@ -50,7 +58,7 @@ module ZMQ
     def error_string
       LibZMQ.zmq_strerror errno
     end
-    
+
     # Returns an array of the form [major, minor, patch] to represent the
     # version of libzmq.
     def version
@@ -69,7 +77,7 @@ module ZMQ
       true # used by Socket::send/recv
     end
 
-    # 
+    #
     def error_check_nonblock result_code
       queue_operation = eagain? && !result_code.zero? ? false : true
       queue_operation
@@ -78,6 +86,19 @@ module ZMQ
     def eagain?
       EAGAIN == errno
     end
+    
+    # Set when the number of application threads using sockets within this context
+    # has been exceeded.
+    def emthread?; EMTHREAD == errno; end
+
+    # Set when trying to send on a REP socket before it has received a request,
+    # or when trying to recv on a REQ socket before it has sent a request.
+    def efsm?; EFSM == errno; end
+    
+    def enocompatproto?; ENOCOMPATPROTO == errno; end
+    
+    def eterm?; ETERM == errno; end
+    
 
   end # module Util
 

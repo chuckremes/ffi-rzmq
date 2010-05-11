@@ -2,7 +2,7 @@ require 'ffi' # external gem
 
 module LibC
   extend FFI::Library
-  LINUX = ["libc.so", "/usr/lib/libc.so"]
+  LINUX = ["libc.so", "/lib/libc.so", "/lib/libc.so.6", "/usr/lib/libc.so", "/usr/lib/libc.so.6"]
   OSX = ["libc.dylib", "/usr/lib/libc.dylib"]
   WINDOWS = []
   ffi_lib(LINUX + OSX + WINDOWS)
