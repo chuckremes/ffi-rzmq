@@ -39,7 +39,7 @@ ctx = ZMQ::Context.new(1, 1, 0)
 s = auto_mgmt ? ctx.socket(ZMQ::REQ) : ZMQ::Socket.new(ctx.context, ZMQ::REQ, message_opts)
 s.connect(connect_to)
 
-msg = ZMQ::Message.new "#{'0'*message_size}"
+msg = ZMQ::Message.new "#{'3'*message_size}"
 
 start_time = Time.now
 
