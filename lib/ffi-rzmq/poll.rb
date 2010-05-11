@@ -16,23 +16,48 @@ module ZMQ
       error_check_poll result_code
       items_hash
     end
-    
+
     def poll_nonblock
       poll 0
     end
 
-    def register sock = nil, events = ZMQ::POLLIN | ZMQ::POLLOUT, fd = nil
-      return unless socket || fd
-      @sockets << sock
-      item = LibZMQ::PollItem.new
-      item[:socket] = sock.socket
-      item[:fd] = fd
-      item[:events] = events
+    # Register the +sock+ for +events+. This method is idempotent meaning
+    # it can be called multiple times with the same data and the socket
+    # will only get registered at most once. Calling multiple times with
+    # different values for +events+ will OR the event information together.
+    def register sock = nil, events = ZMQ::POLLIN | ZMQ::POLLOUT
+      return unless socket
+
+      item = get @sockets.index(sock)
+
+      unless item
+        @sockets << sock
+        item = LibZMQ::PollItem.new
+        case sock
+        when Socket
+          item[:socket] = sock.socket
+          item[:fd] = 0
+        else
+          item[:socket] = 0
+          item[:fd] = fd
+        end
+      end
+
+      item[:events] |= events
+
       @items << item
     end
-    
+
+    def register_readable sock = nil
+      register sock, ZMQ::POLLIN, fd
+    end
+
+    def register_writable sock = nil
+      register sock, ZMQ::POLLOUT, fd
+    end
+
     private
-    
+
     def items_hash
       hsh = {}
       i = 0
