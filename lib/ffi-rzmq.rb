@@ -63,6 +63,6 @@ end  # module ZMQ
 
 
 # the order of files is important
-%w(wrapper zmq exceptions context message socket).each do |file|
+%w(wrapper zmq exceptions context message socket poll_items poll).each do |file|
   require ZMQ.libpath(['ffi-rzmq', file])
 end

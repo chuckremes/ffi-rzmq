@@ -20,7 +20,7 @@ other runtimes remove their GIL, JRuby will likely be the best
 environment to run this library.}
   s.email = %q{cremes@mac.com}
   s.extra_rdoc_files = ["History.txt", "README.txt", "version.txt"]
-  s.files = [".bnsignore", "History.txt", "README.txt", "Rakefile", "examples/local_lat.rb", "examples/remote_lat.rb", "lib/ffi-rzmq.rb", "lib/ffi-rzmq/context.rb", "lib/ffi-rzmq/exceptions.rb", "lib/ffi-rzmq/message.rb", "lib/ffi-rzmq/socket.rb", "lib/ffi-rzmq/wrapper.rb", "lib/ffi-rzmq/zmq.rb", "spec/ffi-rzmq_spec.rb", "spec/spec_helper.rb", "version.txt"]
+  s.files = [".bnsignore", "History.txt", "README.txt", "Rakefile", "examples/local_lat.rb", "examples/remote_lat.rb", "examples/publish_subscribe.rb", "examples/reqrep_poll.rb", "examples/request_response.rb", "lib/ffi-rzmq.rb", "lib/ffi-rzmq/context.rb", "lib/ffi-rzmq/exceptions.rb", "lib/ffi-rzmq/message.rb", "lib/ffi-rzmq/poll.rb", "lib/ffi-rzmq/poll_items.rb", "lib/ffi-rzmq/socket.rb", "lib/ffi-rzmq/wrapper.rb", "lib/ffi-rzmq/zmq.rb", "spec/ffi-rzmq_spec.rb", "spec/spec_helper.rb", "version.txt"]
   s.homepage = %q{http://github.com/chuckremes/ffi-rzmq}
   s.rdoc_options = ["--main", "README.txt"]
   s.require_paths = ["lib"]

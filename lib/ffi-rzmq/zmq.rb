@@ -33,6 +33,7 @@ module ZMQ
 
   #  I/O multiplexing
 
+  POLL = 1
   POLLIN = 1
   POLLOUT = 2
   POLLERR = 4
@@ -56,7 +57,7 @@ module ZMQ
     end
 
     def error_string
-      LibZMQ.zmq_strerror errno
+      LibZMQ.zmq_strerror(errno).read_string
     end
 
     # Returns an array of the form [major, minor, patch] to represent the
@@ -81,6 +82,10 @@ module ZMQ
     def error_check_nonblock result_code
       queue_operation = eagain? && !result_code.zero? ? false : true
       queue_operation
+    end
+    
+    def error_check_poll result_code
+      true
     end
 
     def eagain?

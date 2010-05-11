@@ -94,6 +94,24 @@ module LibZMQ
   
   class PollItem < FFI::Struct
     include PollItemLayout
+    
+    def readable?
+      !(self[:revents] & ZMQ::POLLIN).zero?
+    end
+    
+    def writable?
+      !(self[:revents] & ZMQ::POLLOUT).zero?
+    end
+    
+    def both_accessible?
+      readable? && writable?
+    end
+    
+    def inspect
+      "socket [#{self[:socket]}], fd [#{self[:fd]}], events [#{self[:events]}], revents [#{self[:revents]}]"
+    end
+    
+    def to_s; inspect; end
   end # class PollItem
 
 end # module ZMQ
