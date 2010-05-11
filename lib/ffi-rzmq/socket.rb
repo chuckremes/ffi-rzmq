@@ -40,11 +40,13 @@ module ZMQ
       begin
         case option_name
         when HWM, LWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP
-          option_value_ptr = FFI::MemoryPointer.new :long
+          option_value_ptr = LibC::malloc option_value.size
           option_value_ptr.write_long option_value
 
         when IDENTITY, SUBSCRIBE, UNSUBSCRIBE
-          option_value_ptr = FFI::MemoryPointer.from_string option_value
+          # note: not checking errno for failed memory allocations :(
+          option_value_ptr = LibC::malloc option_value.size
+          option_value_ptr.write_string option_value
 
         else
           # we didn't understand the passed option argument
@@ -55,7 +57,7 @@ module ZMQ
         result_code = LibZMQ.zmq_setsockopt @socket, option_name, option_value_ptr, size || option_value.size
         error_check ZMQ_SETSOCKOPT_STR, result_code
       ensure
-        option_value_ptr.free
+        LibC.free option_value_ptr unless option_value_ptr.null?
       end
     end
 

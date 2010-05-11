@@ -34,11 +34,11 @@ module ZMQ
         # FIXME: not really zero-copy since #from_string copies the data to
         # native memory behind the scenes. The intention of this constructor is to
         # take in a pointer and its length and just pass it on to the Lib 
-        # directly. Having a hard time getting through the FFI source because it is
-        # really poorly documented. :(
-        data = FFI::MemoryPointer.from_string message.to_s
+        # directly.
+        data_buffer = LibC.malloc message.size
+        data_buffer.put_string 0, message
 
-        result_code = LibZMQ.zmq_msg_init_data @struct, data, message.size, LibZMQ::MessageDeallocator, nil
+        result_code = LibZMQ.zmq_msg_init_data @struct, data_buffer, message.size, LibZMQ::MessageDeallocator, nil
         error_check ZMQ_MSG_INIT_DATA_STR, result_code
       else
         # initialize an empty message structure to receive a message
@@ -67,16 +67,16 @@ module ZMQ
       LibZMQ.zmq_msg_size @struct
     end
 
-    # Returns an FFI::MemoryPointer pointing to the data buffer.
+    # Returns a pointer to the data buffer.
     # This pointer should *never* be freed. It will automatically be freed
     # when the +message+ object goes out of scope and gets garbage
     # collected.
     def data
-      FFI::MemoryPointer.new(LibZMQ.zmq_msg_data(@struct))
+      LibZMQ.zmq_msg_data @struct
     end
 
     def data_as_string
-      data.read_string(size)
+      data.read_string size
     end
     
     # Manually release the message struct and its associated buffers.
