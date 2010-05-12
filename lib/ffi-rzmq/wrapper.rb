@@ -2,10 +2,8 @@ require 'ffi' # external gem
 
 module LibC
   extend FFI::Library
-  LINUX = ["libc.so", "/lib/libc.so", "/lib/libc.so.6", "/usr/lib/libc.so", "/usr/lib/libc.so.6"]
-  OSX = ["libc.dylib", "/usr/lib/libc.dylib"]
-  WINDOWS = []
-  ffi_lib(LINUX + OSX + WINDOWS)
+  # figures out the correct libc for each platform including Windows
+  ffi_lib FFI::Library::LIBC
   
   # memory allocators
   attach_function :malloc, [:size_t], :pointer

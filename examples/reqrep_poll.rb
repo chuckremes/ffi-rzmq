@@ -28,13 +28,11 @@ until @done do
     puts "sending payload nonblocking"
     s1.send_string payload, ZMQ::NOBLOCK
     @unsent = false
-    puts "sent"
   end
 
   # check for messages after 1 second
   if Time.now - start_time > 1
     poller.readables.each do |sock|
-      puts "receiving a msg with flags [#{ZMQ::NOBLOCK}]"
       received_msg = sock.recv_string ZMQ::NOBLOCK
 
       puts "message received [#{received_msg}]"
