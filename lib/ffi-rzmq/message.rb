@@ -35,10 +35,12 @@ module ZMQ
         # native memory behind the scenes. The intention of this constructor is to
         # take in a pointer and its length and just pass it on to the Lib 
         # directly.
-        data_buffer = LibC.malloc message.size
+        # Strings require an extra byte to contain the null byte (C string)
+        data_buffer = LibC.malloc message.size + 1
         data_buffer.put_string 0, message
 
-        result_code = LibZMQ.zmq_msg_init_data @struct, data_buffer, message.size, LibZMQ::MessageDeallocator, nil
+        result_code = LibZMQ.zmq_msg_init_data @struct.pointer, data_buffer, message.size, LibZMQ::MessageDeallocator, nil
+        #result_code = LibZMQ.zmq_msg_init_data @struct.pointer, data_buffer, message.size, nil, nil
         error_check ZMQ_MSG_INIT_DATA_STR, result_code
       else
         # initialize an empty message structure to receive a message
@@ -49,22 +51,22 @@ module ZMQ
 
     # Provides the memory address of the +zmq_msg_t+ struct.
     def address
-      @struct
+      @struct.pointer
     end
 
     def copy source
-      result_code = LibZMQ.zmq_msg_copy @struct, source.address
+      result_code = LibZMQ.zmq_msg_copy @struct.pointer, source.address
       error_check ZMQ_MSG_COPY_STR, result_code
     end
 
     def move source
-      result_code = LibZMQ.zmq_msg_copy @struct, source.address
+      result_code = LibZMQ.zmq_msg_copy @struct.pointer, source.address
       error_check ZMQ_MSG_MOVE_STR, result_code
     end
 
     # Provides the size of the data buffer for this +zmq_msg_t+ C struct
     def size
-      LibZMQ.zmq_msg_size @struct
+      LibZMQ.zmq_msg_size @struct.pointer
     end
 
     # Returns a pointer to the data buffer.
@@ -72,16 +74,20 @@ module ZMQ
     # when the +message+ object goes out of scope and gets garbage
     # collected.
     def data
-      LibZMQ.zmq_msg_data @struct
+      LibZMQ.zmq_msg_data @struct.pointer
     end
 
+    # Returns the data buffer as a string. The last byte is chopped off because
+    # it should be the null byte. That isn't necessary for a ruby string.
+    #
+    # Note: If this is binary data, it won't print very prettily.
     def data_as_string
-      data.read_string size
+      data.read_string(size)#.chop!
     end
     
     # Manually release the message struct and its associated buffers.
     def close
-      LibZMQ.zmq_msg_close @struct
+      LibZMQ.zmq_msg_close @struct.pointer
       @pointer.free
       @struct = nil
     end
@@ -148,7 +154,7 @@ module ZMQ
     private
     
     def define_finalizer
-      ObjectSpace.define_finalizer self, self.class.close(@struct, @pointer)
+      ObjectSpace.define_finalizer(self, self.class.close(@struct, @pointer))
     end
 
     # Message finalizer
@@ -157,12 +163,12 @@ module ZMQ
     # way to catch a raised exception anywhere near where the error actually
     # occurred in the code, so we just ignore deallocation failures here.
     def self.close struct, pointer
-      proc {
+      Proc.new do
         # release the data buffer
-        LibZMQ.zmq_msg_close struct
+        LibZMQ.zmq_msg_close struct.pointer
         pointer.free
         struct = nil
-      }
+      end
     end
   end # class Message
 

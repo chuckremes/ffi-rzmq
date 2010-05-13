@@ -42,12 +42,12 @@ module ZMQ
       begin
         case option_name
         when HWM, LWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP
-          option_value_ptr = LibC::malloc option_value.size
+          option_value_ptr = LibC.malloc option_value.size
           option_value_ptr.write_long option_value
 
         when IDENTITY, SUBSCRIBE, UNSUBSCRIBE
           # note: not checking errno for failed memory allocations :(
-          option_value_ptr = LibC::malloc option_value.size
+          option_value_ptr = LibC.malloc option_value.size
           option_value_ptr.write_string option_value
 
         else
@@ -108,7 +108,9 @@ module ZMQ
     # +flags+ are optional
     def send_string message_string, flags = 0
       message = @sender_klass.new message_string
-      send message, flags
+      result = send message, flags
+      message.close
+      result
     end
 
     # Dequeues a message from the underlying queue. By default, this is a blocking operation.
@@ -150,7 +152,9 @@ module ZMQ
       message = recv nil, flags
 
       if message
-        message.data_as_string
+        string = message.data_as_string
+        message.close
+        string
       else
         nil
       end
