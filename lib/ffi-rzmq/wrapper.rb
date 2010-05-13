@@ -73,18 +73,18 @@ module LibZMQ
   # This can aid in situations where the function call will/may block and another
   # thread within the lib may try to call back into the ruby runtime. Failure to
   # release the GIL will result in a hang; the hint *may* allow things to run
-  # smoothly.
+  # smoothly for Ruby runtimes hampered by a GIL.
   attach_function :zmq_setsockopt, [:pointer, :int, :pointer, :int], :int
   attach_function :zmq_bind, [:pointer, :string], :int
   attach_function :zmq_connect, [:pointer, :string], :int
-  @blocking = true unless RUBY_ENGINE == "jruby"
+  @blocking = true
   attach_function :zmq_send, [:pointer, :pointer, :int], :int
-  @blocking = true unless RUBY_ENGINE == "jruby"
+  @blocking = true
   attach_function :zmq_recv, [:pointer, :pointer, :int], :int
   attach_function :zmq_close, [:pointer], :int
 
   # Poll api
-  @blocking = true unless RUBY_ENGINE == "jruby"
+  @blocking = true
   attach_function :zmq_poll, [:pointer, :int, :long], :int
 
   module PollItemLayout
