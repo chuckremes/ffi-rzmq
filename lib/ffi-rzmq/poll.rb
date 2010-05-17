@@ -30,7 +30,6 @@ module ZMQ
     def poll timeout = :blocking
       unless @items.empty?
         timeout = adjust timeout
-        puts "items [#{@items.size}]"
         items_triggered = LibZMQ.zmq_poll @items.address, @items.size, timeout
         error_check ZMQ_POLL_STR, items_triggered >= 0 ? 0 : items_triggered
         update_selectables
