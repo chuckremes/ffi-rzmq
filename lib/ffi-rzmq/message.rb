@@ -13,7 +13,7 @@ module ZMQ
   #
   # When passing in a +message+ and +length+, the data is handed off to
   # to the message structure via a pointer. This provides a zero-copy
-  # transmission facility for data buffers. 
+  # transmission facility for data buffers.
   #
   # Note that by handing the message over to this class, it now owns the
   # buffer and its data. After calling #close on this object, it will
@@ -25,7 +25,7 @@ module ZMQ
 
     def initialize message = nil, length = nil
       # allocate our own pointer so that we can tell it to *not* zero out
-      # the memory; it's pointless work since the library is going to 
+      # the memory; it's pointless work since the library is going to
       # overwrite it anyway.
       @pointer = FFI::MemoryPointer.new LibZMQ::Msg.size, 1, false
       @struct = LibZMQ::Msg.new @pointer
@@ -33,7 +33,7 @@ module ZMQ
       if message
         # FIXME: not really zero-copy since #from_string copies the data to
         # native memory behind the scenes. The intention of this constructor is to
-        # take in a pointer and its length and just pass it on to the Lib 
+        # take in a pointer and its length and just pass it on to the Lib
         # directly.
         # Strings require an extra byte to contain the null byte (C string)
         data_buffer = LibC.malloc message.size + 1
@@ -84,7 +84,7 @@ module ZMQ
     def data_as_string
       data.read_string(size)#.chop!
     end
-    
+
     # Manually release the message struct and its associated buffers.
     def close
       LibZMQ.zmq_msg_close @struct.pointer
@@ -93,15 +93,15 @@ module ZMQ
     end
 
   end # class UnmanagedMessage
-  
+
   # The ruby equivalent of the +zmq_msg_t+ C struct. Access the underlying
   # memory buffer and the buffer size using the #data and #size methods
   # respectively.
   #
   # It is recommended that this class be subclassed to provide zero-copy
   # access to the underlying buffer. The subclass can then be passed into
-  # to the +ZMQ::Socket++ constructor as part of the +opts+ hash. All 
-  # incoming and outgoing buffers for that socket will be wrapped by 
+  # to the #ZMQ::Socket constructor as part of the +opts+ hash. All
+  # incoming and outgoing buffers for that socket will be wrapped by
   # that subclass for easy access to the data.
   #
   # When you are done using the message object, just let it go out of
@@ -143,16 +143,16 @@ module ZMQ
   class Message < UnmanagedMessage
     def initialize message = nil, length = nil
       super
-      
+
       define_finalizer
     end
-    
+
     # Has no effect. This class has automatic memory management via a
     # finalizer.
     def close() end
-    
+
     private
-    
+
     def define_finalizer
       ObjectSpace.define_finalizer(self, self.class.close(@struct, @pointer))
     end

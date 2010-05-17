@@ -16,3 +16,7 @@ announcement.txt
 coverage
 doc
 pkg
+*.tmproj
+*.gem
+*.rbc
+*.html

@@ -7,7 +7,7 @@ module ZMQ
     include ZMQ::Util
 
     attr_reader :readables, :writables
-    
+
     def initialize
       @items = ZMQ::PollItems.new
       @sockets = []
@@ -15,17 +15,37 @@ module ZMQ
       @writables = []
     end
 
-    def poll timeout_in_usecs = -1
+    # Checks each poll item for selectability based on the poll items'
+    # registered +events+. Will block for up to +timeout+ milliseconds
+    # A millisecond is 1/1000 of a second, so to block for 1 second
+    # pass the value "1000" to #poll.
+    #
+    # Pass "-1" or +:blocking+ for +timeout+ for this call to block
+    # indefinitely.
+    #
+    # May raise a ZMQ::PollError exception. This occurs when one of the
+    # registered sockets belongs to an application thread in another
+    # Context.
+    #
+    def poll timeout = :blocking
       unless @items.empty?
-        result_code = LibZMQ.zmq_poll @items.address, @items.size, timeout_in_usecs
-        error_check_poll result_code
-        update_readable_writable
+        timeout = adjust timeout
+        result_code = LibZMQ.zmq_poll @items.address, @items.size, timeout
+        error_check ZMQ_POLL_STR, result_code
+        update_selectables
         items_hash
       else
         {}
       end
     end
 
+    # The non-blocking version of #poll. See the #poll description for
+    # potential exceptions.
+    #
+    # May raise a ZMQ::PollError exception. This occurs when one of the
+    # registered sockets belongs to an application thread in another
+    # Context.
+    #
     def poll_nonblock
       poll 0
     end
@@ -34,6 +54,9 @@ module ZMQ
     # it can be called multiple times with the same data and the socket
     # will only get registered at most once. Calling multiple times with
     # different values for +events+ will OR the event information together.
+    #
+    # Does not raise any exceptions.
+    #
     def register sock = nil, events = ZMQ::POLLIN | ZMQ::POLLOUT, fd = 0
       return unless sock
 
@@ -43,6 +66,7 @@ module ZMQ
       unless item
         @sockets << sock
         item = LibZMQ::PollItem.new
+
         case sock
         when ZMQ::Socket, Socket
           item[:socket] = sock.socket
@@ -58,24 +82,20 @@ module ZMQ
       @items << item
     end
 
+    # A helper method to register a +sock+ as readable events only.
+    #
     def register_readable sock = nil
       register sock, ZMQ::POLLIN, 0
     end
 
+    # A helper method to register a +sock+ for writable events only.
+    #
     def register_writable sock = nil
       register sock, ZMQ::POLLOUT, 0
     end
 
-    private
 
-    def poll_items_c_array
-      if @poll_items_dirty
-        # more items were added, so let's map them to a C array
-      else
-        # no change to the items list; return previously mapped C array
-        @c_array
-      end
-    end
+    private
 
     def items_hash
       hsh = {}
@@ -86,14 +106,30 @@ module ZMQ
 
       hsh
     end
-    
-    def update_readable_writable
+
+    def update_selectables
       @readables.clear
       @writables.clear
-      
+
       @items.each_with_index do |poll_item, i|
         @readables << @sockets[i] if poll_item.readable?
         @writables << @sockets[i] if poll_item.writable?
+      end
+    end
+
+    # Convert the timeout value to something usable by
+    # the library.
+    #
+    # -1 or :blocking should be converted to -1.
+    #
+    # Users will pass in values measured as
+    # milliseconds, so we need to convert that value to
+    # microseconds for the library.
+    def adjust timeout
+      if :blocking == timeout || -1 == timeout
+        -1
+      else
+        timeout *= 1000
       end
     end
   end

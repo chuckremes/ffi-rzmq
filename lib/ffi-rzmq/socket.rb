@@ -1,6 +1,7 @@
 
 module ZMQ
 
+  ZMQ_SOCKET_STR = 'zmq_socket'.freeze unless defined? ZMQ_SOCKET_STR
   ZMQ_SETSOCKOPT_STR = 'zmq_setsockopt'.freeze
   ZMQ_BIND_STR = 'zmq_bind'.freeze
   ZMQ_CONNECT_STR = 'zmq_connect'.freeze
@@ -11,12 +12,18 @@ module ZMQ
     include ZMQ::Util
 
     attr_reader :socket
-    
+
+    # Can raise two kinds of exceptions depending on the error.
+    # ContextError:: Raised when a socket operation is attempted on a terminated
+    # #Context. See #ContextError.
+    # SocketError:: See all of the possibilities in the docs for #SocketError.
+    #
     def initialize context_ptr, type, opts = {}
       defaults = {:receiver_class => Message, :sender_class => Message}
       set_managed defaults.merge(opts)
 
       @socket = LibZMQ.zmq_socket context_ptr, type
+      error_check ZMQ_SOCKET_STR, @socket.nil? ? 1 : 0
     end
 
     # Set the queue options on this socket.
@@ -35,10 +42,12 @@ module ZMQ
     #  ZMQ::SUBSCRIBE
     #  ZMQ::UNSUBSCRIBE
     #
-    # May raise a ZeroMQError when the operation fails or when passed an
-    # invalid +option_name+.
+    # Can raise two kinds of exceptions depending on the error.
+    # ContextError:: Raised when a socket operation is attempted on a terminated
+    # #Context. See #ContextError.
+    # SocketError:: See all of the possibilities in the docs for #SocketError.
     #
-    def setsockopt option_name, option_value, size = nil
+    def setsockopt option_name, option_value, option_len = nil
       begin
         case option_name
         when HWM, LWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP
@@ -56,40 +65,52 @@ module ZMQ
           error_check ZMQ_SETSOCKOPT_STR, EINVAL
         end
 
-        result_code = LibZMQ.zmq_setsockopt @socket, option_name, option_value_ptr, size || option_value.size
+        result_code = LibZMQ.zmq_setsockopt @socket, option_name, option_value_ptr, option_len || option_value.size
         error_check ZMQ_SETSOCKOPT_STR, result_code
       ensure
         LibC.free option_value_ptr unless option_value_ptr.null?
       end
     end
 
+    # Can raise two kinds of exceptions depending on the error.
+    # ContextError:: Raised when a socket operation is attempted on a terminated
+    # #Context. See #ContextError.
+    # SocketError:: See all of the possibilities in the docs for #SocketError.
+    #
     def bind address
       result_code = LibZMQ.zmq_bind @socket, address
       error_check ZMQ_BIND_STR, result_code
     end
 
+    # Can raise two kinds of exceptions depending on the error.
+    # ContextError:: Raised when a socket operation is attempted on a terminated
+    # #Context. See #ContextError.
+    # SocketError:: See all of the possibilities in the docs for #SocketError.
+    #
     def connect address
       result_code = LibZMQ.zmq_connect @socket, address
       error_check ZMQ_CONNECT_STR, result_code
     end
 
     # Queues the message for transmission. Message is assumed to be an instance or
-    # subclass of +Message+.
+    # subclass of #Message.
     #
     # +flags+ may take two values:
-    #  0 (default) - blocking operation
-    #  ZMQ::NOBLOCK - non-blocking operation
+    # * 0 (default) - blocking operation
+    # * ZMQ::NOBLOCK - non-blocking operation
     #
     # Returns true when the message was successfully enqueued.
     # Returns false when the message could not be enqueued *and* +flags+ is set
-    # with ZMQ::NOBLOCK
-    #
-    # May raise a ZeroMQError for other failure modes. The exception will
-    # contain a string describing the problem.
+    # with ZMQ::NOBLOCK.
     #
     # The application code is responsible for handling the +message+ object lifecycle
     # when #send return ZMQ::NOBLOCK or it raises an exception. The #send method
     # does not take ownership of the +message+ and its associated buffers.
+    #
+    # Can raise two kinds of exceptions depending on the error.
+    # ContextError:: Raised when a socket operation is attempted on a terminated
+    # #Context. See #ContextError.
+    # SocketError:: See all of the possibilities in the docs for #SocketError.
     #
     def send message, flags = 0
       result_code = LibZMQ.zmq_send @socket, message.address, flags
@@ -102,10 +123,16 @@ module ZMQ
       queued
     end
 
-    # Helper method to make a new +Message+ instance out of the +message_string+ passed
+    # Helper method to make a new #Message instance out of the +message_string+ passed
     # in for transmission.
     #
-    # +flags+ are optional
+    # +flags+ may be ZMQ::NOBLOCK.
+    #
+    # Can raise two kinds of exceptions depending on the error.
+    # ContextError:: Raised when a socket operation is attempted on a terminated
+    # #Context. See #ContextError.
+    # SocketError:: See all of the possibilities in the docs for #SocketError.
+    #
     def send_string message_string, flags = 0
       message = @sender_klass.new message_string
       result = send message, flags
@@ -125,14 +152,16 @@ module ZMQ
     #
     # Returns a message when it successfully dequeues one from the queue.
     # Returns nil when a message could not be dequeued *and* +flags+ is set
-    # with ZMQ::NOBLOCK
-    #
-    # May raise a ZeroMQError for other failure modes. The exception will
-    # contain a string describing the problem.
+    # with ZMQ::NOBLOCK.
     #
     # The application code is responsible for handling the +message+ object lifecycle
     # when #recv returns ZMQ::NOBLOCK or it raises an exception. The #recv method
     # does not take ownership of the +message+ and its associated buffers.
+    #
+    # Can raise two kinds of exceptions depending on the error.
+    # ContextError:: Raised when a socket operation is attempted on a terminated
+    # #Context. See #ContextError.
+    # SocketError:: See all of the possibilities in the docs for #SocketError.
     #
     def recv message = nil, flags = 0
       message = @receiver_klass.new if message.nil?
@@ -148,6 +177,16 @@ module ZMQ
       dequeued ? message : nil
     end
 
+    # Helper method to make a new #Message instance and convert its payload
+    # to a string.
+    #
+    # +flags+ may be ZMQ::NOBLOCK.
+    #
+    # Can raise two kinds of exceptions depending on the error.
+    # ContextError:: Raised when a socket operation is attempted on a terminated
+    # #Context. See #ContextError.
+    # SocketError:: See all of the possibilities in the docs for #SocketError.
+    #
     def recv_string flags = 0
       message = recv nil, flags
 
@@ -159,6 +198,7 @@ module ZMQ
         nil
       end
     end
+
 
     private
 
