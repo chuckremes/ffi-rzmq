@@ -45,7 +45,7 @@ start_time = Time.now
 
 roundtrip_count.times do
   s.send msg, 0
-  msg = s.recv msg, 0
+  result = s.recv msg, 0
   raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
 end
 

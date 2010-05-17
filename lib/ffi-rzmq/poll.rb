@@ -94,6 +94,13 @@ module ZMQ
       register sock, ZMQ::POLLOUT, 0
     end
 
+    def deregister sock
+      if index = @sockets.index(sock)
+        @items.delete_at index
+        @sockets.delete sock
+      end
+    end
+
 
     private
 

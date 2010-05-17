@@ -8,13 +8,14 @@ module ZMQ
   class Context
     include ZMQ::Util
 
-    attr_reader :context
+    attr_reader :context, :pointer
 
     # May raise a #ContextError.
     #
     def initialize app_threads, io_threads, flags
       @sockets ||= []
       @context = LibZMQ.zmq_init app_threads, io_threads, flags
+      @pointer = @context
       error_check ZMQ_INIT_STR, @context.nil? ? 1 : 0
     end
 

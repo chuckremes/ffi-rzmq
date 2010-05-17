@@ -142,15 +142,11 @@ module ZMQ
 
     # Dequeues a message from the underlying queue. By default, this is a blocking operation.
     #
-    # +message+ can be nil in which case a message object will be allocated for you. For manual
-    # memory management, you may allocate your own message and pass it in. This is necessary to
-    # take better advantage of zero-copy.
-    #
     # +flags+ may take two values:
     #  0 (default) - blocking operation
     #  ZMQ::NOBLOCK - non-blocking operation
     #
-    # Returns a message when it successfully dequeues one from the queue.
+    # Returns a true when it successfully dequeues one from the queue.
     # Returns nil when a message could not be dequeued *and* +flags+ is set
     # with ZMQ::NOBLOCK.
     #
@@ -163,8 +159,7 @@ module ZMQ
     # #Context. See #ContextError.
     # SocketError:: See all of the possibilities in the docs for #SocketError.
     #
-    def recv message = nil, flags = 0
-      message = @receiver_klass.new if message.nil?
+    def recv message, flags = 0
       result_code = LibZMQ.zmq_recv @socket, message.address, flags
 
       begin
@@ -174,7 +169,7 @@ module ZMQ
         raise
       end
 
-      dequeued ? message : nil
+      dequeued ? true : nil
     end
 
     # Helper method to make a new #Message instance and convert its payload
@@ -188,9 +183,10 @@ module ZMQ
     # SocketError:: See all of the possibilities in the docs for #SocketError.
     #
     def recv_string flags = 0
-      message = recv nil, flags
+      message = @receiver_klass.new
+      dequeued = recv message, flags
 
-      if message
+      if dequeued
         string = message.data_as_string
         message.close
         string

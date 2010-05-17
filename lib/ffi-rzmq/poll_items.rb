@@ -36,6 +36,14 @@ module ZMQ
       @items << obj
     end
     alias :push :<<
+    
+    def delete_at index
+      unless @items.empty?
+        @items.delete_at index
+        @dirty = true
+        clean
+      end
+    end
 
     def each &blk
       clean
@@ -60,7 +68,8 @@ module ZMQ
     private
 
     # Allocate a contiguous chunk of memory and copy over the PollItem structs
-    # to this block.
+    # to this block. Note that the old +@store+ value goes out of scope so when
+    # it is garbage collected that native memory should be automatically freed.
     def clean
       if @dirty
         @store = FFI::MemoryPointer.new @element_size, @items.size, false

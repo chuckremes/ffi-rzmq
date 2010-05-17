@@ -34,8 +34,7 @@ This gem is brand new and has no tests at all. I'm certain there are a
 ton of bugs, so please open issues for them here or fork this project,
 fix them, and send me a pull request.
 
-All features are implemented with the exception of #zmq_poll. I'll add
-it as soon as I am able.
+All features are implemented.
 
 == SYNOPSIS:
 
@@ -43,75 +42,58 @@ Client code:
   
   require 'rubygems'
   require 'ffi-rzmq'
-
-  if ARGV.length != 4
-    puts "usage: local_lat <connect-to> <message-size> <roundtrip-count> <manual memory mgmt>"
+  
+  if ARGV.length < 3
+    puts "usage: local_lat <connect-to> <message-size> <roundtrip-count>"
     exit
   end
-
+  
   bind_to = ARGV[0]
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
-  auto_mgmt = ARGV[3].to_i.zero?
-
-  if auto_mgmt
-    message_opts = {}
-  else
-    message_opts = {:receiver_class => ZMQ::UnmanagedMessage, :sender_class => ZMQ::UnmanagedMessage}
-  end
-
+  
   ctx = ZMQ::Context.new(1, 1, 0)
-  s = auto_mgmt ? ctx.socket(ZMQ::REP) : ZMQ::Socket.new(ctx.context, ZMQ::REP, message_opts)
+  s = ctx.socket ZMQ::REP
   s.setsockopt(ZMQ::HWM, 100)
   s.setsockopt(ZMQ::LWM, 90) # level to restart when congestion is relieved
   s.bind(bind_to)
-
-  msg = ZMQ::Message.new
-
+  
   roundtrip_count.times do
-    msg = s.recv msg, 0
-    raise "Message size doesn't match" if message_size != msg.size
-    s.send msg, 0
+    msg = s.recv_string 0
+    raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
+    s.send_string msg, 0
   end
-
-  msg.close unless auto_mgmt
+  
+  # give the lib time to flush any remaining messages
+  sleep 1
 
 Server code:
 
   require 'rubygems'
   require 'ffi-rzmq'
   
-  if ARGV.length != 4
-    puts "usage: remote_lat <connect-to> <message-size> <roundtrip-count> <manual memory mgmt>"
+  if ARGV.length < 3
+    puts "usage: remote_lat <connect-to> <message-size> <roundtrip-count>"
     exit
   end
   
   connect_to = ARGV[0]
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
-  auto_mgmt = ARGV[3].to_i.zero?
-  
-  if auto_mgmt
-    message_opts = {}
-  else
-    message_opts = {:receiver_class => ZMQ::UnmanagedMessage, :sender_class => ZMQ::UnmanagedMessage}
-  end
   
   ctx = ZMQ::Context.new(1, 1, 0)
-  s = auto_mgmt ? ctx.socket(ZMQ::REQ) : ZMQ::Socket.new(ctx.context, ZMQ::REQ, message_opts)
+  s = ctx.socket ZMQ::REQ
   s.connect(connect_to)
   
-  msg = ZMQ::Message.new "#{'0'*message_size}"
+  msg = "#{ '3' * message_size }"
   
   start_time = Time.now
   
   roundtrip_count.times do
-    s.send msg, 0
-    msg = s.recv msg, 0
-    raise "Message size doesn't match" if message_size != msg.size
+    s.send_string msg, 0
+    msg = s.recv_string 0
+    raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
   end
-  
-  msg.close unless auto_mgmt
 
 == REQUIREMENTS:
 
@@ -121,9 +103,15 @@ like /usr/local/lib. This is the default for new ZeroMQ installs.
 Future releases may include the library as a C extension built at
 time of installation.
 
+Install the current master version of FFI that fixes several threading problems
+under MRI 1.9.x. Code and installation instructions can be found on github:
+
+  http://github.com/ffi/ffi
+
 == INSTALL:
 
-Make sure the ZeroMQ library is already installed on your system.
+Make sure the ZeroMQ library is already installed on your system. Secondly,
+make sure the FFI gem is built from its project master (see Requirements).
 
  % gem build ffi-rzmq.gemspec
  % gem install ffi-rzmq-*.gem
