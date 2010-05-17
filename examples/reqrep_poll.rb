@@ -2,7 +2,7 @@ require 'rubygems'
 require 'ffi-rzmq'
 
 
-link = "tcp://127.0.0.1:5555"
+link = "tcp://127.0.0.1:5556"
 
 ctx = ZMQ::Context.new 1, 1, ZMQ::POLL
 s1 = ctx.socket ZMQ::REQ
@@ -19,8 +19,13 @@ start_time = Time.now
 @unsent = true
 
 until @done do
-  poller.poll_nonblock
-  
+  begin
+    poller.poll_nonblock
+  rescue ZMQ::PollError => e
+    puts "efault? [#{e.efault?}]"
+    raise
+  end
+
   # send the message after 5 seconds
   if Time.now - start_time > 5 && @unsent
     payload = "#{ '3' * 1024 }"
@@ -40,3 +45,5 @@ until @done do
     end
   end
 end
+
+puts "executed in [#{Time.now - start_time}] seconds"

@@ -107,7 +107,7 @@ module ZMQ
     #
     def error_check source, result_code
       unless result_code.zero?
-        raise_error source
+        raise_error source, result_code
       end
 
       # used by Socket::send/recv, ignored by others
@@ -125,7 +125,7 @@ module ZMQ
       queue_operation
     end
 
-    def raise_error source, code
+    def raise_error source, result_code
       case source
       when ZMQ_SOCKET_STR, ZMQ_SETSOCKOPT_STR, ZMQ_BIND_STR, ZMQ_CONNECT_STR, ZMQ_SEND_STR, ZMQ_RECV_STR
         raise SocketError.new source, result_code, errno, error_string
