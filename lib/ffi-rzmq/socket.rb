@@ -13,14 +13,25 @@ module ZMQ
 
     attr_reader :socket
 
+    # By default, this class uses ZMQ::Message for regular Ruby
+    # memory management. 
+    #
+    # Pass {:unmanaged => true} as +opts+ to override the
+    # default and have the pleasure of calling
+    # UnmanagedMessage#close all by yourself.
+    #
+    # +type+ can be one of ZMQ::REQ, ZMQ::REP, ZMQ::PUB, 
+    # ZMQ::SUB, ZMQ::PAIR, ZMQ::UPSTREAM, ZMQ::DOWNSTREAM,
+    # ZMQ::XREQ or ZMQ::XREP.
+    #
     # Can raise two kinds of exceptions depending on the error.
     # ContextError:: Raised when a socket operation is attempted on a terminated
     # #Context. See #ContextError.
     # SocketError:: See all of the possibilities in the docs for #SocketError.
     #
     def initialize context_ptr, type, opts = {}
-      defaults = {:receiver_class => Message, :sender_class => Message}
-      set_managed defaults.merge(opts)
+      defaults = {:unmanaged => false}
+      message_type defaults.merge(opts)
 
       @socket = LibZMQ.zmq_socket context_ptr, type
       error_check ZMQ_SOCKET_STR, @socket.nil? ? 1 : 0
@@ -134,7 +145,8 @@ module ZMQ
     # SocketError:: See all of the possibilities in the docs for #SocketError.
     #
     def send_string message_string, flags = 0
-      message = @sender_klass.new message_string
+      message = @sender_klass.new
+      message.copy_in_string message_string
       result = send message, flags
       message.close
       result
@@ -187,7 +199,7 @@ module ZMQ
       dequeued = recv message, flags
 
       if dequeued
-        string = message.data_as_string
+        string = message.copy_out_string
         message.close
         string
       else
@@ -198,9 +210,9 @@ module ZMQ
 
     private
 
-    def set_managed opts
-      @sender_klass = opts[:sender_class]
-      @receiver_klass = opts[:receiver_class]
+    def message_type opts
+      @sender_klass = opts[:unmanaged] ? ZMQ::UnmanagedMessage : ZMQ::Message
+      @receiver_klass = opts[:unmanaged] ? ZMQ::UnmanagedMessage : ZMQ::Message
     end
 
   end # class Socket
