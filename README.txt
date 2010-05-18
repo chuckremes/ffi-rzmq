@@ -22,11 +22,20 @@ Using FFI introduces some minimal overhead. In my latest benchmarks,
 I was unable to detect any measurable performance drop due to FFI
 regardless of which ruby runtime was tested. JRuby had the best overall
 performance (with --server) once it warmed up. MRI behaved quite well 
-too and has a much lower memory footprint than JRuby.
+too and has a much lower memory footprint than JRuby (use the trunk
+version of the FFI bindings to fix several threading issues affecting
+MRI).
 
 The hope is that in a multi-threaded environment that JRuby's native
 threads and lack of GIL will provide the best ZeroMQ performance using
 the ruby language.
+
+Unfortunately, there is really no reasonable way to support zero-copy
+using Ruby. Anytime data needs to be accessible by the Ruby runtime,
+it must be copied out of native memory to the Ruby heap. The same is
+true for the reverse. I am investigating ways to "pin" primitive arrays
+in memory for Rubinius and JRuby to achieve zero-copy, but that is
+a ways off.
 
 == FEATURES/PROBLEMS:
 
@@ -104,7 +113,10 @@ Future releases may include the library as a C extension built at
 time of installation.
 
 Install the current master version of FFI that fixes several threading problems
-under MRI 1.9.x. Code and installation instructions can be found on github:
+under MRI 1.9.x. Unfortunately, MRI 1.8.x is irretrievably broken so it isn't
+recommended if you plan to use threads or callbacks.
+
+Code and installation instructions can be found on github:
 
   http://github.com/ffi/ffi
 
