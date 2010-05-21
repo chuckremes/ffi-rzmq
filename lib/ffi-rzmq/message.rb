@@ -9,19 +9,66 @@ module ZMQ
   ZMQ_MSG_MOVE_STR = 'zmq_msg_move'.freeze
   ZMQ_MSG_SIZE_STR = 'zmq_msg_size'.freeze
 
-  # When you really need to control when data is allocated and released,
-  # use this class. Otherwise, use its smarter brother #Message.
-  #
   # The constructor optionally takes a string as an argument. It will
   # copy this string to native memory in preparation for transmission.
   # So, don't pass a string unless you intend to send it. Internally it
   # calls #copy_in_string.
   #
-  # Call #close when done with this object to release buffers.
+  # Call #close to release buffers when you have *not* passed this on
+  # to Socket#send or Socket#recv. Those methods call #close on your
+  # behalf.
   #
-  # (Not really zero-copy. Ruby makes this near impossible.)
+  # (This class is not really zero-copy. Ruby makes this near impossible.)
   #
-  class UnmanagedMessage
+  # Message represents ruby equivalent of the +zmq_msg_t+ C struct.
+  # Access the underlying memory buffer and the buffer size using the
+  # #data and #size methods respectively.
+  #
+  # It is recommended that this class be composed inside another class for
+  # access to the underlying buffer. The outer wrapper class can provide
+  # nice accessors for the information in the data buffer; a clever
+  # implementation can probably lazily encode/decode the data buffer
+  # on demand. Lots of protocols send more information than is strictly
+  # necessary, so only decode (copy from the 0mq buffer to Ruby) that
+  # which is necessary.
+  #
+  # When you are done using a *received* message object, just let it go out of
+  # scope to release the memory. During the next garbage collection run
+  # it will call the equivalent of #LibZMQ.zmq_msg_close to release
+  # all buffers. Obviously, this automatic collection of message objects
+  # comes at the price of a larger memory footprint (for the
+  # finalizer proc object) and lower performance. If you wanted blistering
+  # performance, Ruby isn't there just yet.
+  #
+  # As noted above, for sent objects the underlying library will call close
+  # for you.
+  #
+  #  class MyMessage
+  #    def initialize msg_struct = nil
+  #      @msg_t = msg_struct ? msg_struct : ZMQ::Message.new
+  #    end
+  #
+  #    def size() @size = @msg_t.size; end
+  #
+  #    def decode
+  #      @decoded_data = JSON.parse(@msg_t.copy_out_string)
+  #    end
+  #
+  #    def field1
+  #      @field1 ||= decode[:field1]
+  #    end
+  #
+  #    def field2
+  #      @field2 ||= decode[:field2]
+  #    end
+  # ---
+  #
+  #  message = Message.new
+  #  successful_read = socket.recv message
+  #  message = MyMessage.new message if successful_read
+  #  puts "field1 is #{message.field1}"
+  #
+  class Message
     include ZMQ::Util
 
     def initialize message = nil
@@ -39,23 +86,33 @@ module ZMQ
         error_check ZMQ_MSG_INIT_STR, result_code
       end
     end
-    
-    def copy_in_string string
-      # add extra byte to null-terminate
-      len = string.size + 1
-      data_buffer = LibC.malloc len
-      data_buffer.put_string 0, string
 
-      # keep that extra byte on the end a secret :)
-      # we want to send only the bytes of the string and not its terminator;
-      # the buffer already knows its size so we can reconstruct it
-      # on the far side. Unnecessary to transmit.
-      result_code = LibZMQ.zmq_msg_init_data @struct.pointer, data_buffer, len - 1, LibZMQ::MessageDeallocator, nil
-      error_check ZMQ_MSG_INIT_DATA_STR, result_code
+    # Makes a copy of the ruby +string+ into a native memory buffer so
+    # that libzmq can send it. The underlying library will handle
+    # deallocation of the native memory buffer.
+    #
+    def copy_in_string string
+      copy_in_bytes string, string.size
     end
-    
+
+    # Makes a copy of +len+ bytes from the ruby string +bytes+. Library
+    # handles deallocation of the native memory buffer.
+    #
     def copy_in_bytes bytes, len
+      # release any associated buffers if this Message object is being
+      # reused
+      close
       
+      data_buffer = LibC.malloc len
+      # writes the exact number of bytes, no null byte to terminate string
+      data_buffer.write_string bytes, len
+
+      # make sure we have a way to deallocate this memory if the object goes
+      # out of scope
+      define_finalizer
+
+      result_code = LibZMQ.zmq_msg_init_data @struct.pointer, data_buffer, len, LibZMQ::MessageDeallocator, nil
+      error_check ZMQ_MSG_INIT_DATA_STR, result_code
     end
 
     # Provides the memory address of the +zmq_msg_t+ struct. Used mostly for
@@ -100,76 +157,26 @@ module ZMQ
       data.read_string(size)
     end
 
-    # Manually release the message struct and its associated buffers.
+    # Manually release the message struct and its associated data
+    # buffer.
+    #
+    # The Message object is still valid after this call and can be used
+    # again for sending or receiving.
     #
     def close
       LibZMQ.zmq_msg_close @struct.pointer
-      @pointer.free
-      @struct = nil
-    end
-    
-  end # class UnmanagedMessage
-
-  # The ruby equivalent of the +zmq_msg_t+ C struct. Access the underlying
-  # memory buffer and the buffer size using the #data and #size methods
-  # respectively.
-  #
-  # It is recommended that this class be composed inside another class for
-  # access to the underlying buffer. The outer wrapper class can provide
-  # nice accessors for the information in the data buffer; a clever
-  # implementation can probably lazily encode/decode the data buffer
-  # on demand. Lots of protocols send more information than is strictly
-  # necessary, so only decode (copy from the 0mq buffer to Ruby) that
-  # which is necessary.
-  #
-  # When you are done using the message object, just let it go out of
-  # scope to release the memory. During the next garbage collection run
-  # it will call the equivalent of #LibZMQ.zmq_msg_close to release
-  # all buffers. Obviously, this automatic collection of message objects
-  # comes at the price of a larger memory footprint (for the
-  # finalizer proc object) and lower performance. If you wanted blistering
-  # performance, Ruby isn't there just yet.
-  #
-  #  class MyMessage
-  #    def initialize msg_struct = nil
-  #      @msg_t = msg_struct ? msg_struct : ZMQ::Message.new
-  #    end
-  #
-  #    def size() @size = @msg_t.size; end
-  #
-  #    def decode
-  #      @decoded_data = JSON.parse(@msg_t.data_as_string)
-  #    end
-  #
-  #    def field1
-  #      @field1 ||= decode[:field1]
-  #    end
-  #
-  #    def field2
-  #      @field2 ||= decode[:field2]
-  #    end
-  # ---
-  #
-  #  message = Message.new
-  #  successful_read = socket.recv message
-  #  message = MyMessage.new message if successful_read
-  #  puts "field1 is #{message.field1}"
-  #
-  class Message < UnmanagedMessage
-    def initialize message = nil
-      super
-
-      define_finalizer
+      remove_finalizer
     end
 
-    # Has no effect. This class has automatic memory management via a
-    # finalizer.
-    def close() end
 
     private
 
     def define_finalizer
-      ObjectSpace.define_finalizer(self, self.class.close(@struct, @pointer))
+      ObjectSpace.define_finalizer(self, self.class.close(@struct))
+    end
+
+    def remove_finalizer
+      ObjectSpace.undefine_finalizer self
     end
 
     # Message finalizer
@@ -177,14 +184,13 @@ module ZMQ
     # This is intentional. Since this code runs as a finalizer, there is no
     # way to catch a raised exception anywhere near where the error actually
     # occurred in the code, so we just ignore deallocation failures here.
-    def self.close struct, pointer
+    def self.close struct
       Proc.new do
         # release the data buffer
         LibZMQ.zmq_msg_close struct.pointer
-        pointer.free
-        struct = nil
       end
     end
+
   end # class Message
 
 end # module ZMQ

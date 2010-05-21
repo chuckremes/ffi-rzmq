@@ -12,7 +12,7 @@ module ZMQ
 
     # May raise a #ContextError.
     #
-    def initialize app_threads, io_threads, flags
+    def initialize app_threads, io_threads, flags = 0
       @sockets ||= []
       @context = LibZMQ.zmq_init app_threads, io_threads, flags
       @pointer = @context

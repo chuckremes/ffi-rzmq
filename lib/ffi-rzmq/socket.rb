@@ -14,13 +14,9 @@ module ZMQ
     attr_reader :socket
 
     # By default, this class uses ZMQ::Message for regular Ruby
-    # memory management. 
+    # memory management.
     #
-    # Pass {:unmanaged => true} as +opts+ to override the
-    # default and have the pleasure of calling
-    # UnmanagedMessage#close all by yourself.
-    #
-    # +type+ can be one of ZMQ::REQ, ZMQ::REP, ZMQ::PUB, 
+    # +type+ can be one of ZMQ::REQ, ZMQ::REP, ZMQ::PUB,
     # ZMQ::SUB, ZMQ::PAIR, ZMQ::UPSTREAM, ZMQ::DOWNSTREAM,
     # ZMQ::XREQ or ZMQ::XREP.
     #
@@ -29,9 +25,11 @@ module ZMQ
     # #Context. See #ContextError.
     # SocketError:: See all of the possibilities in the docs for #SocketError.
     #
-    def initialize context_ptr, type, opts = {}
-      defaults = {:unmanaged => false}
-      message_type defaults.merge(opts)
+    def initialize context_ptr, type
+      # maybe at some point we'll want to allow users to override this with their
+      # own classes? Or is this a YAGNI mistake?
+      @sender_klass = ZMQ::Message
+      @receiver_klass = ZMQ::Message
 
       @socket = LibZMQ.zmq_socket context_ptr, type
       error_check ZMQ_SOCKET_STR, @socket.nil? ? 1 : 0
@@ -114,9 +112,13 @@ module ZMQ
     # Returns false when the message could not be enqueued *and* +flags+ is set
     # with ZMQ::NOBLOCK.
     #
-    # The application code is responsible for handling the +message+ object lifecycle
-    # when #send return ZMQ::NOBLOCK or it raises an exception. The #send method
-    # does not take ownership of the +message+ and its associated buffers.
+    # The application code is *not* responsible for handling the +message+ object
+    # lifecycle when #send return ZMQ::NOBLOCK or it raises an exception. The
+    # #send method takes ownership of the +message+ and its associated buffers.
+    # A failed call will release the +message+ data buffer.
+    #
+    # Again, once a +message+ object has been passed to this method,
+    # do not try to access its #data buffer anymore. The 0mq library now owns it.
     #
     # Can raise two kinds of exceptions depending on the error.
     # ContextError:: Raised when a socket operation is attempted on a terminated
@@ -124,11 +126,15 @@ module ZMQ
     # SocketError:: See all of the possibilities in the docs for #SocketError.
     #
     def send message, flags = 0
-      result_code = LibZMQ.zmq_send @socket, message.address, flags
+      begin
+        result_code = LibZMQ.zmq_send @socket, message.address, flags
 
-      # when the flag isn't set, do a normal error check
-      # when set, check to see if the message was successfully queued
-      queued = flags.zero? ? error_check(ZMQ_SEND_STR, result_code) : error_check_nonblock(result_code)
+        # when the flag isn't set, do a normal error check
+        # when set, check to see if the message was successfully queued
+        queued = flags.zero? ? error_check(ZMQ_SEND_STR, result_code) : error_check_nonblock(result_code)
+      ensure
+        message.close
+      end
 
       # true if sent, false if failed/EAGAIN
       queued
@@ -148,7 +154,6 @@ module ZMQ
       message = @sender_klass.new
       message.copy_in_string message_string
       result = send message, flags
-      message.close
       result
     end
 
@@ -158,13 +163,17 @@ module ZMQ
     #  0 (default) - blocking operation
     #  ZMQ::NOBLOCK - non-blocking operation
     #
-    # Returns a true when it successfully dequeues one from the queue.
-    # Returns nil when a message could not be dequeued *and* +flags+ is set
-    # with ZMQ::NOBLOCK.
+    # Returns a true when it successfully dequeues one from the queue. Also, the +message+
+    # object is populated by the library with a data buffer containing the received
+    # data.
     #
-    # The application code is responsible for handling the +message+ object lifecycle
-    # when #recv returns ZMQ::NOBLOCK or it raises an exception. The #recv method
-    # does not take ownership of the +message+ and its associated buffers.
+    # Returns nil when a message could not be dequeued *and* +flags+ is set
+    # with ZMQ::NOBLOCK. The +message+ object is not modified in this situation.
+    #
+    # The application code is *not* responsible for handling the +message+ object lifecycle
+    # when #recv raises an exception. The #recv method takes ownership of the 
+    # +message+ and its associated buffers. A failed call will
+    # release the data buffers assigned to the +message+.
     #
     # Can raise two kinds of exceptions depending on the error.
     # ContextError:: Raised when a socket operation is attempted on a terminated
@@ -172,12 +181,10 @@ module ZMQ
     # SocketError:: See all of the possibilities in the docs for #SocketError.
     #
     def recv message, flags = 0
-      result_code = LibZMQ.zmq_recv @socket, message.address, flags
-
       begin
-        dequeued = flags.zero? ? error_check(ZMQ_RECV_STR, result_code) : error_check_nonblock(result_code)
+        dequeued = _recv message, flags
       rescue ZeroMQError
-        dequeued = false
+        message.close
         raise
       end
 
@@ -196,23 +203,26 @@ module ZMQ
     #
     def recv_string flags = 0
       message = @receiver_klass.new
-      dequeued = recv message, flags
 
-      if dequeued
-        string = message.copy_out_string
+      begin
+        dequeued = _recv message, flags
+        
+        if dequeued
+          message.copy_out_string
+        else
+          nil
+        end
+      ensure
         message.close
-        string
-      else
-        nil
       end
     end
 
-
     private
 
-    def message_type opts
-      @sender_klass = opts[:unmanaged] ? ZMQ::UnmanagedMessage : ZMQ::Message
-      @receiver_klass = opts[:unmanaged] ? ZMQ::UnmanagedMessage : ZMQ::Message
+    def _recv message, flags = 0
+      result_code = LibZMQ.zmq_recv @socket, message.address, flags
+
+      flags.zero? ? error_check(ZMQ_RECV_STR, result_code) : error_check_nonblock(result_code)
     end
 
   end # class Socket
