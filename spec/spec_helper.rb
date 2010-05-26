@@ -23,4 +23,9 @@ module APIHelper
     :zmq_sterror => @err_str_mock
     )
   end
+  
+  # generate a random port between 10_000 and 65534
+  def random_port
+    rand(55534) + 10_000
+  end
 end
