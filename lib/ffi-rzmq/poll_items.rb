@@ -48,7 +48,7 @@ module ZMQ
     def each &blk
       clean
       index = 0
-      until index >= @size do
+      until index >= @items.size do
         struct = get index
         yield struct
         index += 1

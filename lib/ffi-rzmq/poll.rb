@@ -58,7 +58,7 @@ module ZMQ
     # Does not raise any exceptions.
     #
     def register sock = nil, events = ZMQ::POLLIN | ZMQ::POLLOUT, fd = 0
-      return unless sock
+      return unless sock || !fd.zero?
 
       @poll_items_dirty = true
       item = @items.get(@sockets.index(sock))
@@ -84,13 +84,13 @@ module ZMQ
 
     # A helper method to register a +sock+ as readable events only.
     #
-    def register_readable sock = nil
+    def register_readable sock
       register sock, ZMQ::POLLIN, 0
     end
 
     # A helper method to register a +sock+ for writable events only.
     #
-    def register_writable sock = nil
+    def register_writable sock
       register sock, ZMQ::POLLOUT, 0
     end
 
@@ -99,6 +99,14 @@ module ZMQ
         @items.delete_at index
         @sockets.delete sock
       end
+    end
+    
+    def size(); @items.size; end
+    
+    def inspect
+      str = ""
+      @items.each { |item|  str << "#{item.inspect}, "}
+      str.chop.chop
     end
 
 
