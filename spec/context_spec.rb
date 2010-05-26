@@ -14,15 +14,15 @@ module ZMQ
       end
 
       it "should raise an error for negative app threads" do
-        lambda { Context.new -1, -1, 0 }.should raise_exception(ZMQ::ContextError)
+        lambda { Context.new(-1, -1, 0) }.should raise_exception(ZMQ::ContextError)
       end
 
       it "should raise an error for negative io threads" do
-        lambda { Context.new 1, -1, 0 }.should raise_exception(ZMQ::ContextError)
+        lambda { Context.new(1, -1, 0) }.should raise_exception(ZMQ::ContextError)
       end
 
       it "should not raise an error for positive thread counts" do
-        lambda { Context.new 1, 1, 0 }.should_not raise_error
+        lambda { Context.new(1, 1, 0) }.should_not raise_error
       end
 
       it "should set the :pointer accessor to non-nil" do
