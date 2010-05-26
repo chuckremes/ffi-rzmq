@@ -2,7 +2,7 @@ require 'rubygems'
 require 'ffi-rzmq'
 
 
-link = "tcp://127.0.0.1:5556"
+link = "tcp://127.0.0.1:5555"
 
 ctx = ZMQ::Context.new 1, 1, ZMQ::POLL
 s1 = ctx.socket ZMQ::REQ
@@ -21,7 +21,6 @@ start_time = Time.now
 until @done do
   begin
     poller.poll_nonblock
-    puts "poller #{poller.inspect}"
   rescue ZMQ::PollError => e
     puts "efault? [#{e.efault?}]"
     raise

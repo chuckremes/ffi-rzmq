@@ -13,3 +13,14 @@ Spec::Runner.configure do |config|
   # config.mock_with :rr
 end
 
+module APIHelper
+  def stub_libzmq
+    @err_str_mock = mock("error string")
+    
+    LibZMQ.stub!(
+    :zmq_init => 0,
+    :zmq_errno => 0,
+    :zmq_sterror => @err_str_mock
+    )
+  end
+end
