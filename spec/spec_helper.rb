@@ -1,3 +1,6 @@
+# To run these specs using rake, make sure the 'bones' and 'bones-extras'
+# gems are installed. Then execute 'rake spec' from the main directory
+# to run all specs.
 
 require File.expand_path(
     File.join(File.dirname(__FILE__), %w[.. lib ffi-rzmq]))
