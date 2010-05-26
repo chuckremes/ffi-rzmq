@@ -36,7 +36,6 @@ s.bind(bind_to)
 
 roundtrip_count.times do
   msg = s.recv_string 0
-  p msg
   raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
   s.send_string msg, 0
 end

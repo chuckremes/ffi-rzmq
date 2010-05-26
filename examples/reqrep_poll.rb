@@ -21,6 +21,7 @@ start_time = Time.now
 until @done do
   begin
     poller.poll_nonblock
+    puts "poller #{poller.inspect}"
   rescue ZMQ::PollError => e
     puts "efault? [#{e.efault?}]"
     raise

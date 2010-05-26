@@ -72,6 +72,8 @@ module ZMQ
     include ZMQ::Util
 
     def initialize message = nil
+      @state = :uninitialized
+      
       # allocate our own pointer so that we can tell it to *not* zero out
       # the memory; it's pointless work since the library is going to
       # overwrite it anyway.
@@ -84,6 +86,7 @@ module ZMQ
         # initialize an empty message structure to receive a message
         result_code = LibZMQ.zmq_msg_init @struct
         error_check ZMQ_MSG_INIT_STR, result_code
+        @state = :initialized
       end
     end
 
@@ -101,7 +104,7 @@ module ZMQ
     def copy_in_bytes bytes, len
       # release any associated buffers if this Message object is being
       # reused
-      close
+      close unless uninitialized?
       
       data_buffer = LibC.malloc len
       # writes the exact number of bytes, no null byte to terminate string
@@ -113,6 +116,7 @@ module ZMQ
 
       result_code = LibZMQ.zmq_msg_init_data @struct.pointer, data_buffer, len, LibZMQ::MessageDeallocator, nil
       error_check ZMQ_MSG_INIT_DATA_STR, result_code
+      @state = :initialized
     end
 
     # Provides the memory address of the +zmq_msg_t+ struct. Used mostly for
@@ -127,11 +131,13 @@ module ZMQ
     def copy source
       result_code = LibZMQ.zmq_msg_copy @struct.pointer, source.address
       error_check ZMQ_MSG_COPY_STR, result_code
+      @state = :initialized
     end
 
     def move source
       result_code = LibZMQ.zmq_msg_copy @struct.pointer, source.address
       error_check ZMQ_MSG_MOVE_STR, result_code
+      @state = :initialized
     end
 
     # Provides the size of the data buffer for this +zmq_msg_t+ C struct.
@@ -166,10 +172,13 @@ module ZMQ
     def close
       LibZMQ.zmq_msg_close @struct.pointer
       remove_finalizer
+      @state = :uninitialized
     end
 
 
     private
+    
+    def uninitialized?(); :uninitialized == @state; end
 
     def define_finalizer
       ObjectSpace.define_finalizer(self, self.class.close(@struct))
