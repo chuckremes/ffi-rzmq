@@ -1,9 +1,9 @@
-require 'ffi' unless RUBY_ENGINE =~ /rbx/ # external gem
+require 'ffi' unless RBX # external gem
 
 module LibC
   extend FFI::Library
   # figures out the correct libc for each platform including Windows
-  ffi_lib FFI::Library::LIBC unless RUBY_ENGINE =~ /rbx/
+  ffi_lib FFI::Library::LIBC unless RBX
 
   # memory allocators
   attach_function :malloc, [:size_t], :pointer
@@ -23,7 +23,7 @@ module LibZMQ
   LINUX = ["libzmq", "/usr/local/lib/libzmq", "/opt/local/lib/libzmq"]
   OSX = ["libzmq", "/usr/local/lib/libzmq", "/opt/local/lib/libzmq"]
   WINDOWS = []
-  RUBY_ENGINE !~ /rbx/ ? ffi_lib(LINUX + OSX + WINDOWS) : ffi_lib(*(LINUX + OSX + WINDOWS))
+  RBX ? ffi_lib(*(LINUX + OSX + WINDOWS)) : ffi_lib(LINUX + OSX + WINDOWS)
 
   # Misc
   attach_function :zmq_version, [:pointer, :pointer, :pointer], :void
@@ -45,10 +45,12 @@ module LibZMQ
   attach_function :zmq_msg_copy, [:pointer, :pointer], :int
   attach_function :zmq_msg_move, [:pointer, :pointer], :int
 
-  MessageDeallocator = FFI::Function.new(:void, [:pointer, :pointer]) do |data_ptr, hint_ptr|
-    LibC.free data_ptr
+  unless RBX
+    MessageDeallocator = FFI::Function.new(:void, [:pointer, :pointer]) do |data_ptr, hint_ptr|
+      LibC.free data_ptr
+    end
+    MessageDeallocator.autorelease = false
   end
-  MessageDeallocator.autorelease = false
 
   module MsgLayout
     def self.included(base)

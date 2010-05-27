@@ -73,7 +73,7 @@ module ZMQ
 
     def initialize message = nil
       @state = :uninitialized
-      
+
       # allocate our own pointer so that we can tell it to *not* zero out
       # the memory; it's pointless work since the library is going to
       # overwrite it anyway.
@@ -105,7 +105,7 @@ module ZMQ
       # release any associated buffers if this Message object is being
       # reused
       close unless uninitialized?
-      
+
       data_buffer = LibC.malloc len
       # writes the exact number of bytes, no null byte to terminate string
       data_buffer.write_string bytes, len
@@ -114,7 +114,12 @@ module ZMQ
       # out of scope
       define_finalizer
 
-      result_code = LibZMQ.zmq_msg_init_data @struct.pointer, data_buffer, len, LibZMQ::MessageDeallocator, nil
+      unless RBX
+        result_code = LibZMQ.zmq_msg_init_data @struct.pointer, data_buffer, len, LibZMQ::MessageDeallocator, nil
+      else
+        # no callback for freeing up memory; memory leak!
+        result_code = LibZMQ.zmq_msg_init_data @struct.pointer, data_buffer, len, nil, nil
+      end
       error_check ZMQ_MSG_INIT_DATA_STR, result_code
       @state = :initialized
     end
@@ -177,7 +182,7 @@ module ZMQ
 
 
     private
-    
+
     def uninitialized?(); :uninitialized == @state; end
 
     def define_finalizer

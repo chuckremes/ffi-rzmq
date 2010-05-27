@@ -61,6 +61,9 @@ module ZMQ
 
 end  # module ZMQ
 
+# some code is conditionalized based upon what ruby engine we are
+# executing
+RBX = RUBY_ENGINE =~ /rbx/ ? true : false
 
 # the order of files is important
 %w(wrapper zmq exceptions context message socket poll_items poll).each do |file|
