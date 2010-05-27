@@ -1,9 +1,9 @@
-require 'ffi' # external gem
+require 'ffi' unless RUBY_ENGINE =~ /rbx/ # external gem
 
 module LibC
   extend FFI::Library
   # figures out the correct libc for each platform including Windows
-  ffi_lib FFI::Library::LIBC
+  ffi_lib FFI::Library::LIBC unless RUBY_ENGINE =~ /rbx/
 
   # memory allocators
   attach_function :malloc, [:size_t], :pointer
@@ -20,10 +20,10 @@ end # module LibC
 
 module LibZMQ
   extend FFI::Library
-  LINUX = ["libzmq.so", "/usr/local/lib/libzmq.so", "/opt/local/lib/libzmq.so"]
-  OSX = ["libzmq.dylib", "/usr/local/lib/libzmq.dylib", "/opt/local/lib/libzmq.dylib"]
+  LINUX = ["libzmq", "/usr/local/lib/libzmq", "/opt/local/lib/libzmq"]
+  OSX = ["libzmq", "/usr/local/lib/libzmq", "/opt/local/lib/libzmq"]
   WINDOWS = []
-  ffi_lib(LINUX + OSX + WINDOWS)
+  RUBY_ENGINE !~ /rbx/ ? ffi_lib(LINUX + OSX + WINDOWS) : ffi_lib(*(LINUX + OSX + WINDOWS))
 
   # Misc
   attach_function :zmq_version, [:pointer, :pointer, :pointer], :void
