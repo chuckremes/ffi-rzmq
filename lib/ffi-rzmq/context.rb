@@ -47,11 +47,13 @@ module ZMQ
     # May raise a #ContextError.
     #
     def terminate
-      result_code = LibZMQ.zmq_term @context
-      error_check ZMQ_TERM_STR, result_code
-      @context = nil
-      @socket = nil
-      @sockets = nil
+      unless @context.null? || @context.nil?
+        result_code = LibZMQ.zmq_term @context
+        error_check ZMQ_TERM_STR, result_code
+        @context = nil
+        @sockets = nil
+        remove_finalizer
+      end
     end
 
     # Short-cut to allocate a socket for a specific context.
@@ -70,20 +72,24 @@ module ZMQ
     # May raise a #ContextError or #SocketError.
     #
     def socket type
-      @socket = Socket.new @context, type
-      error_check ZMQ_SOCKET_STR, @socket.nil? ? 1 : 0
-      @socket
+      sock = Socket.new @context, type
+      error_check ZMQ_SOCKET_STR, sock.nil? ? 1 : 0
+      sock
     end
 
 
     private
 
     def define_finalizer
-      ObjectSpace.define_finalizer(self, self.class.close(@context))
+      #ObjectSpace.define_finalizer(self, self.class.close(@context))
+    end
+
+    def remove_finalizer
+      #ObjectSpace.undefine_finalizer self
     end
 
     def self.close context
-      Proc.new { LibZMQ.zmq_term context unless context.nil? }
+      Proc.new { LibZMQ.zmq_term context unless context.null? }
     end
   end
 
