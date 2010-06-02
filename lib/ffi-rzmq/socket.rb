@@ -5,6 +5,7 @@ module ZMQ
   ZMQ_SETSOCKOPT_STR = 'zmq_setsockopt'.freeze
   ZMQ_BIND_STR = 'zmq_bind'.freeze
   ZMQ_CONNECT_STR = 'zmq_connect'.freeze
+  ZMQ_CLOSE_STR = 'zmq_close'.freeze
   ZMQ_SEND_STR = 'zmq_send'.freeze
   ZMQ_RECV_STR = 'zmq_recv'.freeze
 
@@ -33,6 +34,8 @@ module ZMQ
 
       @socket = LibZMQ.zmq_socket context_ptr, type
       error_check ZMQ_SOCKET_STR, @socket.nil? ? 1 : 0
+
+      define_finalizer
     end
 
     # Set the queue options on this socket.
@@ -99,6 +102,13 @@ module ZMQ
     def connect address
       result_code = LibZMQ.zmq_connect @socket, address
       error_check ZMQ_CONNECT_STR, result_code
+    end
+
+    # Closes the socket. Any unprocessed messages in queue are dropped.
+    #
+    def close
+      LibZMQ.zmq_close @socket
+      remove_finalizer
     end
 
     # Queues the message for transmission. Message is assumed to be an instance or
@@ -171,7 +181,7 @@ module ZMQ
     # with ZMQ::NOBLOCK. The +message+ object is not modified in this situation.
     #
     # The application code is *not* responsible for handling the +message+ object lifecycle
-    # when #recv raises an exception. The #recv method takes ownership of the 
+    # when #recv raises an exception. The #recv method takes ownership of the
     # +message+ and its associated buffers. A failed call will
     # release the data buffers assigned to the +message+.
     #
@@ -206,7 +216,7 @@ module ZMQ
 
       begin
         dequeued = _recv message, flags
-        
+
         if dequeued
           message.copy_out_string
         else
@@ -225,6 +235,17 @@ module ZMQ
       flags.zero? ? error_check(ZMQ_RECV_STR, result_code) : error_check_nonblock(result_code)
     end
 
+    def define_finalizer
+      #ObjectSpace.define_finalizer(self, self.class.close(@socket))
+    end
+
+    def remove_finalizer
+      #ObjectSpace.undefine_finalizer self
+    end
+
+    def self.close socket
+      Proc.new { LibZMQ.zmq_close socket }
+    end
   end # class Socket
 
 end # module ZMQ
