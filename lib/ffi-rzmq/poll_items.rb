@@ -64,6 +64,15 @@ module ZMQ
         index += 1
       end
     end
+    
+    def inspect
+      clean
+      str = ""
+      each { |item| str << "ptr [#{item[:socket]}], events [#{item[:events]}], revents [#{item[:revents]}], " }
+      str.chop.chop
+    end
+    
+    def to_s(); inspect; end
 
     private
 

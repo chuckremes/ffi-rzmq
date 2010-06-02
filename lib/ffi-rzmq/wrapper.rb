@@ -104,11 +104,11 @@ module LibZMQ
     include PollItemLayout
 
     def readable?
-      !(self[:revents] & ZMQ::POLLIN).zero?
+      (self[:revents] & ZMQ::POLLIN) > 0
     end
 
     def writable?
-      !(self[:revents] & ZMQ::POLLOUT).zero?
+      (self[:revents] & ZMQ::POLLOUT) > 0
     end
 
     def both_accessible?

@@ -104,10 +104,10 @@ module ZMQ
     def size(); @items.size; end
     
     def inspect
-      str = ""
-      @items.each { |item|  str << "#{item.inspect}, "}
-      str.chop.chop
+      @items.inspect
     end
+    
+    def to_s(); inspect; end
 
 
     private
