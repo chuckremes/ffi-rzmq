@@ -29,7 +29,7 @@ module LibZMQ
   attach_function :zmq_version, [:pointer, :pointer, :pointer], :void
 
   # Context and misc api
-  attach_function :zmq_init, [:int, :int, :int], :pointer
+  attach_function :zmq_init, [:int], :pointer
   attach_function :zmq_socket, [:pointer, :int], :pointer
   attach_function :zmq_term, [:pointer], :int
   attach_function :zmq_errno, [], :int
@@ -52,20 +52,12 @@ module LibZMQ
     MessageDeallocator.autorelease = false
   end
 
-  module MsgLayout
-    def self.included(base)
-      base.class_eval do
-        layout :content,  :pointer,
-        :flags,    :uint8,
-        :vsm_size, :uint8,
-        :vsm_data, [:uint8, 30]
-      end
-    end
-  end # module MsgLayout
-
   # Used for casting pointers back to the struct
   class Msg < FFI::Struct
-    include MsgLayout
+    layout :content,  :pointer,
+    :flags,    :uint8,
+    :vsm_size, :uint8,
+    :vsm_data, [:uint8, 30]
   end # class Msg
 
 
@@ -77,6 +69,7 @@ module LibZMQ
   # release the GIL will result in a hang; the hint *may* allow things to run
   # smoothly for Ruby runtimes hampered by a GIL.
   attach_function :zmq_setsockopt, [:pointer, :int, :pointer, :int], :int
+  attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :pointer], :int
   attach_function :zmq_bind, [:pointer, :string], :int
   attach_function :zmq_connect, [:pointer, :string], :int
   @blocking = true

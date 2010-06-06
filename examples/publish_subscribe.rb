@@ -4,7 +4,7 @@ require 'ffi-rzmq'
 
 link = "tcp://127.0.0.1:5555"
 
-ctx = ZMQ::Context.new 1, 1, 0
+ctx = ZMQ::Context.new 1
 s1 = ctx.socket ZMQ::PUB
 s2 = ctx.socket ZMQ::SUB
 s3 = ctx.socket ZMQ::SUB
@@ -24,24 +24,28 @@ s5.connect link
 
 sleep 1
 
-payload = "animals.dog|Animal crackers!"
+topic = "animals.dog"
+payload = "Animal crackers!"
 
+s1.identity = "publisher-A"
 puts "sending"
-s1.send_string payload
+# use the new multi-part messaging support to
+# automatically separate the topic from the body
+s1.send_string topic, ZMQ::SNDMORE
+s1.send_string payload, ZMQ::SNDMORE
+s1.send_string s1.identity
 
-s2_string = s2.recv_string
-topic = s2_string.split('|').first
-body = s2_string.split('|').last
-puts "s2 received topic [#{topic}], body [#{body}]"
+topic = s2.recv_string
+body = s2.recv_string if s2.more_parts?
+identity = s2.recv_string if s2.more_parts?
+puts "s2 received topic [#{topic}], body [#{body}], identity [#{identity}]"
 
-s3_string = s3.recv_string
-topic = s3_string.split('|').first
-body = s3_string.split('|').last
+topic = s3.recv_string
+body = s3.recv_string if s3.more_parts?
 puts "s3 received topic [#{topic}], body [#{body}]"
 
-s4_string = s4.recv_string
-topic = s4_string.split('|').first
-body = s4_string.split('|').last
+topic = s4.recv_string
+body = s4.recv_string if s4.more_parts?
 puts "s4 received topic [#{topic}], body [#{body}]"
 
 s5_string = s5.recv_string ZMQ::NOBLOCK

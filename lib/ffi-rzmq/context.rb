@@ -11,26 +11,26 @@ module ZMQ
 
     attr_reader :context, :pointer
 
-    # Recommended to just pass 1 for +app_threads+ and +io_threads+
+    # Recommended to just pass 1 for +io_threads+
     # since most programs are not heavily threaded. The rule of thumb
-    # is to make +app_threads+ equal to the number of application
+    # is to make +io_threads+ equal to the number of application
     # threads that will be accessing 0mq sockets within this context.
-    #
-    # Takes a single flag (soon to be deprecated): #ZMQ::POLL
+    # The +io_threads+ number specifies the size of the thread pool
+    # allocated by 0mq for processing incoming/outgoing messages.
     #
     # Returns a context object. It's necessary for passing to the
     # #Socket constructor when allocating new sockets. All sockets
     # live within a context. Sockets in one context may not be accessed
-    # from another context's app_threads; doing so raises an exception.
+    # from another context; doing so raises an exception.
     #
     # To connect sockets between contexts, use +inproc+ or +ipc+
     # transport and set up a 0mq socket between them.
     #
     # May raise a #ContextError.
     #
-    def initialize app_threads, io_threads, flags = 0
+    def initialize io_threads
       @sockets ||= []
-      @context = LibZMQ.zmq_init app_threads, io_threads, flags
+      @context = LibZMQ.zmq_init io_threads
       @pointer = @context
       error_check ZMQ_INIT_STR, @context.null? ? 1 : 0
 
@@ -47,13 +47,14 @@ module ZMQ
     # May raise a #ContextError.
     #
     def terminate
-      unless @context.null? || @context.nil?
+      unless @context.nil? || @context.null?
         result_code = LibZMQ.zmq_term @context
         error_check ZMQ_TERM_STR, result_code
         @context = nil
         @sockets = nil
         remove_finalizer
       end
+      nil
     end
 
     # Short-cut to allocate a socket for a specific context.
@@ -66,6 +67,8 @@ module ZMQ
     #   #ZMQ::PAIR
     #   #ZMQ::UPSTREAM
     #   #ZMQ::DOWNSTREAM
+    #   #ZMQ::XREQ
+    #   #ZMQ::XREP
     #
     # Returns a #ZMQ::Socket.
     #
@@ -81,11 +84,11 @@ module ZMQ
     private
 
     def define_finalizer
-      #ObjectSpace.define_finalizer(self, self.class.close(@context))
+      ObjectSpace.define_finalizer(self, self.class.close(@context))
     end
 
     def remove_finalizer
-      #ObjectSpace.undefine_finalizer self
+      ObjectSpace.undefine_finalizer self
     end
 
     def self.close context

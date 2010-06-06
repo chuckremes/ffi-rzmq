@@ -4,7 +4,7 @@ require 'ffi-rzmq'
 
 link = "tcp://127.0.0.1:5555"
 
-ctx = ZMQ::Context.new 1, 1, 0
+ctx = ZMQ::Context.new 1
 s1 = ctx.socket ZMQ::REQ
 s2 = ctx.socket ZMQ::REP
 

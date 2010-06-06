@@ -14,7 +14,6 @@ module ZMQ
 
   #  Socket options
   HWM = 1
-  LWM = 2
   SWAP = 3
   AFFINITY = 4
   IDENTITY = 5
@@ -127,14 +126,15 @@ module ZMQ
 
     def raise_error source, result_code
       case source
-      when ZMQ_SOCKET_STR, ZMQ_SETSOCKOPT_STR, ZMQ_BIND_STR, ZMQ_CONNECT_STR, ZMQ_SEND_STR, ZMQ_RECV_STR
+      when ZMQ_SOCKET_STR, ZMQ_SETSOCKOPT_STR, ZMQ_GETSOCKOPT_STR, ZMQ_BIND_STR, ZMQ_CONNECT_STR, ZMQ_SEND_STR, ZMQ_RECV_STR
         raise SocketError.new source, result_code, errno, error_string
       when ZMQ_INIT_STR, ZMQ_TERM_STR
         raise ContextError.new source, result_code, errno, error_string
       when ZMQ_POLL_STR
         raise PollError.new source, result_code, errno, error_string
       else
-        raise ZeroMQError.new source, result_code, "Source [#{source}] does not match any zmq_* strings, error_string [#{error_string}]"
+        raise ZeroMQError.new source, result_code, -1, 
+        "Source [#{source}] does not match any zmq_* strings, rc [#{result_code}], errno [#{errno}], error_string [#{error_string}]"
       end
     end
 

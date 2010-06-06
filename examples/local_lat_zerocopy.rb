@@ -10,10 +10,9 @@ bind_to = ARGV[0]
 message_size = ARGV[1].to_i
 roundtrip_count = ARGV[2].to_i
 
-ctx = ZMQ::Context.new 1, 1
+ctx = ZMQ::Context.new 1
 s = ZMQ::Socket.new ctx.context, ZMQ::REP
 s.setsockopt ZMQ::HWM, 100
-s.setsockopt ZMQ::LWM, 90 # level to restart when congestion is relieved
 s.bind bind_to
 
 msg = ZMQ::Message.new

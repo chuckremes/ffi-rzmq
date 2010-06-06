@@ -12,7 +12,7 @@ module ZMQ
       let(:string) { "booga-booga" }
 
       before(:each) do
-        context = ZMQ::Context.new 1, 1
+        context = ZMQ::Context.new 1
         @ping = context.socket ZMQ::REQ
         @pong = context.socket ZMQ::REP
         link = "tcp://127.0.0.1:#{random_port}"

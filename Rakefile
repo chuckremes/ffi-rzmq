@@ -13,5 +13,7 @@ Bones {
   authors  'Chuck Remes'
   email    'cremes@mac.com'
   url      'http://github.com/chuckremes/ffi-rzmq'
+  readme_file 'README.rdoc'
+  ruby_opts.clear # turn off warnings
 }
 
