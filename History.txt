@@ -1,3 +1,25 @@
+== 0.5.0 / 20100606
+  * Updated the bindings to conform to the 0mq 2.0.7 release.
+  Several parts of the API changed.
+  
+  * Updated all examples to use the new Context api.
+  
+  * Added Socket#getsockopt.
+  
+  * Added a Socket#identity and Socket#identity= method pair to
+  allow for easy get/put on socket identities. Useful for async
+  request/reply using XREQ/XREP sockets.
+  
+  * Added more specs (slowly but surely).
+  
+  * Support multi-part messages (new as of 2.0.7). I am unsure how
+  to best support multi-part messages so the Message (and related)
+  API may change in the future. Added Socket#more_parts?.
+  
+  * Lots of fixes. Many classes use finalizers to deallocate native
+  memory when they go out of scope; be sure to use JRuby 1.5.1 or
+  later to get important finalizer fixes.
+
 == 0.4.1 / 20100511
   * I was misusing all of the FFI memory allocator classes. I now
   wrap libc and use malloc/free directly for creating buffers
