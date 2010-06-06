@@ -7,7 +7,7 @@ ffi-rzmq
 This gem wraps the ZeroMQ networking library using the ruby FFI (foreign
 function interface). It's a pure ruby wrapper so this gem can be loaded
 and run by any ruby runtime that supports FFI. Right now that means
-MRI 1.8.7, 1.9.1 and JRuby.
+MRI 1.8.7, 1.9.x and JRuby.
 
 The impetus behind this library was to provide support for ZeroMQ in
 JRuby which has native threads. Unlike MRI, MacRuby, IronRuby and
@@ -26,12 +26,15 @@ too and has a much lower memory footprint than JRuby (use the trunk
 version of the FFI bindings to fix several threading issues affecting
 MRI).
 
+Due to odd interactions between 0mq threads and the GIL (Giant Interpreter
+Lock), I recommend using JRuby 1.5.1 or later. JRuby has no GIL.
+
 The hope is that in a multi-threaded environment that JRuby's native
 threads and lack of GIL will provide the best ZeroMQ performance using
 the ruby language.
 
 Unfortunately, there is really no reasonable way to support zero-copy
-using Ruby. Anytime data needs to be accessible by the Ruby runtime,
+using Ruby. Any time data needs to be accessible by the Ruby runtime,
 it must be copied out of native memory to the Ruby heap. The same is
 true for the reverse. I am investigating ways to "pin" primitive arrays
 in memory for Rubinius and JRuby to achieve zero-copy, but that is
@@ -39,11 +42,12 @@ a ways off.
 
 == FEATURES/PROBLEMS:
 
-This gem is brand new and has no tests at all. I'm certain there are a
+This gem is brand new and has minimal tests. I'm certain there are a
 ton of bugs, so please open issues for them here or fork this project,
 fix them, and send me a pull request.
 
-All features are implemented.
+All features are implemented with the exception of the 0mq devices
+(forwarder, queue, streamer).
 
 == SYNOPSIS:
 
@@ -61,10 +65,9 @@ Client code:
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
   
-  ctx = ZMQ::Context.new(1, 1, 0)
+  ctx = ZMQ::Context.new 1
   s = ctx.socket ZMQ::REP
   s.setsockopt(ZMQ::HWM, 100)
-  s.setsockopt(ZMQ::LWM, 90) # level to restart when congestion is relieved
   s.bind(bind_to)
   
   roundtrip_count.times do
@@ -90,7 +93,7 @@ Server code:
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
   
-  ctx = ZMQ::Context.new(1, 1, 0)
+  ctx = ZMQ::Context.new 1
   s = ctx.socket ZMQ::REQ
   s.connect(connect_to)
   
@@ -106,12 +109,16 @@ Server code:
 
 == REQUIREMENTS:
 
+  * 0mq 2.0.7
+  
 The ZeroMQ library must be installed on your system in a well-known location
 like /usr/local/lib. This is the default for new ZeroMQ installs.
 
 Future releases may include the library as a C extension built at
 time of installation.
 
+  * ffi (> 0.6.3)
+  
 Install the current master version of FFI that fixes several threading problems
 under MRI 1.9.x. Unfortunately, MRI 1.8.x is irretrievably broken so it isn't
 recommended if you plan to use threads or callbacks.
