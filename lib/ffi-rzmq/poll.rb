@@ -57,8 +57,8 @@ module ZMQ
     #
     # Does not raise any exceptions.
     #
-    def register sock = nil, events = ZMQ::POLLIN | ZMQ::POLLOUT, fd = 0
-      return unless sock || !fd.zero?
+    def register sock, events = ZMQ::POLLIN | ZMQ::POLLOUT, fd = 0
+      return unless sock || !fd.zero? || !events.zero?
 
       @poll_items_dirty = true
       item = @items.get(@sockets.index(sock))
@@ -82,6 +82,23 @@ module ZMQ
       @items << item
     end
 
+    # Deregister the +sock+ for +events+.
+    #
+    # Does not raise any exceptions.
+    #
+    def deregister sock, events, fd = 0
+      return unless sock || !fd.zero?
+
+      item = @items.get(@sockets.index(sock))
+
+      if item
+        # change the value in place
+        item[:events] ^= events
+
+        delete sock if items[:events].zero?
+      end
+    end
+
     # A helper method to register a +sock+ as readable events only.
     #
     def register_readable sock
@@ -94,19 +111,33 @@ module ZMQ
       register sock, ZMQ::POLLOUT, 0
     end
 
-    def deregister sock
+    # A helper method to deregister a +sock+ for readable events.
+    #
+    def deregister_readable sock
+      deregister sock, ZMQ::POLLIN, 0
+    end
+
+    # A helper method to deregister a +sock+ for writable events.
+    #
+    def deregister_writable sock
+      deregister sock, ZMQ::POLLOUT, 0
+    end
+
+    # Deletes the +sock+ for all subscribed events.
+    #
+    def delete sock
       if index = @sockets.index(sock)
         @items.delete_at index
         @sockets.delete sock
       end
     end
-    
+
     def size(); @items.size; end
-    
+
     def inspect
       @items.inspect
     end
-    
+
     def to_s(); inspect; end
 
 
