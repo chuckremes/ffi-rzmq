@@ -23,7 +23,8 @@ module LibZMQ
   LINUX = ["libzmq", "/usr/local/lib/libzmq", "/opt/local/lib/libzmq"]
   OSX = ["libzmq", "/usr/local/lib/libzmq", "/opt/local/lib/libzmq"]
   WINDOWS = []
-  RBX ? ffi_lib(*(LINUX + OSX + WINDOWS)) : ffi_lib(LINUX + OSX + WINDOWS)
+  ffi_lib(LINUX + OSX + WINDOWS)
+  
 
   # Misc
   attach_function :zmq_version, [:pointer, :pointer, :pointer], :void
