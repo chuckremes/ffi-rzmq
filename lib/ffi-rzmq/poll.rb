@@ -10,6 +10,7 @@ module ZMQ
 
     def initialize
       @items = ZMQ::PollItems.new
+      @raw_to_socket = {}
       @sockets = []
       @readables = []
       @writables = []
@@ -75,11 +76,12 @@ module ZMQ
           item[:socket] = 0
           item[:fd] = fd
         end
+
+        @raw_to_socket[item[:socket].address] = sock
+        @items << item
       end
-
+      
       item[:events] |= events
-
-      @items << item
     end
 
     # Deregister the +sock+ for +events+.
@@ -95,7 +97,7 @@ module ZMQ
         # change the value in place
         item[:events] ^= events
 
-        delete sock if items[:events].zero?
+        delete sock if item[:events].zero?
       end
     end
 
@@ -129,6 +131,7 @@ module ZMQ
       if index = @sockets.index(sock)
         @items.delete_at index
         @sockets.delete sock
+        @raw_to_socket.delete sock.socket
       end
     end
 
@@ -146,8 +149,8 @@ module ZMQ
     def items_hash
       hsh = {}
 
-      @items.each_with_index do |poll_item, i|
-        hsh[@sockets[i]] = poll_item
+      @items.each do |poll_item|
+        hsh[@raw_to_socket[poll_item[:socket].address]] = poll_item
       end
 
       hsh
@@ -157,9 +160,9 @@ module ZMQ
       @readables.clear
       @writables.clear
 
-      @items.each_with_index do |poll_item, i|
-        @readables << @sockets[i] if poll_item.readable?
-        @writables << @sockets[i] if poll_item.writable?
+      @items.each do |poll_item|
+        @readables << @raw_to_socket[poll_item[:socket].address] if poll_item.readable?
+        @writables << @raw_to_socket[poll_item[:socket].address] if poll_item.writable?
       end
     end
 
