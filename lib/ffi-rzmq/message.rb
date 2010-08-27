@@ -95,7 +95,7 @@ module ZMQ
     # deallocation of the native memory buffer.
     #
     def copy_in_string string
-      copy_in_bytes string, string.size
+      copy_in_bytes string, string.size if string
     end
 
     # Makes a copy of +len+ bytes from the ruby string +bytes+. Library
@@ -104,7 +104,7 @@ module ZMQ
     def copy_in_bytes bytes, len
       # release any associated buffers if this Message object is being
       # reused
-      close unless uninitialized?
+      close unless uninitialized? # FIXME: this is a bug waiting to happen
 
       data_buffer = LibC.malloc len
       # writes the exact number of bytes, no null byte to terminate string
