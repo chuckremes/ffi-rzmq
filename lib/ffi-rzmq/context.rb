@@ -65,8 +65,8 @@ module ZMQ
     #   #ZMQ::PUB
     #   #ZMQ::SUB
     #   #ZMQ::PAIR
-    #   #ZMQ::UPSTREAM
-    #   #ZMQ::DOWNSTREAM
+    #   #ZMQ::PULL
+    #   #ZMQ::PUSH
     #   #ZMQ::XREQ
     #   #ZMQ::XREP
     #

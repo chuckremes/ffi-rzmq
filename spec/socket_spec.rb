@@ -42,12 +42,12 @@ module ZMQ
         lambda { Socket.new(ctx.pointer, ZMQ::XREP) }.should_not raise_error
       end
 
-      it "should not raise an error for a ZMQ::DOWNSTREAM socket type" do
-        lambda { Socket.new(ctx.pointer, ZMQ::DOWNSTREAM) }.should_not raise_error
+      it "should not raise an error for a ZMQ::PUSH socket type" do
+        lambda { Socket.new(ctx.pointer, ZMQ::PUSH) }.should_not raise_error
       end
 
-      it "should not raise an error for a ZMQ::UPSTREAM socket type" do
-        lambda { Socket.new(ctx.pointer, ZMQ::UPSTREAM) }.should_not raise_error
+      it "should not raise an error for a ZMQ::PULL socket type" do
+        lambda { Socket.new(ctx.pointer, ZMQ::PULL) }.should_not raise_error
       end
 
       it "should raise an error for an unknown socket type" do
