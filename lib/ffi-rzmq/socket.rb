@@ -19,7 +19,7 @@ module ZMQ
     # memory management.
     #
     # +type+ can be one of ZMQ::REQ, ZMQ::REP, ZMQ::PUB,
-    # ZMQ::SUB, ZMQ::PAIR, ZMQ::UPSTREAM, ZMQ::DOWNSTREAM,
+    # ZMQ::SUB, ZMQ::PAIR, ZMQ::PULL, ZMQ::PUSH,
     # ZMQ::XREQ or ZMQ::XREP.
     #
     # Can raise two kinds of exceptions depending on the error.

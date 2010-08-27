@@ -9,8 +9,8 @@ module ZMQ
   REP = 4
   XREQ = 5
   XREP = 6
-  UPSTREAM = 7
-  DOWNSTREAM = 8
+  PULL = UPSTREAM = 7
+  PUSH = DOWNSTREAM = 8
 
   #  Socket options
   HWM = 1
