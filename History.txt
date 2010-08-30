@@ -1,3 +1,14 @@
+== 0.5.1 / 20100830
+  * Works with 0mq 2.0.8 release.
+  
+  * Removed the socket finalizer. The current 0mq framework cannot
+    handle the case where zmq_close is called on a socket that was
+    created from another thread. Therefore, the garbage collection
+    thread causes the framework to break. Version 2.1 (or later)
+    should fix this 0mq limitation.
+    
+  * Misc fixes. See commits.
+
 == 0.5.0 / 20100606
   * Updated the bindings to conform to the 0mq 2.0.7 release.
   Several parts of the API changed.

@@ -7,7 +7,7 @@ ffi-rzmq
 This gem wraps the ZeroMQ networking library using the ruby FFI (foreign
 function interface). It's a pure ruby wrapper so this gem can be loaded
 and run by any ruby runtime that supports FFI. Right now that means
-MRI 1.8.7, 1.9.x and JRuby.
+MRI 1.9.x and JRuby.
 
 The impetus behind this library was to provide support for ZeroMQ in
 JRuby which has native threads. Unlike MRI, MacRuby, IronRuby and
@@ -46,8 +46,22 @@ This gem is brand new and has minimal tests. I'm certain there are a
 ton of bugs, so please open issues for them here or fork this project,
 fix them, and send me a pull request.
 
+Running this gem with MRI 1.8.x will likely exhibit a LOT of problems in
+the form of hangs, segmentation faults and bus errors. The threading support
+in MRI 1.8.x is irrevocably broken (according to the brains behind the
+Ruby FFI project) so tread carefully.
+
+Running this gem with MRI 1.9.x may also exhibit some hangs particularly at
+shutdown. This is due to a threading interaction between the 0mq library
+and MRI's threads. Apparently MRI does not "adopt" external threads when
+they make a call into the MRI runtime so some deadlocks may occur due to
+the GIL not getting released. Fixes for this should be sent to ruby-core.
+
 All features are implemented with the exception of the 0mq devices
-(forwarder, queue, streamer).
+(forwarder, queue, streamer). For implementations of these devices, see
+the 0mq Ruby reactor project:
+
+  http://github.com/chuckremes/zmqmachine
 
 == SYNOPSIS:
 
@@ -109,7 +123,7 @@ Server code:
 
 == REQUIREMENTS:
 
-  * 0mq 2.0.7
+  * 0mq 2.0.7 or 2.0.8
   
 The ZeroMQ library must be installed on your system in a well-known location
 like /usr/local/lib. This is the default for new ZeroMQ installs.
@@ -129,11 +143,19 @@ Code and installation instructions can be found on github:
 
 == INSTALL:
 
-Make sure the ZeroMQ library is already installed on your system. Secondly,
-make sure the FFI gem is built from its project master (see Requirements).
+A full gem has been released to rubygems.org as of release 0.5.0.
+Make sure the ZeroMQ library is already installed on your system.
 
+ % gem install ffi-rzmq # should grab the latest release
+
+
+To build from git master:
+
+ % git clone git://github.com/chuckremes/ffi-rzmq
+ % cd ffi-rzmq
  % gem build ffi-rzmq.gemspec
  % gem install ffi-rzmq-*.gem
+ 
  
 
 == LICENSE:
