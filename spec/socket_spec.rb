@@ -60,6 +60,7 @@ module ZMQ
       end
 
       it "should define a finalizer on this object" do
+        pending # need to wait for 0mq 2.1 or later to fix this
         ObjectSpace.should_receive(:define_finalizer)
         ctx = Context.new 1
       end

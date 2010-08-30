@@ -40,7 +40,7 @@ module ZMQ
         raise ContextError.new ZMQ_SOCKET_STR, 0, ETERM, "Context pointer was null"
       end
 
-      define_finalizer
+      #define_finalizer
     end
 
     # Set the queue options on this socket.
@@ -119,13 +119,13 @@ module ZMQ
         # will force a raise
         error_check ZMQ_SETSOCKOPT_STR, -1
       end
-      
+
       option_value, option_length = alloc_temp_sockopt_buffers option_name
 
       result_code = LibZMQ.zmq_getsockopt @socket, option_name, option_value, option_length
       error_check ZMQ_GETSOCKOPT_STR, result_code
       ret = 0
-      
+
       case option_name
       when RCVMORE, MCAST_LOOP
         # boolean return
@@ -135,11 +135,11 @@ module ZMQ
       when IDENTITY
         ret = option_value.read_string(option_length.read_long_long)
       end
-      
+
       ret
     end
   end
-  
+
   # Convenience method for checking on additional message parts.
   #
   # Equivalent to Socket#getsockopt ZMQ::RCVMORE
@@ -147,13 +147,13 @@ module ZMQ
   def more_parts?
     getsockopt ZMQ::RCVMORE
   end
-  
+
   # Convenience method for getting the value of the socket IDENTITY.
   #
   def identity
     getsockopt ZMQ::IDENTITY
   end
-  
+
   # Convenience method for setting the value of the socket IDENTITY.
   #
   def identity= value
@@ -312,7 +312,7 @@ module ZMQ
 
     flags != NOBLOCK ? error_check(ZMQ_RECV_STR, result_code) : error_check_nonblock(result_code)
   end
-  
+
   def alloc_temp_sockopt_buffers option_name
     length = FFI::MemoryPointer.new :int64
 

@@ -1,3 +1,4 @@
+$: << "." # added for ruby 1.9.2 compatibilty; it doesn't include the current directory on the load path anymore
 
 require File.join(File.dirname(__FILE__), %w[spec_helper])
 
