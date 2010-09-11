@@ -3,7 +3,7 @@ require 'ffi' unless RBX # external gem
 module LibC
   extend FFI::Library
   # figures out the correct libc for each platform including Windows
-  ffi_lib FFI::Library::LIBC unless RBX
+  library = ffi_lib(FFI::Library::LIBC).first
 
   # memory allocators
   attach_function :malloc, [:size_t], :pointer
@@ -11,6 +11,9 @@ module LibC
   attach_function :valloc, [:size_t], :pointer
   attach_function :realloc, [:pointer, :size_t], :pointer
   attach_function :free, [:pointer], :void
+  
+  # get a pointer to the free function; used for ZMQ::Message deallocation
+  Free = library.find_symbol('free')
 
   # memory movers
   attach_function :memcpy, [:pointer, :pointer, :size_t], :pointer
@@ -46,12 +49,6 @@ module LibZMQ
   attach_function :zmq_msg_copy, [:pointer, :pointer], :int
   attach_function :zmq_msg_move, [:pointer, :pointer], :int
 
-  unless RBX
-    MessageDeallocator = FFI::Function.new(:void, [:pointer, :pointer]) do |data_ptr, hint_ptr|
-      LibC.free data_ptr
-    end
-    MessageDeallocator.autorelease = false
-  end
 
   # Used for casting pointers back to the struct
   class Msg < FFI::Struct

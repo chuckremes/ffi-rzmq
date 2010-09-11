@@ -84,7 +84,7 @@ module ZMQ
         copy_in_string message
       else
         # initialize an empty message structure to receive a message
-        result_code = LibZMQ.zmq_msg_init @struct
+        result_code = LibZMQ.zmq_msg_init @pointer
         error_check ZMQ_MSG_INIT_STR, result_code
         @state = :initialized
       end
@@ -114,12 +114,8 @@ module ZMQ
       # out of scope
       define_finalizer
 
-      unless RBX
-        result_code = LibZMQ.zmq_msg_init_data @struct.pointer, data_buffer, len, LibZMQ::MessageDeallocator, nil
-      else
-        # no callback for freeing up memory; memory leak!
-        result_code = LibZMQ.zmq_msg_init_data @struct.pointer, data_buffer, len, nil, nil
-      end
+      result_code = LibZMQ.zmq_msg_init_data @pointer, data_buffer, len, LibC::Free, nil
+
       error_check ZMQ_MSG_INIT_DATA_STR, result_code
       @state = :initialized
     end
@@ -129,18 +125,18 @@ module ZMQ
     # require a real data address.
     #
     def address
-      @struct.pointer
+      @pointer
     end
     alias :pointer :address
 
     def copy source
-      result_code = LibZMQ.zmq_msg_copy @struct.pointer, source.address
+      result_code = LibZMQ.zmq_msg_copy @pointer, source.address
       error_check ZMQ_MSG_COPY_STR, result_code
       @state = :initialized
     end
 
     def move source
-      result_code = LibZMQ.zmq_msg_copy @struct.pointer, source.address
+      result_code = LibZMQ.zmq_msg_copy @pointer, source.address
       error_check ZMQ_MSG_MOVE_STR, result_code
       @state = :initialized
     end
@@ -148,7 +144,7 @@ module ZMQ
     # Provides the size of the data buffer for this +zmq_msg_t+ C struct.
     #
     def size
-      LibZMQ.zmq_msg_size @struct.pointer
+      LibZMQ.zmq_msg_size @pointer
     end
 
     # Returns a pointer to the data buffer.
@@ -157,7 +153,7 @@ module ZMQ
     # collected.
     #
     def data
-      LibZMQ.zmq_msg_data @struct.pointer
+      LibZMQ.zmq_msg_data @pointer
     end
 
     # Returns the data buffer as a string.
@@ -175,7 +171,7 @@ module ZMQ
     # again for sending or receiving.
     #
     def close
-      LibZMQ.zmq_msg_close @struct.pointer
+      LibZMQ.zmq_msg_close @pointer
       remove_finalizer
       @state = :uninitialized
     end
@@ -186,7 +182,7 @@ module ZMQ
     def uninitialized?(); :uninitialized == @state; end
 
     def define_finalizer
-      ObjectSpace.define_finalizer(self, self.class.close(@struct))
+      ObjectSpace.define_finalizer(self, self.class.close(@pointer))
     end
 
     def remove_finalizer
@@ -198,10 +194,10 @@ module ZMQ
     # This is intentional. Since this code runs as a finalizer, there is no
     # way to catch a raised exception anywhere near where the error actually
     # occurred in the code, so we just ignore deallocation failures here.
-    def self.close struct
+    def self.close ptr
       Proc.new do
         # release the data buffer
-        LibZMQ.zmq_msg_close struct.pointer
+        LibZMQ.zmq_msg_close ptr
       end
     end
 
