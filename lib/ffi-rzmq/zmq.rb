@@ -11,6 +11,18 @@ module ZMQ
   XREP = 6
   PULL = UPSTREAM = 7
   PUSH = DOWNSTREAM = 8
+  
+  SocketTypeNameMap = {
+    PAIR => "PAIR",
+    PUB => "PUB",
+    SUB => "SUB",
+    REQ => "REQ",
+    REP => "REP",
+    XREQ => "XREQ",
+    XREP => "XREP",
+    PULL => "PULL",
+    PUSH => "PUSH"
+  }
 
   #  Socket options
   HWM = 1
@@ -120,18 +132,19 @@ module ZMQ
     # send/recv. True only when #errno is EGAIN and +result_code+ is non-zero.
     #
     def error_check_nonblock result_code
-      queue_operation = eagain? && !result_code.zero? ? false : true
-      queue_operation
+      !result_code.zero? && eagain? ? false : true
     end
 
     def raise_error source, result_code
       case source
-      when ZMQ_SOCKET_STR, ZMQ_SETSOCKOPT_STR, ZMQ_GETSOCKOPT_STR, ZMQ_BIND_STR, ZMQ_CONNECT_STR, ZMQ_SEND_STR, ZMQ_RECV_STR
+      when ZMQ_SEND_STR, ZMQ_RECV_STR, ZMQ_SOCKET_STR, ZMQ_SETSOCKOPT_STR, ZMQ_GETSOCKOPT_STR, ZMQ_BIND_STR, ZMQ_CONNECT_STR
         raise SocketError.new source, result_code, errno, error_string
       when ZMQ_INIT_STR, ZMQ_TERM_STR
         raise ContextError.new source, result_code, errno, error_string
       when ZMQ_POLL_STR
         raise PollError.new source, result_code, errno, error_string
+      when ZMQ_MSG_INIT_STR, ZMQ_MSG_INIT_DATA_STR, ZMQ_MSG_COPY_STR, ZMQ_MSG_MOVE_STR
+        raise MessageError.new source, result_code, errno, error_string
       else
         raise ZeroMQError.new source, result_code, -1, 
         "Source [#{source}] does not match any zmq_* strings, rc [#{result_code}], errno [#{errno}], error_string [#{error_string}]"
