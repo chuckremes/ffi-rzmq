@@ -86,7 +86,7 @@ module ZMQ
         # copy over
         offset = 0
         @items.each do |item|
-          LibC.memcpy(@store + offset, item, @element_size)
+          LibC.memcpy(@store + offset, item.pointer, @element_size)
           offset += @element_size
         end
 
