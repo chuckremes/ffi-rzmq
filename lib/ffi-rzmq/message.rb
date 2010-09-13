@@ -15,10 +15,12 @@ module ZMQ
   # calls #copy_in_string.
   #
   # Call #close to release buffers when you have *not* passed this on
-  # to Socket#send or Socket#recv. Those methods call #close on your
-  # behalf.
+  # to Socket#send. That method calls #close on your behalf.
   #
-  # (This class is not really zero-copy. Ruby makes this near impossible.)
+  # (This class is not really zero-copy. Ruby makes this near impossible
+  # since Ruby objects can be relocated in memory by the GC at any
+  # time. There is no way to peg them to native memory or have them
+  # use non-movable native memory as backing store.)
   #
   # Message represents ruby equivalent of the +zmq_msg_t+ C struct.
   # Access the underlying memory buffer and the buffer size using the
@@ -32,41 +34,54 @@ module ZMQ
   # necessary, so only decode (copy from the 0mq buffer to Ruby) that
   # which is necessary.
   #
-  # When you are done using a *received* message object, just let it go out of
-  # scope to release the memory. During the next garbage collection run
-  # it will call the equivalent of #LibZMQ.zmq_msg_close to release
-  # all buffers. Obviously, this automatic collection of message objects
-  # comes at the price of a larger memory footprint (for the
-  # finalizer proc object) and lower performance. If you wanted blistering
-  # performance, Ruby isn't there just yet.
+  # When you are done using a *received* message object, call #close to
+  # release the associated buffers.
   #
   # As noted above, for sent objects the underlying library will call close
   # for you.
   #
   #  class MyMessage
+  #    class Layout < FFI::Struct
+  #      layout :value1, :uint8,
+  #             :value2, :uint64,
+  #             :value3, :uint32,
+  #             :value4, [:char, 30]
+  #    end
+  #
   #    def initialize msg_struct = nil
-  #      @msg_t = msg_struct ? msg_struct : ZMQ::Message.new
+  #      if msg_struct
+  #        @msg_t = msg_struct
+  #        @data = Layout.new(@msg_t.data)
+  #      else
+  #        @pointer = FFI::MemoryPointer.new :byte, Layout.size, true
+  #        @data = Layout.new @pointer
+  #      end
   #    end
   #
   #    def size() @size = @msg_t.size; end
   #
-  #    def decode
-  #      @decoded_data = JSON.parse(@msg_t.copy_out_string)
+  #    def value1
+  #      @data[:value1]
   #    end
   #
-  #    def field1
-  #      @field1 ||= decode[:field1]
+  #    def value4
+  #      @data[:value4].to_ptr.read_string
   #    end
   #
-  #    def field2
-  #      @field2 ||= decode[:field2]
+  #    def value1=(val)
+  #      @data[:value1] = val
   #    end
-  # ---
+  #
+  #    def create_sendable_message
+  #      msg = Message.new
+  #      msg.copy_in_bytes @pointer, Layout.size
+  #    end
+  #
   #
   #  message = Message.new
   #  successful_read = socket.recv message
   #  message = MyMessage.new message if successful_read
-  #  puts "field1 is #{message.field1}"
+  #  puts "value1 is #{message.value1}"
   #
   class Message
     include ZMQ::Util
@@ -86,13 +101,17 @@ module ZMQ
         # initialize an empty message structure to receive a message
         result_code = LibZMQ.zmq_msg_init @pointer
         error_check ZMQ_MSG_INIT_STR, result_code
-        @state = :initialized
       end
     end
 
     # Makes a copy of the ruby +string+ into a native memory buffer so
     # that libzmq can send it. The underlying library will handle
     # deallocation of the native memory buffer.
+    #
+    # Can only be initialized via #copy_in_string or #copy_in_bytes once.
+    #
+    # Can raise a MessageError when #copy_in_string or #copy_in_bytes is
+    # called multiple times on the same instance. 
     #
     def copy_in_string string
       copy_in_bytes string, string.size if string
@@ -101,19 +120,21 @@ module ZMQ
     # Makes a copy of +len+ bytes from the ruby string +bytes+. Library
     # handles deallocation of the native memory buffer.
     #
+    # Can only be initialized via #copy_in_string or #copy_in_bytes once.
+    #
+    # Can raise a MessageError when #copy_in_string or #copy_in_bytes is
+    # called multiple times on the same instance. 
+    #
     def copy_in_bytes bytes, len
-      # release any associated buffers if this Message object is being
-      # reused
-      close unless uninitialized? # FIXME: this is a bug waiting to happen
+      raise MessageError.new "#{self}", -1, -1, "This object cannot be reused; allocate a new one!" if initialized?
 
       data_buffer = LibC.malloc len
       # writes the exact number of bytes, no null byte to terminate string
       data_buffer.write_string bytes, len
 
-      # make sure we have a way to deallocate this memory if the object goes
-      # out of scope
-      define_finalizer
-
+      # use libC to call free on the data buffer; earlier versions used an
+      # FFI::Function here that called back into Ruby, but Rubinius won't 
+      # support that and there are issues with the other runtimes too
       result_code = LibZMQ.zmq_msg_init_data @pointer, data_buffer, len, LibC::Free, nil
 
       error_check ZMQ_MSG_INIT_DATA_STR, result_code
@@ -167,19 +188,66 @@ module ZMQ
     # Manually release the message struct and its associated data
     # buffer.
     #
-    # The Message object is still valid after this call and can be used
-    # again for sending or receiving.
-    #
     def close
       LibZMQ.zmq_msg_close @pointer
-      remove_finalizer
-      @state = :uninitialized
     end
 
 
     private
 
-    def uninitialized?(); :uninitialized == @state; end
+    def initialized?(); :initialized == @state; end
+
+  end # class Message
+
+
+
+  # A subclass of #Message that includes finalizers for deallocating
+  # native memory when this object is garbage collected. Note that on
+  # certain Ruby runtimes the use of finalizers can add 10s of
+  # microseconds of overhead for each message. The convenience comes
+  # at a price.
+  #
+  # The constructor optionally takes a string as an argument. It will
+  # copy this string to native memory in preparation for transmission.
+  # So, don't pass a string unless you intend to send it. Internally it
+  # calls #copy_in_string.
+  #
+  # Call #close to release buffers when you have *not* passed this on
+  # to Socket#send. That method calls #close on your behalf.
+  #
+  # When you are done using a *received* message object, just let it go out of
+  # scope to release the memory. During the next garbage collection run
+  # it will call the equivalent of #LibZMQ.zmq_msg_close to release
+  # all buffers. Obviously, this automatic collection of message objects
+  # comes at the price of a larger memory footprint (for the
+  # finalizer proc object) and lower performance. If you wanted blistering
+  # performance, Ruby isn't there just yet.
+  #
+  # As noted above, for sent objects the underlying library will call close
+  # for you.
+  #
+  class ManagedMessage < Message
+    # Makes a copy of +len+ bytes from the ruby string +bytes+. Library
+    # handles deallocation of the native memory buffer.
+    #
+    def copy_in_bytes bytes, len
+      super
+      
+      # make sure we have a way to deallocate this memory if the object goes
+      # out of scope
+      define_finalizer
+    end
+
+    # Manually release the message struct and its associated data
+    # buffer.
+    #
+    def close
+      super
+      remove_finalizer
+    end
+
+
+    private
 
     def define_finalizer
       ObjectSpace.define_finalizer(self, self.class.close(@pointer))
@@ -201,6 +269,6 @@ module ZMQ
       end
     end
 
-  end # class Message
+  end # class ManagedMessage
 
 end # module ZMQ
