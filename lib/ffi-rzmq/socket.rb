@@ -27,8 +27,8 @@ module ZMQ
     #
     #  sock = Socket.new(Context.new, ZMQ::REQ, :receiver_class => ZMQ::ManagedMessage)
     #
-    # Advanced users may want to replace the sender and receiver classes with their 
-    # own custom classes. The custom classes must conform to the same public API
+    # Advanced users may want to replace the receiver class with their 
+    # own custom class. The custom class must conform to the same public API
     # as ZMQ::Message.
     #
     # Can raise two kinds of exceptions depending on the error.
@@ -36,11 +36,10 @@ module ZMQ
     # #Context. See #ContextError.
     # SocketError:: See all of the possibilities in the docs for #SocketError.
     #
-    def initialize context_ptr, type, klasses = {:sender_class => ZMQ::Message, :receiver_class => ZMQ::Message}
-      # users may override the classes used for sending and receiving; classes must conform to the
+    def initialize context_ptr, type, opts = {:receiver_class => ZMQ::Message}
+      # users may override the classes used for receiving; class must conform to the
       # same public API as ZMQ::Message
-      @sender_klass = klasses[:sender_class]
-      @receiver_klass = klasses[:receiver_class]
+      @receiver_klass = opts[:receiver_class]
 
       unless context_ptr.null?
         @socket = LibZMQ.zmq_socket context_ptr, type
@@ -253,7 +252,7 @@ module ZMQ
   # SocketError:: See all of the possibilities in the docs for #SocketError.
   #
   def send_string message_string, flags = 0
-    message = @sender_klass.new
+    message = Message.new
     message.copy_in_string message_string
     result = send message, flags
     result
