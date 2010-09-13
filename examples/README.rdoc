@@ -1,0 +1,163 @@
+= Examples
+
+== Requirements
+
+1. Installed gem
+
+All of the examples assume the gem has been successfully installed.
+
+2. Installed libzmq library
+
+The ZeroMQ C libraries need to be downloaded, compiled and installed separately from the gem. Please see http://www.zeromq.org/area:download for links to the downloadable files along with some simple installation instructions. Also, be sure to check the FAQ if you run into problems with compiling.
+
+3. Two terminal windows
+
+ZeroMQ is used to build network applications. At minimum, there is a "client" application and a "server" application that talk to each other over the network, IPC or an internal thread queue. For the sake of code simplicity, these programs are in separate files and need to be executed in different windows.
+
+== Latency Test
+
+The examples include a latency performance test. The example sets up a pair of REQ/REP sockets and send a message back and forth as fast as possible. There is only a single message in flight at any given moment. The time required to send the message the requested number of times determines overall single-message latency for this type of socket.
+
+==== Files
+
+* local_lat.rb
+* remote_lat.rb
+
+==== Arguments
+
+The remote_lat.rb program takes 3 arguments:
+
+  [bind_to]  Requires a transport string of the format "transport"://"endpoint"<:><port>. For example, tcp://127.0.0.1:5555
+  
+  [message size] Size of each message measured in bytes. Allowable range is 1 to 2^(64-1).
+  
+  [message count] The number of round-trips used for the latency measurements. Allowable range is 1 to 2^(64-1).
+
+
+The local_lat.rb program also takes 3 arguments. They should exactly mirror the arguments given to remote_lat.rb.
+
+  
+==== Execution
+
+In one of the terminals, start up the remote_lat.rb program first. It *must* be launched first so that it can be ready and waiting for the first message sent by the local_lat.rb program.
+
+  % ruby remote_lat.rb tcp://127.0.0.1:5555 1024 100_000
+
+In the second terminal window, start up the local_lat.rb program too.
+
+  % ruby local_lat.rb tcp://127.0.0.1:5555 1024 100_000
+  
+On a relatively new system, it can run 100k messages in under 30 seconds. When complete, the remote_lat.rb program prints out a few statistics and exits. The local_lat.rb program does not print any message when it exits.
+
+Running with a larger "message count" will yield a more accurate latency measurement since nearly all Ruby runtimes require a little warm up time to hit their stride. I recommend 100k as a minimum while 10 million is better for determining a true measure.
+
+On a desktop computer purchased in 2007, all of the Ruby runtimes report a latency of approximately 110 microseconds per message. For comparison, the pure C latency test reports approximately 88 microseconds of latency.
+
+
+
+== Zero Copy Latency Test
+
+The examples include a zero copy latency performance test. The example sets up a pair of REQ/REP sockets and send a message back and forth as fast as possible. There is only a single message in flight at any given moment. The time required to send the message the requested number of times determines overall single-message latency for this type of socket.
+
+The difference between this test and the first latency test has to do with the management of the sent and received messages. This test does not examine or copy the contents of the message at all. Instead, its mere presence is sufficient to echo it back to the other program. Therefore, this test is doing a lot less work for each message send & receive than the first latency test. Also, this test more perfectly mirrors the work being performed by the C latency test.
+
+==== Files
+
+* local_lat_zerocopy.rb
+* remote_lat_zerocopy.rb
+
+==== Arguments
+
+The remote_lat_zerocopy.rb program takes 3 arguments:
+
+  [bind_to]  Requires a transport string of the format "transport"://"endpoint"<:><port>. For example, tcp://127.0.0.1:5555
+  
+  [message size] Size of each message measured in bytes. Allowable range is 1 to 2^(64-1).
+  
+  [message count] The number of round-trips used for the latency measurements. Allowable range is 1 to 2^(64-1).
+
+
+The local_lat_zerocopy.rb program also takes 3 arguments. They should exactly mirror the arguments given to remote_lat_zerocopy.rb.
+
+  
+==== Execution
+
+In one of the terminals, start up the remote_lat_zerocopy.rb program first. It *must* be launched first so that it can be ready and waiting for the first message sent by the local_lat_zerocopy.rb program.
+
+  % ruby remote_lat_zerocopy.rb tcp://127.0.0.1:5555 1024 100_000
+
+In the second terminal window, start up the local_lat.rb program too.
+
+  % ruby local_lat_zerocopy.rb tcp://127.0.0.1:5555 1024 100_000
+  
+On a relatively new system, it can run 100k messages in under 30 seconds. When complete, the remote_lat_zerocopy.rb program prints out a few statistics and exits. The local_lat_zerocopy.rb program does not print any message when it exits.
+
+Running with a larger "message count" will yield a more accurate latency measurement since nearly all Ruby runtimes require a little warm up time to hit their stride. I recommend 100k as a minimum while 10 million is better for determining a true measure.
+
+On a desktop computer purchased in 2007, all of the Ruby runtimes report a latency of approximately 95 microseconds per message. For comparison, the pure C latency test reports approximately 88 microseconds of latency.
+
+
+
+== Throughput Test
+
+The examples include a throughput performance test. The example sets up a pair of PUB/SUB sockets and publish messages as fast as possible to a subscriber listening for every message. The publisher can send much faster than the subscriber can retrieve messages. 
+
+Since the publisher completes first, that program contains a "sleep" statement to keep the program alive and active which gives the subscriber more time to consume the queued messages. When the publisher exits, the socket closes and discards all remaining messages.
+
+The subscriber prints some statistics when it exits.
+
+==== Files
+
+* local_throughput.rb
+* remote_throughput.rb
+
+==== Arguments
+
+The local_throughput.rb program takes 3 arguments:
+
+  [bind_to]  Requires a transport string of the format "transport"://"endpoint"<:><port>. For example, tcp://127.0.0.1:5555
+  
+  [message size] Size of each message measured in bytes. Allowable range is 1 to 2^(64-1).
+  
+  [message count] The number of round-trips used for the latency measurements. Allowable range is 1 to 2^(64-1).
+
+
+The remote_throughput.rb program also takes 3 arguments. They should exactly mirror the arguments given to local_throughput.rb.
+
+  
+==== Execution
+
+In one of the terminals, start up the local_throughput.rb program first. It *must* be launched first so that it can be ready and waiting for the first message published by the remote_throughput.rb program.
+
+  % ruby local_throughput.rb tcp://127.0.0.1:5555 1024 100_000
+
+In the second terminal window, start up the second program.
+
+  % ruby remote_throughput.rb tcp://127.0.0.1:5555 1024 100_000
+  
+On a relatively new system, it can run 100k messages in under 10 seconds. When complete, the local_throughput.rb program prints out a few statistics and exits. The remote_throughput.rb program does not print any message when it exits.
+
+Running with a larger "message count" will yield a more accurate latency measurement since nearly all Ruby runtimes require a little warm up time to hit their stride. I recommend 100k as a minimum while 1 million is better for determining a true measure. NOTE! The publisher can send much faster than the subscriber so the publisher's queue will grow very rapidly in RAM. For 1 million messages (or more) this can consume hundreds of megabytes or gigabytes of RAM. On my system, sending 10 million messages requires 10 GB of RAM before the subscriber can catch up.
+
+On a desktop computer purchased in 2007, all of the Ruby runtimes report a throughput of approximately 150k messages per second. For comparison, the pure C throughput test reports approximately 260k messages per second.
+
+
+
+== Poll
+
+For a reasonable example of using zmq_poll(), take a look at the reqrep_poll.rb program. It illustrates the use of zmq_poll(), as wrapped by the Ruby library, for detecting and responding to read and write events recorded on sockets. It also shows how to use ZMQ::NO_BLOCK for non-blocking send and receive.
+
+==== Files
+
+* reqrep_poll.rb
+
+==== Arguments
+
+None.
+
+==== Execution
+
+This program is completely self-contained, so it only requires a single terminal window for execution.
+
+  % ruby reqrep_poll.rb
+
