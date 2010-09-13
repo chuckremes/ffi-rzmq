@@ -13,6 +13,14 @@ module ZMQ
       it "should raise an error for negative io threads" do
         lambda { Context.new(-1) }.should raise_exception(ZMQ::ContextError)
       end
+      
+      it "should default to requesting 1 i/o thread when no argument is passed" do
+        ctx = mock('ctx')
+        ctx.stub!(:null? => false)
+        LibZMQ.should_receive(:zmq_init).with(1).and_return(ctx)
+        
+        Context.new
+      end
 
       it "should set the :pointer accessor to non-nil" do
         ctx = Context.new 1
@@ -43,7 +51,7 @@ module ZMQ
         ctx.terminate
       end
 
-      it "should raise an exception when it fails" do
+      it "should raise a ZMQ::ContextError exception when it fails" do
         ctx = Context.new 1
         LibZMQ.stub(:zmq_term => 1)
         lambda { ctx.terminate }.should raise_error(ZMQ::ContextError)
@@ -57,7 +65,7 @@ module ZMQ
         ctx.socket(ZMQ::REQ).should be_kind_of(ZMQ::Socket)
       end
 
-      it "should raise an exception when allocation fails" do
+      it "should raise a ZMQ::SocketError exception when allocation fails" do
         ctx = Context.new 1
         Socket.stub(:new => nil)
         lambda { ctx.socket(ZMQ::REQ) }.should raise_error(ZMQ::SocketError)

@@ -11,10 +11,12 @@ module ZMQ
 
     attr_reader :context, :pointer
 
-    # Recommended to just pass 1 for +io_threads+
-    # since most programs are not heavily threaded. The rule of thumb
-    # is to make +io_threads+ equal to the number of application
-    # threads that will be accessing 0mq sockets within this context.
+    # Recommended to use the default for +io_threads+
+    # since most programs will not saturate I/O. 
+    #
+    # The rule of thumb is to make +io_threads+ equal to the number 
+    # gigabits per second that the application will produce.
+    #
     # The +io_threads+ number specifies the size of the thread pool
     # allocated by 0mq for processing incoming/outgoing messages.
     #
@@ -23,12 +25,19 @@ module ZMQ
     # live within a context. Sockets in one context may not be accessed
     # from another context; doing so raises an exception.
     #
+    # Also, Sockets should *only* be accessed from the thread where they
+    # were first created. Do *not* pass sockets between threads; pass
+    # in the context and allocate a new socket per thread.
+    #
     # To connect sockets between contexts, use +inproc+ or +ipc+
-    # transport and set up a 0mq socket between them.
+    # transport and set up a 0mq socket between them. This is also the
+    # recommended technique for allowing sockets to communicate between
+    # threads.
     #
-    # May raise a #ContextError.
+    # Will raise a #ContextError when the native library context cannot be
+    # be allocated.
     #
-    def initialize io_threads
+    def initialize io_threads = 1
       @sockets ||= []
       @context = LibZMQ.zmq_init io_threads
       @pointer = @context
@@ -44,7 +53,8 @@ module ZMQ
     #
     # Returns nil.
     #
-    # May raise a #ContextError.
+    # Will raise a #ContextError when the call fails. Failures occur when
+    # the context has somehow become null (indicates a libzmq bug).
     #
     def terminate
       unless @context.nil? || @context.null?
