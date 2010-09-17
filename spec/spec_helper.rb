@@ -5,6 +5,8 @@
 require File.expand_path(
 File.join(File.dirname(__FILE__), %w[.. lib ffi-rzmq]))
 
+Thread.abort_on_exception = true
+
 # turns off all warnings; added so I don't have to see the warnings
 # for included libraries like FFI.
 $VERBOSE = false
