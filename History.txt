@@ -1,3 +1,38 @@
+== 0.6.0 / 20100911
+  * API Change! Modified ZMQ::Message by removing automatic memory
+    management. While doing some performance tests I saw that
+    defining/undefining the finalizer added 15-30% processing 
+    overhead on the latency test. So, I split this functionality
+    out to a subclass called ZMQ::ManagedMemory. Any existing code
+    that relies on the default Message class to clean up after itself
+    will now have a memory leak. Explicitly call #close on these
+    received messages *unless* they are sent out again. The #send
+    method automatically closes call on your behalf.
+
+  * Rubinius/rbx compatibility! Requires an rbx code pull from git
+    from 20100911 or later to get the necessary code fixes.
+  
+  * Modify Message to use the @pointer directly rather than indirectly
+    via the @struct object. Provides better compatibility for rbx
+    since rbx does not yet support the FFI pointer protocol for structs
+    like the FFI gem.
+
+  * Modify Message to pass libC's free function for disposing of message
+    data buffers rather than trying to callback into ruby code to
+    do the same thing. External thread callbacks into ruby code will
+    never be supported in rbx; this also improves compatibility and
+    performance with MRI and JRuby. (In particular, MRI enqueues these
+    kinds of callbacks and spawns a *new* thread to execute each one.
+    Avoiding the ruby callback entirely eliminates this extra work
+    for MRI.)
+
+  * Modify FFI wrapper to capture the libC dynamic library to fetch
+    a pointer to the free function.
+
+  * Modify FFI wrapper to remove the FFI::Function callback used
+    by Message. It's no longer necessary since we now use free 
+    directly.
+
 == 0.5.1 / 20100830
   * Works with 0mq 2.0.8 release.
   
