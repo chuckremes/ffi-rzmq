@@ -104,6 +104,14 @@ Server code:
     msg = s.recv_string 0
     raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
   end
+  
+== Better Examples
+
+I highly recommend visiting the Learn Ruby 0mq project for a bunch of good code examples.
+
+  http://github.com/andrewvc/learn-ruby-zeromq
+  
+
 
 == REQUIREMENTS:
 
