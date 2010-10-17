@@ -6,8 +6,8 @@ ffi-rzmq
 
 This gem wraps the ZeroMQ networking library using the ruby FFI (foreign
 function interface). It's a pure ruby wrapper so this gem can be loaded
-and run by any ruby runtime that supports FFI. Right now that means
-MRI 1.9.x and JRuby.
+and run by any ruby runtime that supports FFI. That's all of them:
+MRI 1.8.7+, 1.9.x, Rubinius and JRuby.
 
 The impetus behind this library was to provide support for ZeroMQ in
 JRuby which has native threads. Unlike MRI, MacRuby, IronRuby and
@@ -18,31 +18,13 @@ environment to run this library.
 
 == PERFORMANCE
 
-Using FFI introduces some minimal overhead. In my latest benchmarks,
-I was unable to detect any measurable performance drop due to FFI
-regardless of which ruby runtime was tested. JRuby had the best overall
-performance (with --server) once it warmed up. MRI behaved quite well 
-too and has a much lower memory footprint than JRuby (use the trunk
-version of the FFI bindings to fix several threading issues affecting
-MRI).
+Check out the latest performance results:
 
-Due to odd interactions between 0mq threads and the GIL (Giant Interpreter
-Lock), I recommend using JRuby 1.5.1 or later. JRuby has no GIL.
-
-The hope is that in a multi-threaded environment that JRuby's native
-threads and lack of GIL will provide the best ZeroMQ performance using
-the ruby language.
-
-Unfortunately, there is really no reasonable way to support zero-copy
-using Ruby. Any time data needs to be accessible by the Ruby runtime,
-it must be copied out of native memory to the Ruby heap. The same is
-true for the reverse. I am investigating ways to "pin" primitive arrays
-in memory for Rubinius and JRuby to achieve zero-copy, but that is
-a ways off.
+  http://www.zeromq.org/bindings:ruby-ffi
 
 == FEATURES/PROBLEMS:
 
-This gem is brand new and has minimal tests. I'm certain there are a
+This gem needs more tests. I'm certain there are a
 ton of bugs, so please open issues for them here or fork this project,
 fix them, and send me a pull request.
 
@@ -52,10 +34,12 @@ in MRI 1.8.x is irrevocably broken (according to the brains behind the
 Ruby FFI project) so tread carefully.
 
 Running this gem with MRI 1.9.x may also exhibit some hangs particularly at
-shutdown. This is due to a threading interaction between the 0mq library
-and MRI's threads. Apparently MRI does not "adopt" external threads when
-they make a call into the MRI runtime so some deadlocks may occur due to
-the GIL not getting released. Fixes for this should be sent to ruby-core.
+shutdown. This is due to a signaling interaction between the 0mq library
+and MRI. If the 0mq library is blocked on a call and the program receives
+a signal (e.g. SIGINT), the Ruby runtime has no opportunity to run its signal
+handler and process it. The 2.1.x branch of 0mq resolves this problem by
+interrupting the blocking call and returning EINTR. The 2.0.x branch will
+not get this fix because the API change breaks backward compatibility.
 
 All features are implemented with the exception of the 0mq devices
 (forwarder, queue, streamer). For implementations of these devices, see
@@ -79,7 +63,7 @@ Client code:
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
   
-  ctx = ZMQ::Context.new 1
+  ctx = ZMQ::Context.new
   s = ctx.socket ZMQ::REP
   s.setsockopt(ZMQ::HWM, 100)
   s.bind(bind_to)
@@ -107,7 +91,7 @@ Server code:
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
   
-  ctx = ZMQ::Context.new 1
+  ctx = ZMQ::Context.new
   s = ctx.socket ZMQ::REQ
   s.connect(connect_to)
   
@@ -120,10 +104,18 @@ Server code:
     msg = s.recv_string 0
     raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
   end
+  
+== Better Examples
+
+I highly recommend visiting the Learn Ruby 0mq project for a bunch of good code examples.
+
+  http://github.com/andrewvc/learn-ruby-zeromq
+  
+
 
 == REQUIREMENTS:
 
-  * 0mq 2.0.7 or 2.0.8
+  * 0mq 2.0.8 or 2.0.9
   
 The ZeroMQ library must be installed on your system in a well-known location
 like /usr/local/lib. This is the default for new ZeroMQ installs.
