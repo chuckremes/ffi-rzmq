@@ -166,14 +166,21 @@ module ZMQ
         end # context using option ZMQ::HWM
 
         context "getting an FD" do
-          it "should return an FD" do
-            socket.getsockopt(ZMQ::FD).should > 0
+          before(:all) do
+            @fd = socket.getsockopt ZMQ::FD
+          end
+          it "should return an FD as a positive integer" do
+            @fd = socket.getsockopt(ZMQ::FD).should be_a(Fixnum)
+          end
+          
+          it "should return a valid FD" do
+            lambda { IO.new(@fd) }.should_not raise_exception(Errno::EBADF)
           end
         end
         
         context "getting events" do
-          it "should return a mask of events" do
-            socket.getsockopt(ZMQ::EVENTS).should be_a(Fixnum)
+          it "should return a mask of events as a Fixnum" do
+            @sub.getsockopt(ZMQ::EVENTS).should be_a(Fixnum)
           end
         end
 
@@ -295,6 +302,33 @@ module ZMQ
 
     end # each socket_type
 
+    describe "Events mapping to POLLIN and POLLOUT" do
+      include APIHelper
+      
+      before(:all) do
+        addr = "tcp://127.0.0.1:#{random_port}"
+         
+        ctx = ZMQ::Context.new 1
+        @sub = ctx.socket ZMQ::SUB
+        @sub.setsockopt ZMQ::SUBSCRIBE, ''
+
+        @pub = ctx.socket ZMQ::PUB
+        @pub.connect 'tcp://127.0.0.1:2200'
+
+        @sub.bind 'tcp://127.0.0.1:2200'
+
+        @pub.send_string('test')
+        sleep 0.1
+      end
+      
+      it "should have only POLLIN set for a sub socket that received a message" do
+        @sub.getsockopt(ZMQ::EVENTS).should == ZMQ::POLLIN
+      end
+      
+      it "should have only POLLOUT set for a sub socket that received a message" do
+        @pub.getsockopt(ZMQ::EVENTS).should == ZMQ::POLLOUT
+      end
+    end
 
   end # describe Socket
 
