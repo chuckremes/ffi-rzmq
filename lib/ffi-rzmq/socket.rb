@@ -114,6 +114,8 @@ module ZMQ
     #  ZMQ::MCAST_LOOP - boolean
     #  ZMQ::SNDBUF - integer
     #  ZMQ::RCVBUF - integer
+    #  ZMQ::FD     - fd in an integer
+    #  ZMQ::EVENTS - bitmap integer
     #
     # Can raise two kinds of exceptions depending on the error.
     # ContextError:: Raised when a socket operation is attempted on a terminated
@@ -126,7 +128,7 @@ module ZMQ
         option_length = FFI::MemoryPointer.new :size_t
 
         unless [RCVMORE, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP,
-        IDENTITY, SNDBUF, RCVBUF].include? option_name
+        IDENTITY, SNDBUF, RCVBUF,FD,EVENTS].include? option_name
         # we didn't understand the passed option argument
         # will force a raise
         error_check ZMQ_SETSOCKOPT_STR, -1
@@ -135,6 +137,7 @@ module ZMQ
       option_value, option_length = alloc_temp_sockopt_buffers option_name
 
       result_code = LibZMQ.zmq_getsockopt @socket, option_name, option_value, option_length
+      
       error_check ZMQ_GETSOCKOPT_STR, result_code
       ret = 0
 
@@ -142,7 +145,7 @@ module ZMQ
       when RCVMORE, MCAST_LOOP
         # boolean return
         ret = option_value.read_long_long != 0
-      when HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF
+      when HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, FD, EVENTS
         ret = option_value.read_long_long
       when IDENTITY
         ret = option_value.read_string(option_length.read_long_long)
@@ -330,7 +333,7 @@ module ZMQ
     length = FFI::MemoryPointer.new :int64
 
     case option_name
-    when RCVMORE, MCAST_LOOP, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF
+    when RCVMORE, MCAST_LOOP, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, FD, EVENTS
       # int64_t
       length.write_long_long 8
       [FFI::MemoryPointer.new(:int64), length]

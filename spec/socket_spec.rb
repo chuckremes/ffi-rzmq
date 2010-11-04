@@ -165,6 +165,17 @@ module ZMQ
           end
         end # context using option ZMQ::HWM
 
+        context "getting an FD" do
+          it "should return an FD" do
+            socket.getsockopt(ZMQ::FD).should > 0
+          end
+        end
+        
+        context "getting events" do
+          it "should return a mask of events" do
+            socket.getsockopt(ZMQ::EVENTS).should be_a(Fixnum)
+          end
+        end
 
 #        context "using option ZMQ::SWAP" do
 #          it "should set the swap value given a positive value" do
