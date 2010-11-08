@@ -7,9 +7,6 @@ module LibC
 
   # memory allocators
   attach_function :malloc, [:size_t], :pointer
-  attach_function :calloc, [:size_t], :pointer
-  attach_function :valloc, [:size_t], :pointer
-  attach_function :realloc, [:pointer, :size_t], :pointer
   attach_function :free, [:pointer], :void
   
   # get a pointer to the free function; used for ZMQ::Message deallocation
@@ -17,8 +14,6 @@ module LibC
 
   # memory movers
   attach_function :memcpy, [:pointer, :pointer, :size_t], :pointer
-  attach_function :bcopy, [:pointer, :pointer, :size_t], :void
-
 end # module LibC
 
 module LibZMQ
