@@ -7,8 +7,12 @@ module ZMQ
   describe Socket do
 
     context "when initializing" do
-
-      let(:ctx) { Context.new 1 }
+      
+      let(:ctx) {
+        
+        Context.new 1 
+      }
+      
 
       it "should raise an error for a nil context" do
         lambda { Socket.new(FFI::Pointer::NULL, ZMQ::REQ) }.should raise_exception(ZMQ::ContextError)

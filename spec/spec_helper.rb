@@ -7,9 +7,11 @@ File.join(File.dirname(__FILE__), %w[.. lib ffi-rzmq]))
 
 Thread.abort_on_exception = true
 
+ctx = ZMQ::Context.new 1
+ZMQ::Context.stub!(:new).and_return(ctx)
+
 # turns off all warnings; added so I don't have to see the warnings
 # for included libraries like FFI.
-$VERBOSE = false
 
 module APIHelper
   def stub_libzmq
