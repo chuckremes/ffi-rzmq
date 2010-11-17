@@ -11,7 +11,7 @@ Thread.abort_on_exception = true
 # for included libraries like FFI.
 
 SPEC_CTX = ZMQ::Context.new 1
-def shared_context
+def spec_ctx
   SPEC_CTX
 end
 

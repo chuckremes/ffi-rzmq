@@ -9,7 +9,7 @@ module ZMQ
     context "when initializing" do
       
       let(:ctx) {
-        shared_context
+        spec_ctx
       }
       
 
@@ -69,42 +69,42 @@ module ZMQ
       it "should define a finalizer on this object" do
         pending # need to wait for 0mq 2.1 or later to fix this
         ObjectSpace.should_receive(:define_finalizer)
-        ctx = shared_context
+        ctx = spec_ctx
       end
     end # context initializing
 
 
     context "identity=" do
       it "should raise an exception for identities in excess of 255 bytes" do
-        ctx = shared_context
+        ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = ('a' * 256) }.should raise_exception(ZMQ::SocketError)
       end
 
       it "should raise an exception for identities of length 0" do
-        ctx = shared_context
+        ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = '' }.should raise_exception(ZMQ::SocketError)
       end
 
       it "should NOT raise an exception for identities of 1 byte" do
-        ctx = shared_context
+        ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = 'a' }.should_not raise_exception(ZMQ::SocketError)
       end
 
       it "should NOT raise an exception for identities of 255 bytes" do
-        ctx = shared_context
+        ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = ('a' * 255) }.should_not raise_exception(ZMQ::SocketError)
       end
 
       it "should convert numeric identities to strings" do
-        ctx = shared_context
+        ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         sock.identity = 7
@@ -117,7 +117,7 @@ module ZMQ
 
       context "#setsockopt for a #{ZMQ::SocketTypeNameMap[socket_type]} socket" do
         let(:socket) do
-          ctx = shared_context
+          ctx = spec_ctx
           Socket.new ctx.pointer, socket_type
         end
 
@@ -312,7 +312,7 @@ module ZMQ
       before(:all) do
         addr = "tcp://127.0.0.1:#{random_port}"
          
-        ctx = shared_context
+        ctx = spec_ctx
         @sub = ctx.socket ZMQ::SUB
         @sub.setsockopt ZMQ::SUBSCRIBE, ''
 
