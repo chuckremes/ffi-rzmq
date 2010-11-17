@@ -9,8 +9,7 @@ module ZMQ
     context "when initializing" do
       
       let(:ctx) {
-        
-        Context.new 1 
+        shared_context
       }
       
 
@@ -70,42 +69,42 @@ module ZMQ
       it "should define a finalizer on this object" do
         pending # need to wait for 0mq 2.1 or later to fix this
         ObjectSpace.should_receive(:define_finalizer)
-        ctx = Context.new 1
+        ctx = shared_context
       end
     end # context initializing
 
 
     context "identity=" do
       it "should raise an exception for identities in excess of 255 bytes" do
-        ctx = Context.new 1
+        ctx = shared_context
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = ('a' * 256) }.should raise_exception(ZMQ::SocketError)
       end
 
       it "should raise an exception for identities of length 0" do
-        ctx = Context.new 1
+        ctx = shared_context
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = '' }.should raise_exception(ZMQ::SocketError)
       end
 
       it "should NOT raise an exception for identities of 1 byte" do
-        ctx = Context.new 1
+        ctx = shared_context
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = 'a' }.should_not raise_exception(ZMQ::SocketError)
       end
 
       it "should NOT raise an exception for identities of 255 bytes" do
-        ctx = Context.new 1
+        ctx = shared_context
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = ('a' * 255) }.should_not raise_exception(ZMQ::SocketError)
       end
 
       it "should convert numeric identities to strings" do
-        ctx = Context.new 1
+        ctx = shared_context
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         sock.identity = 7
@@ -118,7 +117,7 @@ module ZMQ
 
       context "#setsockopt for a #{ZMQ::SocketTypeNameMap[socket_type]} socket" do
         let(:socket) do
-          ctx = Context.new
+          ctx = shared_context
           Socket.new ctx.pointer, socket_type
         end
 
@@ -185,7 +184,7 @@ module ZMQ
         
         context "getting events" do
           it "should return a mask of events as a Fixnum" do
-            @sub.getsockopt(ZMQ::EVENTS).should be_a(Fixnum)
+            socket.getsockopt(ZMQ::EVENTS).should be_a(Fixnum)
           end
         end
 
@@ -313,7 +312,7 @@ module ZMQ
       before(:all) do
         addr = "tcp://127.0.0.1:#{random_port}"
          
-        ctx = ZMQ::Context.new 1
+        ctx = shared_context
         @sub = ctx.socket ZMQ::SUB
         @sub.setsockopt ZMQ::SUBSCRIBE, ''
 
