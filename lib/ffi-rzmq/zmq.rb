@@ -37,6 +37,8 @@ module ZMQ
   SNDBUF = 11
   RCVBUF = 12
   RCVMORE = 13
+  FD = 14
+  EVENTS = 15
 
   #  Send/recv options
   NOBLOCK = 1

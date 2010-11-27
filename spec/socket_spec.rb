@@ -7,8 +7,11 @@ module ZMQ
   describe Socket do
 
     context "when initializing" do
-
-      let(:ctx) { Context.new 1 }
+      
+      let(:ctx) {
+        spec_ctx
+      }
+      
 
       it "should raise an error for a nil context" do
         lambda { Socket.new(FFI::Pointer::NULL, ZMQ::REQ) }.should raise_exception(ZMQ::ContextError)
@@ -66,42 +69,42 @@ module ZMQ
       it "should define a finalizer on this object" do
         pending # need to wait for 0mq 2.1 or later to fix this
         ObjectSpace.should_receive(:define_finalizer)
-        ctx = Context.new 1
+        ctx = spec_ctx
       end
     end # context initializing
 
 
     context "identity=" do
       it "should raise an exception for identities in excess of 255 bytes" do
-        ctx = Context.new 1
+        ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = ('a' * 256) }.should raise_exception(ZMQ::SocketError)
       end
 
       it "should raise an exception for identities of length 0" do
-        ctx = Context.new 1
+        ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = '' }.should raise_exception(ZMQ::SocketError)
       end
 
       it "should NOT raise an exception for identities of 1 byte" do
-        ctx = Context.new 1
+        ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = 'a' }.should_not raise_exception(ZMQ::SocketError)
       end
 
       it "should NOT raise an exception for identities of 255 bytes" do
-        ctx = Context.new 1
+        ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = ('a' * 255) }.should_not raise_exception(ZMQ::SocketError)
       end
 
       it "should convert numeric identities to strings" do
-        ctx = Context.new 1
+        ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
 
         sock.identity = 7
@@ -114,7 +117,7 @@ module ZMQ
 
       context "#setsockopt for a #{ZMQ::SocketTypeNameMap[socket_type]} socket" do
         let(:socket) do
-          ctx = Context.new
+          ctx = spec_ctx
           Socket.new ctx.pointer, socket_type
         end
 
@@ -165,6 +168,25 @@ module ZMQ
           end
         end # context using option ZMQ::HWM
 
+        context "getting an FD" do
+          before(:all) do
+            @fd = socket.getsockopt ZMQ::FD
+          end
+          it "should return an FD as a positive integer" do
+            @fd = socket.getsockopt(ZMQ::FD).should be_a(Fixnum)
+          end
+          
+          it "should return a valid FD" do
+            pending "This causes a too many open files error"
+            lambda { IO.new(@fd).close }.should_not raise_exception(Errno::EBADF)
+          end
+        end
+        
+        context "getting events" do
+          it "should return a mask of events as a Fixnum" do
+            socket.getsockopt(ZMQ::EVENTS).should be_a(Fixnum)
+          end
+        end
 
 #        context "using option ZMQ::SWAP" do
 #          it "should set the swap value given a positive value" do
@@ -284,6 +306,33 @@ module ZMQ
 
     end # each socket_type
 
+    describe "Events mapping to POLLIN and POLLOUT" do
+      include APIHelper
+      
+      before(:all) do
+        addr = "tcp://127.0.0.1:#{random_port}"
+         
+        ctx = spec_ctx
+        @sub = ctx.socket ZMQ::SUB
+        @sub.setsockopt ZMQ::SUBSCRIBE, ''
+
+        @pub = ctx.socket ZMQ::PUB
+        @pub.connect addr
+
+        @sub.bind addr
+
+        @pub.send_string('test')
+        sleep 0.1
+      end
+      
+      it "should have only POLLIN set for a sub socket that received a message" do
+        @sub.getsockopt(ZMQ::EVENTS).should == ZMQ::POLLIN
+      end
+      
+      it "should have only POLLOUT set for a sub socket that received a message" do
+        @pub.getsockopt(ZMQ::EVENTS).should == ZMQ::POLLOUT
+      end
+    end
 
   end # describe Socket
 

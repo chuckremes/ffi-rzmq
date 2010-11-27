@@ -9,17 +9,10 @@ Thread.abort_on_exception = true
 
 # turns off all warnings; added so I don't have to see the warnings
 # for included libraries like FFI.
-$VERBOSE = false
 
-Spec::Runner.configure do |config|
-  # == Mock Framework
-  #
-  # RSpec uses it's own mocking framework by default. If you prefer to
-  # use mocha, flexmock or RR, uncomment the appropriate line:
-  #
-  # config.mock_with :mocha
-  # config.mock_with :flexmock
-  # config.mock_with :rr
+SPEC_CTX = ZMQ::Context.new 1
+def spec_ctx
+  SPEC_CTX
 end
 
 module APIHelper
