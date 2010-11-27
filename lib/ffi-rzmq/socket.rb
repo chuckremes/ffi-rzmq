@@ -65,6 +65,9 @@ module ZMQ
     #  ZMQ::RATE
     #  ZMQ::RECOVERY_IVL
     #  ZMQ::MCAST_LOOP
+    #  ZMQ::LINGER
+    #  ZMQ::RECONNECT_IVL
+    #  ZMQ::BACKLOG
     #
     # Valid +option_name+ values that take a string +option_value+ are:
     #  ZMQ::IDENTITY
@@ -82,7 +85,7 @@ module ZMQ
 
       begin
         case option_name
-        when HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP, SNDBUF, RCVBUF
+        when HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP, SNDBUF, RCVBUF, LINGER, RECONNECT_IVL, BACKLOG
           option_value_ptr = LibC.malloc option_len
           option_value_ptr.write_long option_value
 
@@ -120,6 +123,9 @@ module ZMQ
     #  ZMQ::RCVBUF - integer
     #  ZMQ::FD     - fd in an integer
     #  ZMQ::EVENTS - bitmap integer
+    #  ZMQ::LINGER - integer measured in milliseconds
+    #  ZMQ::RECONNECT_IVL - integer measured in milliseconds
+    #  ZMQ::BACKLOG - integer
     #
     # Can raise two kinds of exceptions depending on the error.
     # ContextError:: Raised when a socket operation is attempted on a terminated
@@ -131,7 +137,10 @@ module ZMQ
         option_value = FFI::MemoryPointer.new :pointer
         option_length = FFI::MemoryPointer.new :size_t
 
-        unless [RCVMORE, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP, IDENTITY, SNDBUF, RCVBUF, FD, EVENTS].include? option_name
+        unless [
+          RCVMORE, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP, IDENTITY, 
+          SNDBUF, RCVBUF, FD, EVENTS, LINGER, RECONNECT_IVL, BACKLOG
+          ].include? option_name
           # we didn't understand the passed option argument
           # will force a raise
           error_check ZMQ_SETSOCKOPT_STR, -1
@@ -147,7 +156,7 @@ module ZMQ
         when RCVMORE, MCAST_LOOP
           # boolean return
           ret = option_value.read_long_long != 0
-        when HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, FD, EVENTS
+        when HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, FD, EVENTS, LINGER, RECONNECT_IVL, BACKLOG
           ret = option_value.read_long_long
         when IDENTITY
           ret = option_value.read_string(option_length.read_long_long)
@@ -335,7 +344,7 @@ module ZMQ
       length = FFI::MemoryPointer.new :int64
 
       case option_name
-      when RCVMORE, MCAST_LOOP, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, FD, EVENTS
+      when RCVMORE, MCAST_LOOP, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, FD, EVENTS, LINGER, RECONNECT_IVL, BACKLOG
         # int64_t
         length.write_long_long 8
         [FFI::MemoryPointer.new(:int64), length]

@@ -39,6 +39,10 @@ module ZMQ
   RCVMORE = 13
   FD = 14
   EVENTS = 15
+  TYPE = 16
+  LINGER = 17
+  RECONNECT_IVL = 18
+  BACKLOG = 19
 
   #  Send/recv options
   NOBLOCK = 1
