@@ -334,15 +334,16 @@ module ZMQ
     def alloc_temp_sockopt_buffers option_name
       length = FFI::MemoryPointer.new :int64
 
-    case option_name
-    when RCVMORE, MCAST_LOOP, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, FD, EVENTS
-      # int64_t
-      length.write_long_long 8
-      [FFI::MemoryPointer.new(:int64), length]
-    when IDENTITY
-      # could be a string of up to 255 bytes
-      length.write_long_long 255
-      [FFI::MemoryPointer.new(255), length]
+      case option_name
+      when RCVMORE, MCAST_LOOP, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, FD, EVENTS
+        # int64_t
+        length.write_long_long 8
+        [FFI::MemoryPointer.new(:int64), length]
+      when IDENTITY
+        # could be a string of up to 255 bytes
+        length.write_long_long 255
+        [FFI::MemoryPointer.new(255), length]
+      end
     end
 
     def sanitize_value option_name, option_value

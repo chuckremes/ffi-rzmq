@@ -72,33 +72,6 @@ module ZMQ
       end
     end # context socket
 
-
-#    context "when allocating a device" do
-#      let(:ctx) { Context.new 1 }
-#      let(:sock1) { ctx.socket ZMQ::REQ }
-#      let(:sock2) { ctx.socket ZMQ::REP }
-#
-#      it "should return a ZMQ::Forwarder" do
-#        device = ctx.device ZMQ::FORWARDER, sock1, sock2
-#        device.should be_kind_of(ZMQ::Forwarder)
-#      end
-#
-#      it "should return a ZMQ::Queue" do
-#        device = ctx.device ZMQ::QUEUE, sock1, sock2
-#        device.should be_kind_of(ZMQ::Queue)
-#      end
-#
-#      it "should return a ZMQ::Streamer" do
-#        device = ctx.device ZMQ::STREAMER, sock1, sock2
-#        device.should be_kind_of(ZMQ::Streamer)
-#      end
-#
-#      it "should raise an exception when the requested device is unknown" do
-#        lambda { ctx.device(-1, sock1, sock2) }.should raise_error(ZMQ::DeviceError)
-#      end
-#    end # context device
-
-
   end # describe Context
 
 
