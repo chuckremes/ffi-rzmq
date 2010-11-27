@@ -98,12 +98,31 @@ module ZMQ
     # Returns an array of the form [major, minor, patch] to represent the
     # version of libzmq.
     #
-    def version
+    # Class method! Invoke as:  ZMQ::Util.version
+    #
+    def self.version
       major = FFI::MemoryPointer.new :int
       minor = FFI::MemoryPointer.new :int
       patch = FFI::MemoryPointer.new :int
       LibZMQ.zmq_version major, minor, patch
       [major.read_int, minor.read_int, patch.read_int]
+    end
+    
+    # Compares the 0mq library API version to a minimal version tuple. Returns
+    # true if it meets the minimum requirement, false otherwise.
+    #
+    # Takes a +tuple+ with 3 elements corresponding to the major, minor and patch
+    # version levels.
+    #
+    # e.g.  Util.minimum_api?([2, 1, 0])
+    #
+    def self.minimum_api? tuple
+      api_version = Util.version
+      
+      # call #to_i to convert nil entries to 0 so the comparison is valid
+      tuple[0].to_i >= api_version[0] &&
+      tuple[1].to_i >= api_version[1] &&
+      tuple[2].to_i >= api_version[2]
     end
 
 

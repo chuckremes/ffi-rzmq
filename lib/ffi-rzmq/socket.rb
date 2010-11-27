@@ -43,13 +43,17 @@ module ZMQ
 
       unless context_ptr.null?
         @socket = LibZMQ.zmq_socket context_ptr, type
-        error_check ZMQ_SOCKET_STR, @socket.null? ? 1 : 0
-        @name = SocketTypeNameMap[type]
+        if @socket
+          error_check ZMQ_SOCKET_STR, @socket.null? ? 1 : 0
+          @name = SocketTypeNameMap[type]
+        else
+          raise ContextError.new ZMQ_SOCKET_STR, 0, ETERM, "Socket pointer was null"
+        end
       else
         raise ContextError.new ZMQ_SOCKET_STR, 0, ETERM, "Context pointer was null"
       end
 
-      #define_finalizer
+      define_finalizer
     end
 
     # Set the queue options on this socket.
@@ -351,8 +355,17 @@ module ZMQ
       end
     end
 
-    def define_finalizer
-      ObjectSpace.define_finalizer(self, self.class.close(@socket))
+    # require a minimum of 0mq 2.1.0 to support socket finalizers; it contains important
+    # fixes for sockets and threads so that a garbage collector thread can successfully
+    # reap this resource without crashing
+    if Util.minimum_api?([2, 1, 0])
+      def define_finalizer
+        ObjectSpace.define_finalizer(self, self.class.close(@socket))
+      end
+    else
+      def define_finalizer
+        # no op
+      end
     end
 
     def remove_finalizer
