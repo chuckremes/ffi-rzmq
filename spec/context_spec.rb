@@ -46,13 +46,13 @@ module ZMQ
 
     context "when terminating" do
       it "should call zmq_term to terminate the library's context" do
-        ctx = spec_ctx
+        ctx = Context.new # can't use a shared context here because we are terminating it!
         LibZMQ.should_receive(:zmq_term).with(ctx.pointer).and_return(0)
         ctx.terminate
       end
 
       it "should raise a ZMQ::ContextError exception when it fails" do
-        ctx = spec_ctx
+        ctx = Context.new # can't use a shared context here because we are terminating it!
         LibZMQ.stub(:zmq_term => 1)
         lambda { ctx.terminate }.should raise_error(ZMQ::ContextError)
       end

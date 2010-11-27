@@ -38,7 +38,7 @@ module ZMQ
     # be allocated.
     #
     def initialize io_threads = 1
-      @sockets ||= []
+      @sockets = []
       @context = LibZMQ.zmq_init io_threads
       @pointer = @context
       error_check ZMQ_INIT_STR, @context.null? ? 1 : 0
