@@ -5,6 +5,9 @@ module LibC
   # figures out the correct libc for each platform including Windows
   library = ffi_lib(FFI::Library::LIBC).first
 
+  # Size_t not working properly on Windows
+  find_type(:size_t) rescue typedef(:ulong, :size_t)
+
   # memory allocators
   attach_function :malloc, [:size_t], :pointer
   attach_function :free, [:pointer], :void
@@ -23,6 +26,8 @@ module LibZMQ
   WINDOWS = []
   ffi_lib(LINUX + OSX + WINDOWS)
   
+  # Size_t not working properly on Windows
+  find_type(:size_t) rescue typedef(:ulong, :size_t)
 
   # Misc
   attach_function :zmq_version, [:pointer, :pointer, :pointer], :void
@@ -61,6 +66,8 @@ module LibZMQ
   # thread within the lib may try to call back into the ruby runtime. Failure to
   # release the GIL will result in a hang; the hint *may* allow things to run
   # smoothly for Ruby runtimes hampered by a GIL.
+  #
+  # This is really only honored by the MRI implementation.
   attach_function :zmq_setsockopt, [:pointer, :int, :pointer, :int], :int
   attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :pointer], :int
   attach_function :zmq_bind, [:pointer, :string], :int
