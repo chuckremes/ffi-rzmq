@@ -206,12 +206,16 @@ module ZMQ
       error_check ZMQ_CONNECT_STR, result_code
     end
 
-    # Closes the socket. Any unprocessed messages in queue are dropped.
+    # Closes the socket. Any unprocessed messages in queue are sent or dropped
+    # depending upon the value of the socket option ZMQ::LINGER.
     #
     def close
-      remove_finalizer
-      result_code = LibZMQ.zmq_close @socket
-      error_check ZMQ_CLOSE_STR, result_code
+      if @socket
+        remove_finalizer
+        result_code = LibZMQ.zmq_close @socket
+        error_check ZMQ_CLOSE_STR, result_code
+        @socket = nil
+      end
     end
 
     # Queues the message for transmission. Message is assumed to conform to the

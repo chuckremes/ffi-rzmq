@@ -39,6 +39,22 @@ module ZMQ
         sock.close
       end
     end # context initializing
+    
+    
+    context "calling close" do
+      before(:all) { @ctx = Context.new }
+      after(:all) { @ctx.terminate }
+
+      it "should call LibZMQ.close only once" do
+        sock = Socket.new @ctx.pointer, ZMQ::REQ
+        raw_socket = sock.socket
+
+        LibZMQ.should_receive(:close).with(raw_socket)
+        sock.close
+        sock.close
+        LibZMQ.close raw_socket # *really close it otherwise the context will block indefinitely
+      end
+    end # context calling close
 
 
     context "identity=" do
