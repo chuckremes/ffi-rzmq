@@ -7,10 +7,10 @@ ffi-rzmq
 This gem wraps the ZeroMQ networking library using the ruby FFI (foreign
 function interface). It's a pure ruby wrapper so this gem can be loaded
 and run by any ruby runtime that supports FFI. That's all of them:
-MRI 1.8.7+, 1.9.x, Rubinius and JRuby.
+MRI 1.9.x, Rubinius and JRuby.
 
 The impetus behind this library was to provide support for ZeroMQ in
-JRuby which has native threads. Unlike MRI, MacRuby, IronRuby and
+JRuby which has native threads. Unlike MRI, IronRuby and
 Rubinius which all have a GIL, JRuby allows for threaded access to ruby
 code from outside extensions. ZeroMQ is heavily threaded, so until the
 other runtimes remove their GIL, JRuby will likely be the best
@@ -28,18 +28,9 @@ This gem needs more tests. I'm certain there are a
 ton of bugs, so please open issues for them here or fork this project,
 fix them, and send me a pull request.
 
-Running this gem with MRI 1.8.x will likely exhibit a LOT of problems in
-the form of hangs, segmentation faults and bus errors. The threading support
-in MRI 1.8.x is irrevocably broken (according to the brains behind the
-Ruby FFI project) so tread carefully.
-
-Running this gem with MRI 1.9.x may also exhibit some hangs particularly at
-shutdown. This is due to a signaling interaction between the 0mq library
-and MRI. If the 0mq library is blocked on a call and the program receives
-a signal (e.g. SIGINT), the Ruby runtime has no opportunity to run its signal
-handler and process it. The 2.1.x branch of 0mq resolves this problem by
-interrupting the blocking call and returning EINTR. The 2.0.x branch will
-not get this fix because the API change breaks backward compatibility.
+The 'ffi' gem has dropped support for MRI 1.8.x. Since this project relies
+on that gem to load and run this code, then this project also no longer
+supports MRI 1.8.x. 
 
 All features are implemented with the exception of the 0mq devices
 (forwarder, queue, streamer). For implementations of these devices, see
@@ -115,7 +106,7 @@ I highly recommend visiting the Learn Ruby 0mq project for a bunch of good code 
 
 == REQUIREMENTS:
 
-  * 0mq 2.0.8 or 2.0.9
+  * 0mq 2.0.10 or 2.1+
   
 The ZeroMQ library must be installed on your system in a well-known location
 like /usr/local/lib. This is the default for new ZeroMQ installs.
@@ -123,15 +114,8 @@ like /usr/local/lib. This is the default for new ZeroMQ installs.
 Future releases may include the library as a C extension built at
 time of installation.
 
-  * ffi (> 0.6.3)
+  * ffi (>= 1.0.0)
   
-Install the current master version of FFI that fixes several threading problems
-under MRI 1.9.x. Unfortunately, MRI 1.8.x is irretrievably broken so it isn't
-recommended if you plan to use threads or callbacks.
-
-Code and installation instructions can be found on github:
-
-  http://github.com/ffi/ffi
 
 == INSTALL:
 
