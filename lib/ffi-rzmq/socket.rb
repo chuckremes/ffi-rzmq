@@ -68,6 +68,7 @@ module ZMQ
     #  ZMQ::LINGER
     #  ZMQ::RECONNECT_IVL
     #  ZMQ::BACKLOG
+    #  ZMQ::RECOVER_IVL_MSEC
     #
     # Valid +option_name+ values that take a string +option_value+ are:
     #  ZMQ::IDENTITY
@@ -85,9 +86,14 @@ module ZMQ
 
       begin
         case option_name
-        when HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP, SNDBUF, RCVBUF, LINGER, RECONNECT_IVL, BACKLOG
+        when HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP, SNDBUF, RCVBUF, RECOVERY_IVL_MSEC
           option_value_ptr = LibC.malloc option_len
           option_value_ptr.write_long option_value
+          
+        when LINGER, RECONNECT_IVL, BACKLOG
+          option_len = 4 # hard-code "int" length to 4 bytes
+          option_value_ptr = LibC.malloc option_len
+          option_value_ptr.write_int option_value
 
         when IDENTITY, SUBSCRIBE, UNSUBSCRIBE
           # note: not checking errno for failed memory allocations :(
@@ -126,6 +132,7 @@ module ZMQ
     #  ZMQ::LINGER - integer measured in milliseconds
     #  ZMQ::RECONNECT_IVL - integer measured in milliseconds
     #  ZMQ::BACKLOG - integer
+    #  ZMQ::RECOVER_IVL_MSEC - integer measured in milliseconds
     #
     # Can raise two kinds of exceptions depending on the error.
     # ContextError:: Raised when a socket operation is attempted on a terminated
@@ -139,7 +146,7 @@ module ZMQ
 
         unless [
           RCVMORE, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP, IDENTITY, 
-          SNDBUF, RCVBUF, FD, EVENTS, LINGER, RECONNECT_IVL, BACKLOG
+          SNDBUF, RCVBUF, FD, EVENTS, LINGER, RECONNECT_IVL, BACKLOG, RECOVERY_IVL_MSEC
           ].include? option_name
           # we didn't understand the passed option argument
           # will force a raise
@@ -156,8 +163,10 @@ module ZMQ
         when RCVMORE, MCAST_LOOP
           # boolean return
           ret = option_value.read_long_long != 0
-        when HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, FD, EVENTS, LINGER, RECONNECT_IVL, BACKLOG
+        when HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, RECOVERY_IVL_MSEC
           ret = option_value.read_long_long
+        when LINGER, RECONNECT_IVL, BACKLOG, FD, EVENTS
+          ret = option_value.read_int
         when IDENTITY
           ret = option_value.read_string(option_length.read_long_long)
         end
@@ -345,14 +354,21 @@ module ZMQ
     end
 
     def alloc_temp_sockopt_buffers option_name
-      length = FFI::MemoryPointer.new :int64
-
       case option_name
-      when RCVMORE, MCAST_LOOP, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, FD, EVENTS, LINGER, RECONNECT_IVL, BACKLOG
+      when RCVMORE, MCAST_LOOP, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, RECOVERY_IVL_MSEC
         # int64_t
+        length = FFI::MemoryPointer.new :int64
         length.write_long_long 8
         [FFI::MemoryPointer.new(:int64), length]
+        
+      when LINGER, RECONNECT_IVL, BACKLOG, FD, EVENTS
+        # int, 0mq assumes int is 4-bytes
+        length = FFI::MemoryPointer.new :int32
+        length.write_int 4
+        [FFI::MemoryPointer.new(:int32), length]
+        
       when IDENTITY
+        length = FFI::MemoryPointer.new :int64
         # could be a string of up to 255 bytes
         length.write_long_long 255
         [FFI::MemoryPointer.new(255), length]
