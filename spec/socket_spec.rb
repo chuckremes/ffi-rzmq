@@ -343,11 +343,6 @@ module ZMQ
           it "should return an FD as a positive integer" do
             socket.getsockopt(ZMQ::FD).should be_a(Fixnum)
           end
-
-          it "should return a valid FD" do
-            pending "This causes a too many open files error"
-            #lambda { IO.new(socket.getsockopt(ZMQ::FD)).close }.should_not raise_exception(Errno::EBADF)
-          end
         end
 
         context "using option ZMQ::EVENTS" do
