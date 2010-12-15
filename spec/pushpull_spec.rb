@@ -18,6 +18,11 @@ module ZMQ
         @push.bind    @link
       end
       
+      after(:each) do
+        @push.close
+        @pull.close
+      end
+      
       it "should receive an exact copy of the sent message using Message objects directly on one pull socket" do
         @push.send_string string
         received = @pull.recv_string
@@ -40,16 +45,17 @@ module ZMQ
         count    = 4
         @pull.close # close this one since we aren't going to use it below and we don't want it to receive a message
          
-        count.times {
-          threads << Thread.new {
+        count.times do
+          threads << Thread.new do
             pull = @context.socket ZMQ::PULL
             rc = pull.connect @link
             received << pull.recv_string
             pull.close
-          }
-        }
+          end
+          sleep 0.001 # give each thread time to spin up
+        end
         
-        count.times { @push.send_string(string); sleep 0.001 }
+        count.times { @push.send_string(string) }
 
         threads.each {|t| t.join}
         
