@@ -7,9 +7,6 @@ File.join(File.dirname(__FILE__), %w[.. lib ffi-rzmq]))
 
 Thread.abort_on_exception = true
 
-# turns off all warnings; added so I don't have to see the warnings
-# for included libraries like FFI.
-
 SPEC_CTX = ZMQ::Context.new 1
 def spec_ctx
   SPEC_CTX

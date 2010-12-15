@@ -178,7 +178,7 @@ module ZMQ
       if :blocking == timeout || -1 == timeout
         -1
       else
-        timeout *= 1000
+        (timeout * 1000).to_i
       end
     end
   end

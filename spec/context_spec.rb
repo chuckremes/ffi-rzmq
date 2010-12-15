@@ -46,13 +46,13 @@ module ZMQ
 
     context "when terminating" do
       it "should call zmq_term to terminate the library's context" do
-        ctx = spec_ctx
+        ctx = Context.new # can't use a shared context here because we are terminating it!
         LibZMQ.should_receive(:zmq_term).with(ctx.pointer).and_return(0)
         ctx.terminate
       end
 
       it "should raise a ZMQ::ContextError exception when it fails" do
-        ctx = spec_ctx
+        ctx = Context.new # can't use a shared context here because we are terminating it!
         LibZMQ.stub(:zmq_term => 1)
         lambda { ctx.terminate }.should raise_error(ZMQ::ContextError)
       end
@@ -71,33 +71,6 @@ module ZMQ
         lambda { ctx.socket(ZMQ::REQ) }.should raise_error(ZMQ::SocketError)
       end
     end # context socket
-
-
-#    context "when allocating a device" do
-#      let(:ctx) { Context.new 1 }
-#      let(:sock1) { ctx.socket ZMQ::REQ }
-#      let(:sock2) { ctx.socket ZMQ::REP }
-#
-#      it "should return a ZMQ::Forwarder" do
-#        device = ctx.device ZMQ::FORWARDER, sock1, sock2
-#        device.should be_kind_of(ZMQ::Forwarder)
-#      end
-#
-#      it "should return a ZMQ::Queue" do
-#        device = ctx.device ZMQ::QUEUE, sock1, sock2
-#        device.should be_kind_of(ZMQ::Queue)
-#      end
-#
-#      it "should return a ZMQ::Streamer" do
-#        device = ctx.device ZMQ::STREAMER, sock1, sock2
-#        device.should be_kind_of(ZMQ::Streamer)
-#      end
-#
-#      it "should raise an exception when the requested device is unknown" do
-#        lambda { ctx.device(-1, sock1, sock2) }.should raise_error(ZMQ::DeviceError)
-#      end
-#    end # context device
-
 
   end # describe Context
 

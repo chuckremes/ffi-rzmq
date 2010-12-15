@@ -7,108 +7,119 @@ module ZMQ
   describe Socket do
 
     context "when initializing" do
-      
-      let(:ctx) {
-        spec_ctx
-      }
-      
+      before(:all) { @ctx = Context.new }
+      after(:all) { @ctx.terminate }
 
       it "should raise an error for a nil context" do
         lambda { Socket.new(FFI::Pointer::NULL, ZMQ::REQ) }.should raise_exception(ZMQ::ContextError)
       end
 
-      it "should not raise an error for a ZMQ::REQ socket type" do
-        lambda { Socket.new(ctx.pointer, ZMQ::REQ) }.should_not raise_error
-      end
+      [ZMQ::REQ, ZMQ::REP, ZMQ::XREQ, ZMQ::XREP, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR].each do |socket_type|
 
-      it "should not raise an error for a ZMQ::REP socket type" do
-        lambda { Socket.new(ctx.pointer, ZMQ::REP) }.should_not raise_error
-      end
-
-      it "should not raise an error for a ZMQ::PUB socket type" do
-        lambda { Socket.new(ctx.pointer, ZMQ::PUB) }.should_not raise_error
-      end
-
-      it "should not raise an error for a ZMQ::SUB socket type" do
-        lambda { Socket.new(ctx.pointer, ZMQ::SUB) }.should_not raise_error
-      end
-
-      it "should not raise an error for a ZMQ::PAIR socket type" do
-        lambda { Socket.new(ctx.pointer, ZMQ::PAIR) }.should_not raise_error
-      end
-
-      it "should not raise an error for a ZMQ::XREQ socket type" do
-        lambda { Socket.new(ctx.pointer, ZMQ::XREQ) }.should_not raise_error
-      end
-
-      it "should not raise an error for a ZMQ::XREP socket type" do
-        lambda { Socket.new(ctx.pointer, ZMQ::XREP) }.should_not raise_error
-      end
-
-      it "should not raise an error for a ZMQ::PUSH socket type" do
-        lambda { Socket.new(ctx.pointer, ZMQ::PUSH) }.should_not raise_error
-      end
-
-      it "should not raise an error for a ZMQ::PULL socket type" do
-        lambda { Socket.new(ctx.pointer, ZMQ::PULL) }.should_not raise_error
-      end
-
-      it "should raise an error for an unknown socket type" do
-        lambda { Socket.new(ctx.pointer, 80) }.should raise_exception(ZMQ::SocketError)
-      end
+        it "should not raise an error for a #{ZMQ::SocketTypeNameMap[socket_type]} socket type" do
+          sock = nil
+          lambda { sock = Socket.new(@ctx.pointer, socket_type) }.should_not raise_error
+          sock.close
+        end
+      end # each socket_type
 
       it "should set the :socket accessor to the raw socket allocated by libzmq" do
-        socket = mock('socket')#.as_null_object
+        socket = mock('socket')
         socket.stub!(:null? => false)
         LibZMQ.should_receive(:zmq_socket).and_return(socket)
 
-        sock = Socket.new(ctx.pointer, ZMQ::REQ)
+        sock = Socket.new(@ctx.pointer, ZMQ::REQ)
         sock.socket.should == socket
       end
 
       it "should define a finalizer on this object" do
         pending # need to wait for 0mq 2.1 or later to fix this
         ObjectSpace.should_receive(:define_finalizer)
+        ctx = Context.new 1
+        pending # need to wait for 0mq 2.1 or later to fix this
+        ObjectSpace.should_receive(:define_finalizer)
         ctx = spec_ctx
+        ObjectSpace.should_receive(:define_finalizer).at_least(1)
+        sock = Socket.new(@ctx.pointer, ZMQ::REQ)
+        sock.close
       end
     end # context initializing
+    
+    
+    context "calling close" do
+      before(:all) { @ctx = Context.new }
+      after(:all) { @ctx.terminate }
+
+      it "should call LibZMQ.close only once" do
+        sock = Socket.new @ctx.pointer, ZMQ::REQ
+        raw_socket = sock.socket
+
+        LibZMQ.should_receive(:close).with(raw_socket)
+        sock.close
+        sock.close
+        LibZMQ.close raw_socket # *really close it otherwise the context will block indefinitely
+      end
+    end # context calling close
 
 
     context "identity=" do
+      before(:all) { @ctx = Context.new }
+      after(:all) { @ctx.terminate }
+
       it "should raise an exception for identities in excess of 255 bytes" do
+        ctx = Context.new 1
+        sock = Socket.new ctx.pointer, ZMQ::REQ
         ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
+        sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = ('a' * 256) }.should raise_exception(ZMQ::SocketError)
+        sock.close
       end
 
       it "should raise an exception for identities of length 0" do
+        ctx = Context.new 1
+        sock = Socket.new ctx.pointer, ZMQ::REQ
         ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
+        sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = '' }.should raise_exception(ZMQ::SocketError)
+        sock.close
       end
 
       it "should NOT raise an exception for identities of 1 byte" do
+        ctx = Context.new 1
+        sock = Socket.new ctx.pointer, ZMQ::REQ
         ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
+        sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = 'a' }.should_not raise_exception(ZMQ::SocketError)
+        sock.close
       end
 
       it "should NOT raise an exception for identities of 255 bytes" do
+        ctx = Context.new 1
+        sock = Socket.new ctx.pointer, ZMQ::REQ
         ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
+        sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = ('a' * 255) }.should_not raise_exception(ZMQ::SocketError)
+        sock.close
       end
 
       it "should convert numeric identities to strings" do
+        ctx = Context.new 1
+        sock = Socket.new ctx.pointer, ZMQ::REQ
         ctx = spec_ctx
         sock = Socket.new ctx.pointer, ZMQ::REQ
+        sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         sock.identity = 7
         sock.identity.should == '7'
+        sock.close
       end
     end # context identity=
 
@@ -116,9 +127,19 @@ module ZMQ
     [ZMQ::REQ, ZMQ::REP, ZMQ::XREQ, ZMQ::XREP, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR].each do |socket_type|
 
       context "#setsockopt for a #{ZMQ::SocketTypeNameMap[socket_type]} socket" do
+        before(:all) { @ctx = Context.new }
+        after(:all) { @ctx.terminate }
+
         let(:socket) do
+          ctx = Context.new
+          Socket.new ctx.pointer, socket_type
           ctx = spec_ctx
           Socket.new ctx.pointer, socket_type
+          Socket.new @ctx.pointer, socket_type
+        end
+
+        after(:each) do
+          socket.close
         end
 
 
@@ -188,18 +209,18 @@ module ZMQ
           end
         end
 
-#        context "using option ZMQ::SWAP" do
-#          it "should set the swap value given a positive value" do
-#            swap = 10_000
-#            socket.setsockopt ZMQ::SWAP, swap
-#            socket.getsockopt(ZMQ::SWAP).should == swap
-#          end
-#
-#          it "should raise a SocketError given a negative value" do
-#            swap = -10_000
-#            lambda { socket.setsockopt(ZMQ::SWAP, swap) }.should raise_error(SocketError)
-#          end
-#        end # context using option ZMQ::SWP
+        context "using option ZMQ::SWAP" do
+          it "should set the swap value given a positive value" do
+            swap = 10_000
+            socket.setsockopt ZMQ::SWAP, swap
+            socket.getsockopt(ZMQ::SWAP).should == swap
+          end
+
+          it "should raise a SocketError given a negative value" do
+            swap = -10_000
+            lambda { socket.setsockopt(ZMQ::SWAP, swap) }.should raise_error(SocketError)
+          end
+        end # context using option ZMQ::SWP
 
 
         context "using option ZMQ::AFFINITY" do
@@ -215,52 +236,53 @@ module ZMQ
             socket.getsockopt(ZMQ::AFFINITY).should == affinity.abs
           end
         end # context using option ZMQ::AFFINITY
-        
-        
+
+
         context "using option ZMQ::IDENTITY" do
           it "should set the identity given any string under 255 characters" do
+            length = 4
             (1..255).each do |length|
               identity = 'a' * length
               socket.setsockopt ZMQ::IDENTITY, identity
               socket.getsockopt(ZMQ::IDENTITY).should == identity
             end
           end
-          
+
           it "should raise a SocketError given a string 256 characters or longer" do
             identity = 'a' * 256
             lambda { socket.setsockopt(ZMQ::IDENTITY, identity) }.should raise_error(SocketError)
           end
         end # context using option ZMQ::IDENTITY
-        
-        
-#        context "using option ZMQ::RATE" do
-#          it "should set the multicast send rate given a positive value" do
-#            rate = 200
-#            socket.setsockopt ZMQ::RATE, rate
-#            socket.getsockopt(ZMQ::RATE).should == rate
-#          end
-#
-#          it "should raise a SocketError given a negative value" do
-#            rate = -200
-#            lambda { socket.setsockopt ZMQ::RATE, rate }.should raise_error(SocketError)
-#          end
-#        end # context using option ZMQ::RATE
-#        
-#        
-#        context "using option ZMQ::RECOVERY_IVL" do
-#          it "should set the multicast recovery buffer measured in seconds given a positive value" do
-#            rate = 200
-#            socket.setsockopt ZMQ::RECOVERY_IVL, rate
-#            socket.getsockopt(ZMQ::RECOVERY_IVL).should == rate
-#          end
-#
-#          it "should raise a SocketError given a negative value" do
-#            rate = -200
-#            lambda { socket.setsockopt ZMQ::RECOVERY_IVL, rate }.should raise_error(SocketError)
-#          end
-#        end # context using option ZMQ::RECOVERY_IVL
-        
-        
+
+
+        context "using option ZMQ::RATE" do
+          it "should set the multicast send rate given a positive value" do
+            rate = 200
+            socket.setsockopt ZMQ::RATE, rate
+            socket.getsockopt(ZMQ::RATE).should == rate
+          end
+
+          it "should raise a SocketError given a negative value" do
+            rate = -200
+            lambda { socket.setsockopt ZMQ::RATE, rate }.should raise_error(SocketError)
+          end
+        end # context using option ZMQ::RATE
+
+
+        context "using option ZMQ::RECOVERY_IVL" do
+          it "should set the multicast recovery buffer measured in seconds given a positive value" do
+            rate = 200
+            socket.setsockopt ZMQ::RECOVERY_IVL, rate
+            socket.getsockopt(ZMQ::RECOVERY_IVL).should == rate
+          end
+
+          it "should raise a SocketError given a negative value" do
+            rate = -200
+            lambda { socket.setsockopt ZMQ::RECOVERY_IVL, rate }.should raise_error(SocketError)
+          end
+        end # context using option ZMQ::RECOVERY_IVL
+
+
         context "using option ZMQ::MCAST_LOOP" do
           it "should enable the multicast loopback given a true value" do
             socket.setsockopt ZMQ::MCAST_LOOP, true
@@ -272,8 +294,8 @@ module ZMQ
             socket.getsockopt(ZMQ::MCAST_LOOP).should be_false
           end
         end # context using option ZMQ::MCAST_LOOP
-        
-        
+
+
         context "using option ZMQ::SNDBUF" do
           it "should set the OS send buffer given a positive value" do
             size = 100
@@ -287,8 +309,8 @@ module ZMQ
             socket.getsockopt(ZMQ::SNDBUF).should == size.abs
           end
         end # context using option ZMQ::SNDBUF
-        
-        
+
+
         context "using option ZMQ::RCVBUF" do
           it "should set the OS receive buffer given a positive value" do
             size = 100
@@ -302,13 +324,94 @@ module ZMQ
             socket.getsockopt(ZMQ::RCVBUF).should == size.abs
           end
         end # context using option ZMQ::RCVBUF
+
+
+        #        context "using option ZMQ::LINGER" do
+        #          it "should set the socket message linger option measured in milliseconds given a positive value" do
+        #            value = 200
+        #            socket.setsockopt ZMQ::LINGER, value
+        #            socket.getsockopt(ZMQ::LINGER).should == value
+        #          end
+        #
+        #          it "should set the socket message linger option to 0 for dropping packets" do
+        #            value = 0
+        #            socket.setsockopt ZMQ::LINGER, value
+        #            socket.getsockopt(ZMQ::LINGER).should == value
+        #          end
+        #
+        #          it "should default to a value of -1" do
+        #            value = -1
+        #            socket.getsockopt(ZMQ::LINGER).should == value
+        #          end
+        #        end # context using option ZMQ::LINGER
+        #
+        #
+        #        context "using option ZMQ::RECONNECT_IVL" do
+        #          it "should set the time interval for reconnecting disconnected sockets measured in milliseconds given a positive value" do
+        #            value = 200
+        #            socket.setsockopt ZMQ::RECONNECT_IVL, value
+        #            socket.getsockopt(ZMQ::RECONNECT_IVL).should == value
+        #          end
+        #
+        #          it "should default to a value of 100" do
+        #            value = 100
+        #            socket.getsockopt(ZMQ::RECONNECT_IVL).should == value
+        #          end
+        #        end # context using option ZMQ::RECONNECT_IVL
+        #
+        #
+        #        context "using option ZMQ::BACKLOG" do
+        #          it "should set the maximum number of pending socket connections given a positive value" do
+        #            value = 200
+        #            socket.setsockopt ZMQ::BACKLOG, value
+        #            socket.getsockopt(ZMQ::BACKLOG).should == value
+        #          end
+        #
+        #          it "should default to a value of 100" do
+        #            value = 100
+        #            socket.getsockopt(ZMQ::BACKLOG).should == value
+        #          end
+        #        end # context using option ZMQ::BACKLOG
       end # context #setsockopt
 
+
+      context "#getsockopt for a #{ZMQ::SocketTypeNameMap[socket_type]} socket" do
+        before(:all) { @ctx = Context.new }
+        after(:all) { @ctx.terminate }
+
+        let(:socket) do
+          Socket.new @ctx.pointer, socket_type
+        end
+
+        after(:each) do
+          socket.close
+        end
+
+        context "using option ZMQ::FD" do
+          it "should return an FD as a positive integer" do
+            socket.getsockopt(ZMQ::FD).should be_a(Fixnum)
+          end
+
+          it "should return a valid FD" do
+            pending "This causes a too many open files error"
+            #lambda { IO.new(socket.getsockopt(ZMQ::FD)).close }.should_not raise_exception(Errno::EBADF)
+          end
+        end
+
+        context "using option ZMQ::EVENTS" do
+          it "should return a mask of events as a Fixnum" do
+            socket.getsockopt(ZMQ::EVENTS).should be_a(Fixnum)
+          end
+        end
+      end # context #getsockopt
+
     end # each socket_type
+
 
     describe "Events mapping to POLLIN and POLLOUT" do
       include APIHelper
       
+
       before(:all) do
         addr = "tcp://127.0.0.1:#{random_port}"
          
@@ -333,6 +436,35 @@ module ZMQ
         @pub.getsockopt(ZMQ::EVENTS).should == ZMQ::POLLOUT
       end
     end
+        @ctx = Context.new
+        addr = "tcp://127.0.0.1:#{random_port}"
+
+        @sub = @ctx.socket ZMQ::SUB
+        @sub.setsockopt ZMQ::SUBSCRIBE, ''
+
+        @pub = @ctx.socket ZMQ::PUB
+        @pub.connect addr
+
+        @sub.bind addr
+
+        @pub.send_string('test')
+        sleep 0.1
+      end
+      after(:all) do
+        @sub.close
+        @pub.close
+        # must call close on *every* socket before calling terminate otherwise it blocks indefinitely
+        @ctx.terminate
+      end
+
+      it "should have only POLLIN set for a sub socket that received a message" do
+        #@sub.getsockopt(ZMQ::EVENTS).should == ZMQ::POLLIN
+      end
+
+      it "should have only POLLOUT set for a sub socket that received a message" do
+        #@pub.getsockopt(ZMQ::EVENTS).should == ZMQ::POLLOUT
+      end
+    end # describe 'events mapping to pollin and pollout'
 
   end # describe Socket
 
