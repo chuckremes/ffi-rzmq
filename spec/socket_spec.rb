@@ -10,6 +10,7 @@ module ZMQ
       before(:all) { @ctx = Context.new }
       after(:all) { @ctx.terminate }
 
+
       it "should raise an error for a nil context" do
         lambda { Socket.new(FFI::Pointer::NULL, ZMQ::REQ) }.should raise_exception(ZMQ::ContextError)
       end
@@ -33,12 +34,6 @@ module ZMQ
       end
 
       it "should define a finalizer on this object" do
-        pending # need to wait for 0mq 2.1 or later to fix this
-        ObjectSpace.should_receive(:define_finalizer)
-        ctx = Context.new 1
-        pending # need to wait for 0mq 2.1 or later to fix this
-        ObjectSpace.should_receive(:define_finalizer)
-        ctx = spec_ctx
         ObjectSpace.should_receive(:define_finalizer).at_least(1)
         sock = Socket.new(@ctx.pointer, ZMQ::REQ)
         sock.close
@@ -67,10 +62,6 @@ module ZMQ
       after(:all) { @ctx.terminate }
 
       it "should raise an exception for identities in excess of 255 bytes" do
-        ctx = Context.new 1
-        sock = Socket.new ctx.pointer, ZMQ::REQ
-        ctx = spec_ctx
-        sock = Socket.new ctx.pointer, ZMQ::REQ
         sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = ('a' * 256) }.should raise_exception(ZMQ::SocketError)
@@ -78,10 +69,6 @@ module ZMQ
       end
 
       it "should raise an exception for identities of length 0" do
-        ctx = Context.new 1
-        sock = Socket.new ctx.pointer, ZMQ::REQ
-        ctx = spec_ctx
-        sock = Socket.new ctx.pointer, ZMQ::REQ
         sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = '' }.should raise_exception(ZMQ::SocketError)
@@ -89,10 +76,6 @@ module ZMQ
       end
 
       it "should NOT raise an exception for identities of 1 byte" do
-        ctx = Context.new 1
-        sock = Socket.new ctx.pointer, ZMQ::REQ
-        ctx = spec_ctx
-        sock = Socket.new ctx.pointer, ZMQ::REQ
         sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = 'a' }.should_not raise_exception(ZMQ::SocketError)
@@ -100,10 +83,6 @@ module ZMQ
       end
 
       it "should NOT raise an exception for identities of 255 bytes" do
-        ctx = Context.new 1
-        sock = Socket.new ctx.pointer, ZMQ::REQ
-        ctx = spec_ctx
-        sock = Socket.new ctx.pointer, ZMQ::REQ
         sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         lambda { sock.identity = ('a' * 255) }.should_not raise_exception(ZMQ::SocketError)
@@ -111,10 +90,6 @@ module ZMQ
       end
 
       it "should convert numeric identities to strings" do
-        ctx = Context.new 1
-        sock = Socket.new ctx.pointer, ZMQ::REQ
-        ctx = spec_ctx
-        sock = Socket.new ctx.pointer, ZMQ::REQ
         sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         sock.identity = 7
@@ -131,10 +106,6 @@ module ZMQ
         after(:all) { @ctx.terminate }
 
         let(:socket) do
-          ctx = Context.new
-          Socket.new ctx.pointer, socket_type
-          ctx = spec_ctx
-          Socket.new ctx.pointer, socket_type
           Socket.new @ctx.pointer, socket_type
         end
 
@@ -189,25 +160,6 @@ module ZMQ
           end
         end # context using option ZMQ::HWM
 
-        context "getting an FD" do
-          before(:all) do
-            @fd = socket.getsockopt ZMQ::FD
-          end
-          it "should return an FD as a positive integer" do
-            @fd = socket.getsockopt(ZMQ::FD).should be_a(Fixnum)
-          end
-          
-          it "should return a valid FD" do
-            pending "This causes a too many open files error"
-            lambda { IO.new(@fd).close }.should_not raise_exception(Errno::EBADF)
-          end
-        end
-        
-        context "getting events" do
-          it "should return a mask of events as a Fixnum" do
-            socket.getsockopt(ZMQ::EVENTS).should be_a(Fixnum)
-          end
-        end
 
         context "using option ZMQ::SWAP" do
           it "should set the swap value given a positive value" do
@@ -410,32 +362,8 @@ module ZMQ
 
     describe "Events mapping to POLLIN and POLLOUT" do
       include APIHelper
-      
 
       before(:all) do
-        addr = "tcp://127.0.0.1:#{random_port}"
-         
-        ctx = spec_ctx
-        @sub = ctx.socket ZMQ::SUB
-        @sub.setsockopt ZMQ::SUBSCRIBE, ''
-
-        @pub = ctx.socket ZMQ::PUB
-        @pub.connect addr
-
-        @sub.bind addr
-
-        @pub.send_string('test')
-        sleep 0.1
-      end
-      
-      it "should have only POLLIN set for a sub socket that received a message" do
-        @sub.getsockopt(ZMQ::EVENTS).should == ZMQ::POLLIN
-      end
-      
-      it "should have only POLLOUT set for a sub socket that received a message" do
-        @pub.getsockopt(ZMQ::EVENTS).should == ZMQ::POLLOUT
-      end
-    end
         @ctx = Context.new
         addr = "tcp://127.0.0.1:#{random_port}"
 
