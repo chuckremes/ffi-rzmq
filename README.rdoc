@@ -116,6 +116,10 @@ time of installation.
 
   * ffi (>= 1.0.0)
   
+This is a requirement for MRI only. Both Rubinius and JRuby have FFI support built
+in as a standard component. Do *not* run this gem under MRI with an old 'ffi' gem.
+It will crash randomly and you will be sad.
+
 
 == INSTALL:
 

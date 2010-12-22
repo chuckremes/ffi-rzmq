@@ -1,3 +1,39 @@
+== 0.7.0 / 20101222
+  * Improved performance of calls to Socket#getsockopt. There are usually
+    a lot of calls passing RCVMORE, so we now cache those buffers instead
+    of reallocating them every time.
+    
+  * Updated the docs on Poller#poll to warn about a possible busy-loop
+    condition.
+    
+  * Fixed some more specs to conform with the 0mq 2.1 requirement that
+    all sockets must be closed explicitly otherwise the program may
+    hang on exit.
+
+== 0.6.1 / 20101127
+  * API Change!
+    Moved the #version method from the Util module and made it a class
+    method instead. Invoke as ZMQ::Util.version. Used for conditionally
+    enabling certain features based upon the 0mq version that is loaded.
+
+  * Preliminary support for the Windows platform. Patches supplied
+    by arvicco.
+    
+  * Added support for FD and EVENTS socket options. These were added
+    in 0mq 2.1.0. Patches + specs supplied by andrewvc.
+    
+  * Added support for LINGER, RECONNECT_IVL, BACKLOG  and
+    RECOVERY_IVL_MSEC socket options.
+    
+  * Conditionally re-enable the socket finalizer when we are running
+    with 0mq 2.1.0 or later.
+    
+  * Drop support for MRI 1.8.x since the 'ffi' gem has dropped it as a
+    supported Ruby runtime with its 1.0 release. No action is taken to
+    prevent running with MRI 1.8.x but it won't be supported.
+    
+  * Misc. spec fixes. Need more specs!
+
 == 0.6.0 / 20100911
   * API Change! Modified ZMQ::Message by removing automatic memory
     management. While doing some performance tests I saw that

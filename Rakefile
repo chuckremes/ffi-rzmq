@@ -28,5 +28,9 @@ Bones {
   url 'http://github.com/chuckremes/ffi-rzmq'
   readme_file 'README.rdoc'
   ruby_opts.clear # turn off warnings
+  
+  # necessary for MRI; unnecessary for JRuby and RBX
+  # can't enable this until JRuby & RBX have a way of dealing with it cleanly
+  #depend_on 'ffi', '>= 1.0.0'
 }
 
