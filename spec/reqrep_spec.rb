@@ -19,6 +19,11 @@ module ZMQ
         @pong.bind link
         @ping.connect link
       end
+      
+      after(:each) do
+        @ping.close
+        @pong.close
+      end
 
       it "should receive an exact string copy of the string message sent" do
         @ping.send_string string
