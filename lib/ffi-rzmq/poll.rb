@@ -28,6 +28,12 @@ module ZMQ
     # registered sockets belongs to an application thread in another
     # Context.
     #
+    # This method will return *immediately* when there are no registered
+    # sockets. In that case, the +timeout+ parameter is not honored. To
+    # prevent a CPU busy-loop, the caller of this method should detect
+    # this possible condition (via #size) and throttle the call
+    # frequency.
+    #
     def poll timeout = :blocking
       unless @items.empty?
         timeout = adjust timeout
