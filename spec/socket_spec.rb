@@ -12,7 +12,7 @@ module ZMQ
 
 
       it "should raise an error for a nil context" do
-        lambda { Socket.new(FFI::Pointer::NULL, ZMQ::REQ) }.should raise_exception(ZMQ::ContextError)
+        lambda { Socket.new(FFI::Pointer.new(0), ZMQ::REQ) }.should raise_exception(ZMQ::ContextError)
       end
 
       [ZMQ::REQ, ZMQ::REP, ZMQ::XREQ, ZMQ::XREP, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR].each do |socket_type|
