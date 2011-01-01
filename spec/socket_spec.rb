@@ -369,9 +369,14 @@ module ZMQ
               attach_function :getsockopt, [:int, :int, :int, :pointer, :pointer], :int
             end # module LibC
             
-            # these 2 hex constants were taken from OSX; may differ on other platforms
-            so_rcvbuf = 0x1002
-            sol_socket = 0xffff
+            if RUBY_PLATFORM =~ /linux/ || (RUBY_PLATFORM == 'java' && `uname` =~ /linux/i)
+              so_rcvbuf =  8 
+              sol_socket = 1
+            else #OSX
+              so_rcvbuf =  0x1002
+              sol_socket = 0xffff
+            end
+
             socklen_size = FFI::MemoryPointer.new :uint32
             socklen_size.write_int 8
             rcvbuf = FFI::MemoryPointer.new :int64
