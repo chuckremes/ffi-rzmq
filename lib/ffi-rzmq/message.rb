@@ -114,7 +114,8 @@ module ZMQ
     # called multiple times on the same instance. 
     #
     def copy_in_string string
-      copy_in_bytes string, string.size if string
+      string_size = string.respond_to?(:bytesize) ? string.bytesize : string.size
+      copy_in_bytes string, string_size if string
     end
 
     # Makes a copy of +len+ bytes from the ruby string +bytes+. Library
