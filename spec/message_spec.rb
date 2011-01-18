@@ -21,6 +21,14 @@ module ZMQ
         lambda { message.copy_in_string("new text") }.should raise_error(MessageError)
       end
     end
+    
+    context "when copying binary data" do
+      it "should find the correct length by ignoring encoding" do
+        message = Message.new
+        message.copy_in_string("\x83\x6e\x04\x00\x00\x44\xd1\x81")
+        message.size.should_equal(8)
+      end
+    end
 
   end # describe Message
   
