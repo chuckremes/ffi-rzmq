@@ -26,7 +26,7 @@ module ZMQ
       it "should find the correct length by ignoring encoding" do
         message = Message.new
         message.copy_in_string("\x83\x6e\x04\x00\x00\x44\xd1\x81")
-        message.size.should_equal(8)
+        message.size.should == 8
       end
     end
 
