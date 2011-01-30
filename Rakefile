@@ -4,9 +4,6 @@ rescue LoadError
   abort '### Please install the "bones" gem ###'
 end
 
-task :default => 'test:run'
-task 'gem:release' => 'test:run'
-
 namespace :win do
 
   desc 'Build and install gem under Windows. Mr Bones just has to break things using tar.'
