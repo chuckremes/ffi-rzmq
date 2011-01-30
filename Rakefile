@@ -16,8 +16,8 @@ namespace :win do
     rm_rf PKG_PATH
     system "gem build #{NAME}.gemspec"
     mkdir_p PKG_PATH
-    mv "#{NAME}-0.6.0.gem", PKG_PATH
-    system "gem install #{PKG_PATH}/#{NAME}-0.6.0.gem"
+    mv "#{NAME}-0.7.1.gem", PKG_PATH
+    system "gem install #{PKG_PATH}/#{NAME}-0.7.1.gem"
   end
 end
 

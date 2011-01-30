@@ -2,11 +2,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{ffi-rzmq}
-  s.version = "0.7.0"
+  s.version = "0.7.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Chuck Remes"]
-  s.date = %q{2010-12-22}
+  s.date = %q{2011-01-30}
   s.description = %q{This gem wraps the ZeroMQ networking library using the ruby FFI (foreign
 function interface). It's a pure ruby wrapper so this gem can be loaded
 and run by any ruby runtime that supports FFI. That's all of them:
