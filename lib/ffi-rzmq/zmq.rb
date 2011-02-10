@@ -158,7 +158,15 @@ module ZMQ
     # send/recv. True only when #errno is EGAIN and +result_code+ is non-zero.
     #
     def error_check_nonblock result_code
-      !result_code.zero? && eagain? ? false : true
+      if result_code.zero?
+        true
+      else
+        # need to check result_code again because !eagain? could be true
+        # and we need the result_code test to fail again to give the right result
+        #  !eagain? is true, result_code is -1 => return false
+        #  !eagain? is false, result_code is -1 => return false
+        !eagain? && result_code.zero?
+      end
     end
 
     def raise_error source, result_code
