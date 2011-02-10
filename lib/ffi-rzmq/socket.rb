@@ -348,11 +348,19 @@ module ZMQ
   end
 
   private
+  
+  def noblock? flag
+    NOBLOCK == flag
+  end
 
   def _recv message, flags = 0
     result_code = LibZMQ.zmq_recv @socket, message.address, flags
 
-    flags != NOBLOCK ? error_check(ZMQ_RECV_STR, result_code) : error_check_nonblock(result_code)
+    if noblock?(flags)
+      error_check_nonblock(result_code)
+    else
+      error_check(ZMQ_RECV_STR, result_code)
+    end
   end
 
   # Calls to ZMQ.getsockopt require us to pass in some pointers. We can cache and save those buffers
