@@ -350,7 +350,7 @@ module ZMQ
   private
   
   def noblock? flag
-    NOBLOCK == flag
+    (NOBLOCK & flag) == NOBLOCK
   end
 
   def _recv message, flags = 0
