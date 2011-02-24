@@ -1,7 +1,13 @@
+== 0.7.2 / 20110224
+  * Several minor refactorings to make the code intent clearer and to allow
+    for better testing. In particular, the error condition checking for
+    a non-blocking send/recv is much clearer.
+
 == 0.7.1 / 20110130
   * Fixed 1.9.1 Binary Encoding bug when UTF8 set as default (Thanks schmurfy)
   * Improved rubinius compat for specs
   * Improved spec compatibility on linux
+
 == 0.7.0 / 20101222
   * Improved performance of calls to Socket#getsockopt. There are usually
     a lot of calls passing RCVMORE, so we now cache those buffers instead
