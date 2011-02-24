@@ -65,7 +65,7 @@ module ZMQ
     # Does not raise any exceptions.
     #
     def register sock, events = ZMQ::POLLIN | ZMQ::POLLOUT, fd = 0
-      return unless sock || !fd.zero? || !events.zero?
+      return false if (sock.nil? && fd.zero?) || events.zero?
 
       @poll_items_dirty = true
       item = @items.get(@sockets.index(sock))
@@ -74,8 +74,7 @@ module ZMQ
         @sockets << sock
         item = LibZMQ::PollItem.new
 
-        case sock
-        when ZMQ::Socket, Socket
+        if sock.kind_of?(ZMQ::Socket) || sock.kind_of?(Socket)
           item[:socket] = sock.socket
           item[:fd] = 0
         else
@@ -134,11 +133,13 @@ module ZMQ
     # Deletes the +sock+ for all subscribed events.
     #
     def delete sock
+      removed = false
+      
       if index = @sockets.index(sock)
-        @items.delete_at index
-        @sockets.delete sock
-        @raw_to_socket.delete sock.socket
+        removed = @items.delete_at(index) and @sockets.delete(sock) and @raw_to_socket.delete(sock.socket.address)
       end
+      
+      removed
     end
 
     def size(); @items.size; end

@@ -38,11 +38,14 @@ module ZMQ
     alias :push :<<
     
     def delete_at index
+      value = nil
       unless @items.empty?
-        @items.delete_at index
+        value = @items.delete_at index
         @dirty = true
         clean
       end
+      
+      value
     end
 
     def each &blk
