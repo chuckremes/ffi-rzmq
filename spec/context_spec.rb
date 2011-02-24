@@ -60,10 +60,12 @@ module ZMQ
 
 
     context "when allocating a socket" do
-      it "should return a ZMQ::Socket" do
-        ctx = spec_ctx
-        ctx.socket(ZMQ::REQ).should be_kind_of(ZMQ::Socket)
-      end
+#      it "should return a ZMQ::Socket" do
+#        ctx = spec_ctx
+#        sock = ctx.socket ZMQ::REQ
+#        sock.should be_kind_of(ZMQ::Socket)
+#        # need to do something with the socket so it's in a state that can return ETERM
+#      end
 
       it "should raise a ZMQ::SocketError exception when allocation fails" do
         ctx = spec_ctx
