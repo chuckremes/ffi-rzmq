@@ -67,6 +67,6 @@ end  # module ZMQ
 RBX = defined?(RUBY_ENGINE) && RUBY_ENGINE =~ /rbx/ ? true : false
 
 # the order of files is important
-%w(wrapper zmq exceptions context message socket poll_items poll).each do |file|
+%w(wrapper zmq exceptions context message socket poll_items poll device).each do |file|
   require ZMQ.libpath(['ffi-rzmq', file])
 end
