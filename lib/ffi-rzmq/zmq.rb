@@ -63,6 +63,11 @@ module ZMQ
   ENODEV = Errno::ENODEV::Errno
   EFAULT = Errno::EFAULT::Errno
 
+  #  Device Types
+  STREAMER = 1
+  FORWARDER = 2
+  QUEUE = 3
+
   # ZMQ errors
   HAUSNUMERO     = 156384712
   EMTHREAD       = (HAUSNUMERO + 50)
