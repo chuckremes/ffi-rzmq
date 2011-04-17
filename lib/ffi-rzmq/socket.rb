@@ -144,7 +144,7 @@ module ZMQ
     def getsockopt option_name
       begin
         option_value = FFI::MemoryPointer.new :pointer
-        option_length = FFI::MemoryPointer.new :size_t
+        option_length = FFI::MemoryPointer.new(:size_t) rescue FFI::MemoryPointer.new(:ulong)
 
         unless [
           RCVMORE, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP, IDENTITY,
