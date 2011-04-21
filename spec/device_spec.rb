@@ -57,9 +57,9 @@ module ZMQ
       back_addr  = "tcp://127.0.0.1:#{random_port}"
       front_addr = "tcp://127.0.0.1:#{random_port}"
       Thread.new do
-        back  = SPEC_CTX.socket(ZMQ::XREP)
+        back  = SPEC_CTX.socket(ZMQ::ROUTER)
         back.bind(back_addr)
-        front = SPEC_CTX.socket(ZMQ::XREQ)
+        front = SPEC_CTX.socket(ZMQ::DEALER)
         front.bind(front_addr)
         Device.new(ZMQ::QUEUE, back, front)
       end
