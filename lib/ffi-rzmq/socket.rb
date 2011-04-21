@@ -19,7 +19,7 @@ module ZMQ
     #
     # +type+ can be one of ZMQ::REQ, ZMQ::REP, ZMQ::PUB,
     # ZMQ::SUB, ZMQ::PAIR, ZMQ::PULL, ZMQ::PUSH,
-    # ZMQ::XREQ or ZMQ::XREP.
+    # ZMQ::DEALER or ZMQ::ROUTER.
     #
     # By default, this class uses ZMQ::Message for manual
     # memory management. For automatic garbage collection of received messages,

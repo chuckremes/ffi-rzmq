@@ -7,19 +7,19 @@ module ZMQ
   SUB = 2
   REQ = 3
   REP = 4
-  XREQ = 5
-  XREP = 6
+  ROUTER = XREQ = 5
+  DEALER = XREP = 6
   PULL = UPSTREAM = 7
   PUSH = DOWNSTREAM = 8
-  
+
   SocketTypeNameMap = {
     PAIR => "PAIR",
     PUB => "PUB",
     SUB => "SUB",
     REQ => "REQ",
     REP => "REP",
-    XREQ => "XREQ",
-    XREP => "XREP",
+    ROUTER => "ROUTER",
+    DEALER => "DEALER",
     PULL => "PULL",
     PUSH => "PUSH"
   }
@@ -119,7 +119,7 @@ module ZMQ
       LibZMQ.zmq_version major, minor, patch
       [major.read_int, minor.read_int, patch.read_int]
     end
-    
+
     # Compares the 0mq library API version to a minimal version tuple. Returns
     # true if it meets the minimum requirement, false otherwise.
     #
@@ -130,7 +130,7 @@ module ZMQ
     #
     def self.minimum_api? tuple
       api_version = Util.version
-      
+
       # call #to_i to convert nil entries to 0 so the comparison is valid
       tuple[0].to_i >= api_version[0] &&
       tuple[1].to_i >= api_version[1] &&
@@ -185,7 +185,7 @@ module ZMQ
       when ZMQ_MSG_INIT_STR, ZMQ_MSG_INIT_DATA_STR, ZMQ_MSG_COPY_STR, ZMQ_MSG_MOVE_STR
         raise MessageError.new source, result_code, errno, error_string
       else
-        raise ZeroMQError.new source, result_code, -1, 
+        raise ZeroMQError.new source, result_code, -1,
         "Source [#{source}] does not match any zmq_* strings, rc [#{result_code}], errno [#{errno}], error_string [#{error_string}]"
       end
     end
