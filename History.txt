@@ -8,12 +8,15 @@
     If you want the old behavior (auto-close messages on send) then
     use the new Socket#send_and_close method which does as its name
     implies.
+  * Fixed bug with type :size_t on Windows (thank you to arvicco)
 
 == 0.7.3 / 20110304
   * Fixed a bug where we had a small memory leak. When closing a socket
     I forgot to release a small amount of native memory used as a cache
     for doing #getsockopt calls.
   * Util.minimum_api? didn't work. Fixed.
+  * Added ROUTER/DEALER constants to reflect new naming for XREQ/XREP.
+    XREQ and XREP remain aliased for backward compatibility.
 
 == 0.7.2 / 20110224
   * Several minor refactorings to make the code intent clearer and to allow
@@ -29,10 +32,10 @@
   * Improved performance of calls to Socket#getsockopt. There are usually
     a lot of calls passing RCVMORE, so we now cache those buffers instead
     of reallocating them every time.
-    
+
   * Updated the docs on Poller#poll to warn about a possible busy-loop
     condition.
-    
+
   * Fixed some more specs to conform with the 0mq 2.1 requirement that
     all sockets must be closed explicitly otherwise the program may
     hang on exit.
@@ -45,26 +48,26 @@
 
   * Preliminary support for the Windows platform. Patches supplied
     by arvicco.
-    
+
   * Added support for FD and EVENTS socket options. These were added
     in 0mq 2.1.0. Patches + specs supplied by andrewvc.
-    
+
   * Added support for LINGER, RECONNECT_IVL, BACKLOG  and
     RECOVERY_IVL_MSEC socket options.
-    
+
   * Conditionally re-enable the socket finalizer when we are running
     with 0mq 2.1.0 or later.
-    
+
   * Drop support for MRI 1.8.x since the 'ffi' gem has dropped it as a
     supported Ruby runtime with its 1.0 release. No action is taken to
     prevent running with MRI 1.8.x but it won't be supported.
-    
+
   * Misc. spec fixes. Need more specs!
 
 == 0.6.0 / 20100911
   * API Change! Modified ZMQ::Message by removing automatic memory
     management. While doing some performance tests I saw that
-    defining/undefining the finalizer added 15-30% processing 
+    defining/undefining the finalizer added 15-30% processing
     overhead on the latency test. So, I split this functionality
     out to a subclass called ZMQ::ManagedMemory. Any existing code
     that relies on the default Message class to clean up after itself
@@ -74,7 +77,7 @@
 
   * Rubinius/rbx compatibility! Requires an rbx code pull from git
     from 20100911 or later to get the necessary code fixes.
-  
+
   * Modify Message to use the @pointer directly rather than indirectly
     via the @struct object. Provides better compatibility for rbx
     since rbx does not yet support the FFI pointer protocol for structs
@@ -93,38 +96,38 @@
     a pointer to the free function.
 
   * Modify FFI wrapper to remove the FFI::Function callback used
-    by Message. It's no longer necessary since we now use free 
+    by Message. It's no longer necessary since we now use free
     directly.
 
 == 0.5.1 / 20100830
   * Works with 0mq 2.0.8 release.
-  
+
   * Removed the socket finalizer. The current 0mq framework cannot
     handle the case where zmq_close is called on a socket that was
     created from another thread. Therefore, the garbage collection
     thread causes the framework to break. Version 2.1 (or later)
     should fix this 0mq limitation.
-    
+
   * Misc fixes. See commits.
 
 == 0.5.0 / 20100606
   * Updated the bindings to conform to the 0mq 2.0.7 release.
   Several parts of the API changed.
-  
+
   * Updated all examples to use the new Context api.
-  
+
   * Added Socket#getsockopt.
-  
+
   * Added a Socket#identity and Socket#identity= method pair to
   allow for easy get/put on socket identities. Useful for async
   request/reply using XREQ/XREP sockets.
-  
+
   * Added more specs (slowly but surely).
-  
+
   * Support multi-part messages (new as of 2.0.7). I am unsure how
   to best support multi-part messages so the Message (and related)
   API may change in the future. Added Socket#more_parts?.
-  
+
   * Lots of fixes. Many classes use finalizers to deallocate native
   memory when they go out of scope; be sure to use JRuby 1.5.1 or
   later to get important finalizer fixes.
@@ -137,41 +140,41 @@
 == 0.4.0 / 20100510
   * Changed the Socket#recv method signature to take an optional
   message object as its first argument. This allows the library
-  user to allocate and pass in their own message object for the 
+  user to allocate and pass in their own message object for the
   purposes of zero-copy. Original behavior was for the library to
   *always* allocate a new message object to receive a message into.
   Hopefully this is the last change required.
-  
+
   * Modified the Socket constructor to take an optional hash as its
   final argument. It honors two keys; :receiver_klass and
   :sender_klass. Passing in a new constant for either (or both) keys
   will override the class used by Socket for allocating new
-  Message objects. 
+  Message objects.
 
 == 0.3.1 / 20100509
   * Modified ZMQ::Message so we have both an UnmanagedMessage where
   memory management is manual via the #close method, and Message where
   memory management is automated via a finalizer method run during
   garbage collection.
-  
+
   * Updated ZMQ::Message docs to make it clearer how to use a subclass
   and FFI::Struct to lazily access the message buffer. This gets us as
   close to zero-copy as possible for performance.
-  
+
   * Fixed a memory leak in Message where the FFI::Struct backing the
   C struct was not being freed.
-  
+
   * Tested the FFI code against MRI 1.8.x and 1.9.x. It works!
-  
+
   * Patched a potential problem in LibZMQ::MessageDeallocator. It was
   crashing under MRI because it complained that FFI::Pointer did not
-  have a free method. It now checks for :free before calling it. 
+  have a free method. It now checks for :free before calling it.
   Need to investigate this further because it never happened under
   JRuby.
-  
+
   * Modified the Socket constructor slightly to allow for using
   unmanaged or managed messages.
-  
+
   * Changed the /examples to print a throughput (msgs/s) number upon
   completion.
 
@@ -181,20 +184,20 @@
     However, to do so requires lots of copying to and from buffers which
     greatly impacts performance. These methods now return a ZMQ::Message
     object which can be subclassed to do lazy evaluation of the buffer.
-    
+
   * Added ZMQ::Socket#send_string and ZMQ::Socket#recv_string. They
     automatically convert the messages to strings just like the official
     0mq ruby bindings.
 
   * Fixed bug in ZMQ::Util#error_string
-  
+
   * Split the ZMQ::Message class into two classes. The base class called
     UnmanagedMessage requires manual memory management. The Message
     class (used by default by Socket) has a finalizer defined to
     automatically release memory when the message object gets garbage
     collected.
-  
-  
+
+
 == 0.2.0 / 20100505
 
 * 1 major enhancement

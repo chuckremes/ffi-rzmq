@@ -77,8 +77,8 @@ module ZMQ
     #   #ZMQ::PAIR
     #   #ZMQ::PULL
     #   #ZMQ::PUSH
-    #   #ZMQ::XREQ
-    #   #ZMQ::XREP
+    #   #ZMQ::DEALER
+    #   #ZMQ::ROUTER
     #
     # Returns a #ZMQ::Socket.
     #
