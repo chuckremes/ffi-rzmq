@@ -2,7 +2,7 @@ require 'rubygems'
 require 'ffi-rzmq'
 
 
-link = "tcp://127.0.0.1:5555"
+link = "tcp://127.0.0.1:5554"
 
 ctx = ZMQ::Context.new 1
 s1 = ctx.socket ZMQ::REQ
