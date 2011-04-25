@@ -37,6 +37,25 @@ module ZMQ
     end
     alias :push :<<
     
+    def delete sock
+      address = sock.socket.address
+      found = false
+      
+      each_with_index do |item, index|
+        if address == item[:socket].address
+          @items.delete_at index
+          found = true
+          @dirty = true
+          clean
+          break
+        end
+      end
+      
+      # these semantics are different from the usual Array#delete; returns a
+      # boolean instead of the actual item or nil
+      found
+    end
+    
     def delete_at index
       value = nil
       unless @items.empty?
@@ -84,7 +103,7 @@ module ZMQ
     # it is garbage collected that native memory should be automatically freed.
     def clean
       if @dirty
-        @store = FFI::MemoryPointer.new @element_size, @items.size, false
+        @store = FFI::MemoryPointer.new @element_size, @items.size, true
 
         # copy over
         offset = 0

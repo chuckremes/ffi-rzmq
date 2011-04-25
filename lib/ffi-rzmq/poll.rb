@@ -67,7 +67,6 @@ module ZMQ
     def register sock, events = ZMQ::POLLIN | ZMQ::POLLOUT, fd = 0
       return false if (sock.nil? && fd.zero?) || events.zero?
 
-      @poll_items_dirty = true
       item = @items.get(@sockets.index(sock))
 
       unless item
@@ -78,7 +77,7 @@ module ZMQ
           item[:socket] = sock.socket
           item[:fd] = 0
         else
-          item[:socket] = 0
+          item[:socket] = FFI::MemoryPointer.new(0)
           item[:fd] = fd
         end
 
@@ -132,14 +131,28 @@ module ZMQ
 
     # Deletes the +sock+ for all subscribed events.
     #
+#    def delete sock
+#      removed = false
+#      
+#      if index = @sockets.index(sock)
+#        removed = @items.delete_at(index) and @sockets.delete(sock) and @raw_to_socket.delete(sock.socket.address)
+#      end
+#      
+#      removed
+#    end
     def delete sock
       removed = false
+      size = @sockets.size
+      @sockets.delete_if { |socket| socket.socket.address == sock.socket.address }
+      socket_deleted = size != @sockets.size
       
-      if index = @sockets.index(sock)
-        removed = @items.delete_at(index) and @sockets.delete(sock) and @raw_to_socket.delete(sock.socket.address)
-      end
+      item_deleted = @items.delete sock
       
-      removed
+      size = @raw_to_socket.size
+      @raw_to_socket.delete(sock.socket.address)
+      raw_deleted = size != @raw_to_socket.size
+      
+      socket_deleted && item_deleted && raw_deleted
     end
 
     def size(); @items.size; end
