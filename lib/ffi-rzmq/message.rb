@@ -189,8 +189,14 @@ module ZMQ
     # Manually release the message struct and its associated data
     # buffer.
     #
+    # Only releases the buffer a single time. Subsequent calls are
+    # no ops.
+    #
     def close
-      LibZMQ.zmq_msg_close @pointer
+      if @pointer
+        LibZMQ.zmq_msg_close @pointer
+        @pointer = nil
+      end
     end
 
 
