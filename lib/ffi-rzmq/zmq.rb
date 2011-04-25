@@ -127,9 +127,9 @@ module ZMQ
       api_version = Util.version
       
       # call #to_i to convert nil entries to 0 so the comparison is valid
-      tuple[0].to_i >= api_version[0] &&
-      tuple[1].to_i >= api_version[1] &&
-      tuple[2].to_i >= api_version[2]
+      result = tuple[0].to_i <= api_version[0] &&
+      tuple[1].to_i <= api_version[1] &&
+      tuple[2].to_i <= api_version[2]
     end
 
 
