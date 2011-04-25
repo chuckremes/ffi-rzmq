@@ -1,3 +1,20 @@
+== 0.8.0 / 20110307
+  * API change!
+    Socket#send_message no longer automatically calls
+    Message#close on behalf of the user. The user is completely
+    responsible for the lifecycle management of all buffers associated
+    with the ZMQ::Message objects.
+    This is a breaking change.
+    If you want the old behavior (auto-close messages on send) then
+    use the new Socket#send_and_close method which does as its name
+    implies.
+
+== 0.7.3 / 20110304
+  * Fixed a bug where we had a small memory leak. When closing a socket
+    I forgot to release a small amount of native memory used as a cache
+    for doing #getsockopt calls.
+  * Util.minimum_api? didn't work. Fixed.
+
 == 0.7.2 / 20110224
   * Several minor refactorings to make the code intent clearer and to allow
     for better testing. In particular, the error condition checking for
