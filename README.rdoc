@@ -32,11 +32,7 @@ The 'ffi' gem has dropped support for MRI 1.8.x. Since this project relies
 on that gem to load and run this code, then this project also no longer
 supports MRI 1.8.x. 
 
-All features are implemented with the exception of the 0mq devices
-(forwarder, queue, streamer). For implementations of these devices, see
-the 0mq Ruby reactor project:
-
-  http://github.com/chuckremes/zmqmachine
+All features are implemented.
 
 == SYNOPSIS:
 
