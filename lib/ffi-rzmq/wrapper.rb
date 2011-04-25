@@ -117,4 +117,4 @@ module LibZMQ
     def to_s; inspect; end
   end # class PollItem
 
-end # module ZMQ
+end # module LibZMQ
