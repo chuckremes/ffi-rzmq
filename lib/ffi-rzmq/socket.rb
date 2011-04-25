@@ -226,6 +226,7 @@ module ZMQ
       result_code = LibZMQ.zmq_close @socket
       error_check ZMQ_CLOSE_STR, result_code
       @socket = nil
+      release_cache
     end
   end
 
@@ -242,13 +243,8 @@ module ZMQ
   # 1. The message could not be enqueued
   # 2. When +flags+ is set with ZMQ::NOBLOCK and the socket returned EAGAIN.
   #
-  # The application code is *not* responsible for handling the +message+ object
-  # lifecycle when #send returns successfully or it raises an exception. The
-  # #send method takes ownership of the +message+ and its associated buffers.
-  # Both successful and failed calls will release the +message+ data buffer.
-  #
-  # Again, once a +message+ object has been passed to this method,
-  # do not try to access its #data buffer anymore. The 0mq library now owns it.
+  # The application code is responsible for handling the +message+ object
+  # lifecycle when #send returns.
   #
   # Can raise two kinds of exceptions depending on the error.
   # ContextError:: Raised when a socket operation is attempted on a terminated
@@ -262,8 +258,6 @@ module ZMQ
       # when the flag isn't set, do a normal error check
       # when set, check to see if the message was successfully queued
       queued = flags != NOBLOCK ? error_check(ZMQ_SEND_STR, result_code) : error_check_nonblock(result_code)
-    ensure
-      message.close
     end
 
     # true if sent, false if failed/EAGAIN
@@ -281,10 +275,24 @@ module ZMQ
   # SocketError:: See all of the possibilities in the docs for #SocketError.
   #
   def send_string message_string, flags = 0
-    message = Message.new
-    message.copy_in_string message_string
-    result = send message, flags
-    result
+    message = Message.new message_string
+    result_code = send_and_close message, flags
+
+    result_code
+  end
+  
+  # Sends a message. This will automatically close the +message+ for both successful
+  # and failed sends.
+  #
+  # Raises the same exceptions as Socket#send
+  #
+  def send_and_close message, flags = 0
+    begin
+      result_code = send message, flags
+    ensure
+      message.close
+    end
+    result_code
   end
 
   # Dequeues a message from the underlying queue. By default, this is a blocking operation.
@@ -403,6 +411,10 @@ module ZMQ
     else
       option_value
     end
+  end
+  
+  def release_cache
+    @sockopt_cache.clear
   end
 
   # require a minimum of 0mq 2.1.0 to support socket finalizers; it contains important
