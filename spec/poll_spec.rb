@@ -41,8 +41,10 @@ module ZMQ
       end
       
       it "should access the raw 0mq socket" do
+        raw_socket = mock('raw socket')
         socket.should_receive(:kind_of?).with(ZMQ::Socket).and_return(true)
-        socket.should_receive(:socket)
+        socket.should_receive(:socket).and_return(raw_socket)
+        raw_socket.should_receive(:address)
         poller.register(socket)
       end
     end
@@ -53,6 +55,11 @@ module ZMQ
       let(:socket) { mock('socket') }
       
       it "should return false for an unregistered socket (i.e. not found)" do
+        address = mock('address')
+        raw_socket = mock('raw_socket')
+        socket.should_receive(:socket).at_least(1).and_return(raw_socket)
+        raw_socket.should_receive(:address).at_least(1).and_return(address)
+        
         poller.delete(socket).should be_false
       end
       
