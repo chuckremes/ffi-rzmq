@@ -84,11 +84,11 @@ module ZMQ
     #
     def setsockopt option_name, option_value, option_len = nil
       option_value = sanitize_value option_name, option_value
-      option_len ||= option_value.size
 
       begin
         case option_name
         when HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP, SNDBUF, RCVBUF, RECOVERY_IVL_MSEC
+          option_len = 8 # all of these options are defined as int64_t or uint64_t
           option_value_ptr = LibC.malloc option_len
           option_value_ptr.write_long option_value
 
@@ -98,6 +98,8 @@ module ZMQ
           option_value_ptr.write_int option_value
 
         when IDENTITY, SUBSCRIBE, UNSUBSCRIBE
+          option_len ||= option_value.size
+
           # note: not checking errno for failed memory allocations :(
           option_value_ptr = LibC.malloc option_len
           option_value_ptr.write_string option_value
