@@ -1,3 +1,10 @@
+== 0.8.1 / 20110504
+  * Fixed bug where Socket#setsockopt was using a size from the current
+    runtime to determine how many bytes to use for HWM, et al. This was
+    incorrect. All of those socket options require 8 bytes. Discovered
+    this while getting the code running under mingw on Windows using a
+    32-bit Ruby runtime.
+
 == 0.8.0 / 20110307
   * API change!
     Socket#send_message no longer automatically calls
