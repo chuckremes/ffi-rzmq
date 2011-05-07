@@ -78,7 +78,7 @@ module LibZMQ
   attach_function :zmq_recv, [:pointer, :pointer, :int], :int
   attach_function :zmq_close, [:pointer], :int
 
-  #experimental zmq_devices support
+  @blocking = true
   attach_function :zmq_device, [:int, :pointer, :pointer], :int
   
   # Poll api
