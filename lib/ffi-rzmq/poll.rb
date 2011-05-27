@@ -142,6 +142,9 @@ module ZMQ
 #    end
     def delete sock
       removed = false
+      deregister_readable sock
+      deregister_writable sock
+      
       size = @sockets.size
       @sockets.delete_if { |socket| socket.socket.address == sock.socket.address }
       socket_deleted = size != @sockets.size
