@@ -175,7 +175,7 @@ module ZMQ
 
     def raise_error source, result_code
       case source
-      when ZMQ_SEND_STR, ZMQ_RECV_STR, ZMQ_SOCKET_STR, ZMQ_SETSOCKOPT_STR, ZMQ_GETSOCKOPT_STR, ZMQ_BIND_STR, ZMQ_CONNECT_STR
+      when ZMQ_SEND_STR, ZMQ_RECV_STR, ZMQ_SOCKET_STR, ZMQ_SETSOCKOPT_STR, ZMQ_GETSOCKOPT_STR, ZMQ_BIND_STR, ZMQ_CONNECT_STR, ZMQ_CLOSE_STR
         raise SocketError.new source, result_code, errno, error_string
       when ZMQ_INIT_STR, ZMQ_TERM_STR
         raise ContextError.new source, result_code, errno, error_string
