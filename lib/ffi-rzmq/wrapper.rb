@@ -22,7 +22,7 @@ end # module LibC
 module LibZMQ
   extend FFI::Library
   LINUX = ["libzmq", "/usr/local/lib/libzmq", "/usr/local/lib/libzmq.so", "/opt/local/lib/libzmq"]
-  OSX = ["libzmq", "/usr/local/lib/libzmq", "/opt/local/lib/libzmq"]
+  OSX = ["libzmq", "/usr/local/lib/libzmq.dynlib", "/opt/local/lib/libzmq.dynlib"]
   WINDOWS = []
   ffi_lib(LINUX + OSX + WINDOWS)
   
