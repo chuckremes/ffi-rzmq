@@ -149,7 +149,7 @@ module ZMQ
         option_length = FFI::MemoryPointer.new(:size_t) rescue FFI::MemoryPointer.new(:ulong)
 
         unless [
-          RCVMORE, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP, IDENTITY,
+          TYPE, RCVMORE, HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP, IDENTITY,
           SNDBUF, RCVBUF, FD, EVENTS, LINGER, RECONNECT_IVL, BACKLOG, RECOVERY_IVL_MSEC
         ].include? option_name
         # we didn't understand the passed option argument
@@ -169,7 +169,7 @@ module ZMQ
         ret = option_value.read_long_long != 0
       when HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, RECOVERY_IVL_MSEC
         ret = option_value.read_long_long
-      when LINGER, RECONNECT_IVL, BACKLOG, FD, EVENTS
+      when TYPE, LINGER, RECONNECT_IVL, BACKLOG, FD, EVENTS
         ret = option_value.read_int
       when IDENTITY
         ret = option_value.read_string(option_length.read_long_long)
@@ -418,7 +418,7 @@ module ZMQ
       end
       @sockopt_cache[:int64]
 
-    when LINGER, RECONNECT_IVL, BACKLOG, FD, EVENTS
+    when TYPE, LINGER, RECONNECT_IVL, BACKLOG, FD, EVENTS
       # int, 0mq assumes int is 4-bytes
       unless @sockopt_cache[:int32]
         length = FFI::MemoryPointer.new :int32
