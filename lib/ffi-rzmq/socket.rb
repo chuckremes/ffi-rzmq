@@ -283,8 +283,8 @@ module ZMQ
     result_code
   end
 
-  # Send a sequence of messages as a multipart message out of the +message_parts+
-  # passed in for transmission. Every element of +message_parts+ should be
+  # Send a sequence of messages as a multipart message out of the +parts+
+  # passed in for transmission. Every element of +parts+ should be
   # a String.
   #
   # +flags+ may be ZMQ::NOBLOCK.
