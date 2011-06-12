@@ -282,7 +282,24 @@ module ZMQ
 
     result_code
   end
-  
+
+  # Send a sequence of messages as a multipart message out of the +message_parts+
+  # passed in for transmission. Every element of +message_parts+ should be
+  # a String.
+  #
+  # +flags+ may be ZMQ::NOBLOCK.
+  #
+  # Raises the same exceptions as Socket#send.
+  #
+  def send_multipart parts, flags = 0
+    return [] if !parts || parts.empty?
+
+    parts[0...-1].each do |part|
+      send_string part, flags | ZMQ::SNDMORE
+    end
+    send_string parts[-1], flags
+  end
+
   # Sends a message. This will automatically close the +message+ for both successful
   # and failed sends.
   #
@@ -355,6 +372,19 @@ module ZMQ
     ensure
       message.close
     end
+  end
+
+  # Receive a multipart message as a list of messages.
+  #
+  # +flags+ may be ZMQ::NOBLOCK.
+  #
+  # Raises the same exceptions as Socket#recv.
+  #
+  def recv_multipart flags = 0
+    parts = []
+    parts << recv_string(flags)
+    parts << recv_string(flags) while more_parts?
+    parts
   end
 
   private
