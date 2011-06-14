@@ -283,7 +283,7 @@ module ZMQ
     result_code
   end
 
-  # Send a sequence of messages as a multipart message out of the +parts+
+  # Send a sequence of strings as a multipart message out of the +parts+
   # passed in for transmission. Every element of +parts+ should be
   # a String.
   #
@@ -291,12 +291,13 @@ module ZMQ
   #
   # Raises the same exceptions as Socket#send.
   #
-  def send_multipart parts, flags = 0
-    return [] if !parts || parts.empty?
+  def send_strings parts, flags = 0
+    return false if !parts || parts.empty?
 
     parts[0...-1].each do |part|
-      send_string part, flags | ZMQ::SNDMORE
+      return false unless send_string part, flags | ZMQ::SNDMORE
     end
+
     send_string parts[-1], flags
   end
 
@@ -374,13 +375,13 @@ module ZMQ
     end
   end
 
-  # Receive a multipart message as a list of messages.
+  # Receive a multipart message as a list of strings.
   #
   # +flags+ may be ZMQ::NOBLOCK.
   #
   # Raises the same exceptions as Socket#recv.
   #
-  def recv_multipart flags = 0
+  def recv_strings flags = 0
     parts = []
     parts << recv_string(flags)
     parts << recv_string(flags) while more_parts?

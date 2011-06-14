@@ -27,11 +27,11 @@ module ZMQ
         it "should be delivered between REQ and REP" do
           req_data, rep_data = [ "1", "2" ], [ "2", "3" ]
 
-          @req.send_multipart(req_data)
-          @rep.recv_multipart.should == req_data
+          @req.send_strings(req_data)
+          @rep.recv_strings.should == req_data
 
-          @rep.send_multipart(rep_data)
-          @req.recv_multipart.should == rep_data
+          @rep.send_strings(rep_data)
+          @req.recv_strings.should == rep_data
         end
       end
 
@@ -58,9 +58,9 @@ module ZMQ
           req_data, rep_data = "hello", [ @req.identity, "", "ok" ]
 
           @req.send_string(req_data)
-          @rep.recv_multipart.should == [ @req.identity, "", "hello" ]
+          @rep.recv_strings.should == [ @req.identity, "", "hello" ]
 
-          @rep.send_multipart(rep_data)
+          @rep.send_strings(rep_data)
           @req.recv_string.should == rep_data.last
         end
       end
