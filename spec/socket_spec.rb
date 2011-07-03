@@ -391,6 +391,12 @@ module ZMQ
             socket.getsockopt(ZMQ::EVENTS).should be_a(Fixnum)
           end
         end
+
+        context "using option ZMQ::TYPE" do
+          it "should return the socket type" do
+            socket.getsockopt(ZMQ::TYPE).should == socket_type
+          end
+        end
       end # context #getsockopt
 
     end # each socket_type
