@@ -21,11 +21,9 @@ end # module LibC
 
 module LibZMQ
   extend FFI::Library
-  LINUX = ["libzmq", "/usr/local/lib/libzmq", "/usr/local/lib/libzmq.so", "/opt/local/lib/libzmq"]
-  OSX = ["libzmq", "/usr/local/lib/libzmq", "/opt/local/lib/libzmq"]
-  WINDOWS = []
-  ffi_lib(LINUX + OSX + WINDOWS)
-  
+  ZMQ_LIB_PATHS = %w{/usr/local/lib /opt/local/lib}.map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
+  ffi_lib(%w{libzmq} + ZMQ_LIB_PATHS)
+
   # Size_t not working properly on Windows
   find_type(:size_t) rescue typedef(:ulong, :size_t)
 
