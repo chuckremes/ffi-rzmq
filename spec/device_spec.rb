@@ -15,6 +15,7 @@ module ZMQ
         front.bind(@front_addr)
         Device.new(ZMQ::STREAMER, back, front)
       end
+      sleep 0.5
     end
     
     it "should create a streamer device without error given valid opts" do
