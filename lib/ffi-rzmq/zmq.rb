@@ -1,4 +1,3 @@
-
 module ZMQ
 
   #  Socket types
@@ -7,8 +6,8 @@ module ZMQ
   SUB = 2
   REQ = 3
   REP = 4
-  ROUTER = XREQ = 5
-  DEALER = XREP = 6
+  DEALER = XREQ = 5
+  ROUTER = XREP = 6
   PULL = UPSTREAM = 7
   PUSH = DOWNSTREAM = 8
 
