@@ -8,7 +8,7 @@ module ZMQ
       @source = source
       @result_code = result_code
       @error_code = error_code
-      @message = message
+      @message = "msg [#{message}], error code [#{error_code}], rc [#{result_code}]"
       super message
     end
   end # call ZeroMQError
