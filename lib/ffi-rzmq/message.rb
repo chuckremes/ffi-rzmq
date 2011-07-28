@@ -93,7 +93,6 @@ module ZMQ
       # the memory; it's pointless work since the library is going to
       # overwrite it anyway.
       @pointer = FFI::MemoryPointer.new LibZMQ::Msg.size, 1, false
-      @struct = LibZMQ::Msg.new @pointer
 
       if message
         copy_in_string message
