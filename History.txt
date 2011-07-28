@@ -1,3 +1,10 @@
+== 0.8.2 / 20110728
+  * Fixed major bug with Socket#setsockopt when writing 8-byte longs.
+
+  * Clarified a bit of logic for non-blocking sends.
+
+  * Improved readability of exceptions.
+
 == 0.8.1 / 20110504
   * Fixed bug where Socket#setsockopt was using a size from the current
     runtime to determine how many bytes to use for HWM, et al. This was
