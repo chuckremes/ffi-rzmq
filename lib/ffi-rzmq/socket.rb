@@ -90,7 +90,7 @@ module ZMQ
         when HWM, SWAP, AFFINITY, RATE, RECOVERY_IVL, MCAST_LOOP, SNDBUF, RCVBUF, RECOVERY_IVL_MSEC
           option_len = 8 # all of these options are defined as int64_t or uint64_t
           option_value_ptr = LibC.malloc option_len
-          option_value_ptr.write_long option_value
+          option_value_ptr.write_long_long option_value
 
         when LINGER, RECONNECT_IVL, BACKLOG
           option_len = 4 # hard-code "int" length to 4 bytes
@@ -259,7 +259,7 @@ module ZMQ
 
       # when the flag isn't set, do a normal error check
       # when set, check to see if the message was successfully queued
-      queued = flags != NOBLOCK ? error_check(ZMQ_SEND_STR, result_code) : error_check_nonblock(result_code)
+      queued = noblock?(flags) ? error_check_nonblock(result_code) : error_check(ZMQ_SEND_STR, result_code)
     end
 
     # true if sent, false if failed/EAGAIN
