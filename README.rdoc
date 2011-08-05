@@ -107,6 +107,8 @@ I highly recommend visiting the Learn Ruby 0mq project for a bunch of good code 
 The ZeroMQ library must be installed on your system in a well-known location
 like /usr/local/lib. This is the default for new ZeroMQ installs.
 
+If you have installed ZeroMQ using brew, you need to `brew link zeromq` before installing this gem.
+
 Future releases may include the library as a C extension built at
 time of installation.
 
