@@ -21,7 +21,7 @@ end # module LibC
 
 module LibZMQ
   extend FFI::Library
-  ZMQ_LIB_PATHS = %w{/usr/local/lib /opt/local/lib}.map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
+  ZMQ_LIB_PATHS = %w{/usr/local/lib /opt/local/lib /usr/local/homebrew/lib}.map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
   ffi_lib(%w{libzmq} + ZMQ_LIB_PATHS)
 
   # Size_t not working properly on Windows
