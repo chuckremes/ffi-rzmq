@@ -1,8 +1,6 @@
 
 module ZMQ
 
-  ZMQ_POLL_STR = 'zmq_poll'.freeze
-
   class Poller
     include ZMQ::Util
 
@@ -38,7 +36,7 @@ module ZMQ
       unless @items.empty?
         timeout = adjust timeout
         items_triggered = LibZMQ.zmq_poll @items.address, @items.size, timeout
-        error_check ZMQ_POLL_STR, items_triggered >= 0 ? 0 : items_triggered
+        error_check 'zmq_poll', items_triggered >= 0 ? 0 : items_triggered
         update_selectables
         items_hash
       else
@@ -84,11 +82,12 @@ module ZMQ
         @raw_to_socket[item[:socket].address] = sock
         @items << item
       end
-      
+
       item[:events] |= events
     end
 
-    # Deregister the +sock+ for +events+.
+    # Deregister the +sock+ for +events+. When there are no events left,
+    # this also deletes the socket from the poll items.
     #
     # Does not raise any exceptions.
     #
@@ -102,6 +101,9 @@ module ZMQ
         item[:events] ^= events
 
         delete sock if item[:events].zero?
+        true
+      else
+        false
       end
     end
 
@@ -129,33 +131,28 @@ module ZMQ
       deregister sock, ZMQ::POLLOUT, 0
     end
 
-    # Deletes the +sock+ for all subscribed events.
+    # Deletes the +sock+ for all subscribed events. Called internally
+    # when a socket has been deregistered and has no more events
+    # registered anywhere.
     #
-#    def delete sock
-#      removed = false
-#      
-#      if index = @sockets.index(sock)
-#        removed = @items.delete_at(index) and @sockets.delete(sock) and @raw_to_socket.delete(sock.socket.address)
-#      end
-#      
-#      removed
-#    end
     def delete sock
-      removed = false
-      deregister_readable sock
-      deregister_writable sock
-      
-      size = @sockets.size
-      @sockets.delete_if { |socket| socket.socket.address == sock.socket.address }
-      socket_deleted = size != @sockets.size
-      
-      item_deleted = @items.delete sock
-      
-      size = @raw_to_socket.size
-      @raw_to_socket.delete(sock.socket.address)
-      raw_deleted = size != @raw_to_socket.size
-      
-      socket_deleted && item_deleted && raw_deleted
+      removed_readable = deregister_readable sock
+      removed_writable = deregister_writable sock
+
+      if (size = @sockets.size) > 0
+        @sockets.delete_if { |socket| socket.socket.address == sock.socket.address }
+        socket_deleted = size != @sockets.size
+
+        item_deleted = @items.delete sock
+
+        raw_deleted = @raw_to_socket.delete(sock.socket.address)
+
+        socket_deleted && item_deleted && raw_deleted
+        
+      else
+        # return result of deregistration
+        removed_readable || removed_writable
+      end
     end
 
     def size(); @items.size; end

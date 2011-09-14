@@ -11,6 +11,7 @@ module ZMQ
       include APIHelper
 
       it "should raise an error for negative io threads" do
+        LibZMQ.stub(:zmq_init => nil)
         lambda { Context.new(-1) }.should raise_exception(ZMQ::ContextError)
       end
       
@@ -53,7 +54,7 @@ module ZMQ
 
       it "should raise a ZMQ::ContextError exception when it fails" do
         ctx = Context.new # can't use a shared context here because we are terminating it!
-        LibZMQ.stub(:zmq_term => 1)
+        LibZMQ.stub(:zmq_term => -1)
         lambda { ctx.terminate }.should raise_error(ZMQ::ContextError)
       end
     end # context terminate

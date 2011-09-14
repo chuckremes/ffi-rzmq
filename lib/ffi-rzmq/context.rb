@@ -1,11 +1,6 @@
 
 module ZMQ
 
-  ZMQ_INIT_STR = 'zmq_init'.freeze
-  ZMQ_TERM_STR = 'zmq_term'.freeze
-  ZMQ_SOCKET_STR = 'zmq_socket'.freeze unless defined? ZMQ_SOCKET_STR
-
-
   class Context
     include ZMQ::Util
 
@@ -41,7 +36,7 @@ module ZMQ
       @sockets = []
       @context = LibZMQ.zmq_init io_threads
       @pointer = @context
-      error_check ZMQ_INIT_STR, (@context.nil? || @context.null?) ? 1 : 0
+      error_check 'zmq_init', (@context.nil? || @context.null?) ? -1 : 0
 
       define_finalizer
     end
@@ -59,7 +54,7 @@ module ZMQ
     def terminate
       unless @context.nil? || @context.null?
         result_code = LibZMQ.zmq_term @context
-        error_check ZMQ_TERM_STR, result_code
+        error_check 'zmq_term', result_code
         @context = nil
         @sockets = nil
         remove_finalizer
@@ -86,7 +81,7 @@ module ZMQ
     #
     def socket type
       sock = Socket.new @context, type
-      error_check ZMQ_SOCKET_STR, sock.nil? ? 1 : 0
+      error_check 'zmq_socket', sock.nil? ? -1 : 0
       sock
     end
 

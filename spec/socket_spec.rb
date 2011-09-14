@@ -152,12 +152,6 @@ module ZMQ
             socket.setsockopt ZMQ::HWM, hwm
             socket.getsockopt(ZMQ::HWM).should == hwm
           end
-
-          it "should convert a negative value to a positive value" do
-            hwm = -4
-            socket.setsockopt ZMQ::HWM, hwm
-            socket.getsockopt(ZMQ::HWM).should == hwm.abs
-          end
         end # context using option ZMQ::HWM
 
 
@@ -180,12 +174,6 @@ module ZMQ
             affinity = 3
             socket.setsockopt ZMQ::AFFINITY, affinity
             socket.getsockopt(ZMQ::AFFINITY).should == affinity
-          end
-
-          it "should set the affinity value as a positive value given a negative value" do
-            affinity = -3
-            socket.setsockopt ZMQ::AFFINITY, affinity
-            socket.getsockopt(ZMQ::AFFINITY).should == affinity.abs
           end
         end # context using option ZMQ::AFFINITY
 
@@ -236,14 +224,14 @@ module ZMQ
 
 
         context "using option ZMQ::MCAST_LOOP" do
-          it "should enable the multicast loopback given a true value" do
-            socket.setsockopt ZMQ::MCAST_LOOP, true
-            socket.getsockopt(ZMQ::MCAST_LOOP).should be_true
+          it "should enable the multicast loopback given a 1 (true) value" do
+            socket.setsockopt ZMQ::MCAST_LOOP, 1
+            socket.getsockopt(ZMQ::MCAST_LOOP).should == 1
           end
 
-          it "should disable the multicast loopback given a false value" do
-            socket.setsockopt ZMQ::MCAST_LOOP, false
-            socket.getsockopt(ZMQ::MCAST_LOOP).should be_false
+          it "should disable the multicast loopback given a 0 (false) value" do
+            socket.setsockopt ZMQ::MCAST_LOOP, 0
+            socket.getsockopt(ZMQ::MCAST_LOOP).should == 0
           end
         end # context using option ZMQ::MCAST_LOOP
 
@@ -254,12 +242,6 @@ module ZMQ
             socket.setsockopt ZMQ::SNDBUF, size
             socket.getsockopt(ZMQ::SNDBUF).should == size
           end
-
-          it "should set the OS send buffer to a positive value given a false value" do
-            size = -100
-            socket.setsockopt ZMQ::SNDBUF, size
-            socket.getsockopt(ZMQ::SNDBUF).should == size.abs
-          end
         end # context using option ZMQ::SNDBUF
 
 
@@ -268,12 +250,6 @@ module ZMQ
             size = 100
             socket.setsockopt ZMQ::RCVBUF, size
             socket.getsockopt(ZMQ::RCVBUF).should == size
-          end
-
-          it "should set the OS receive buffer to a positive value given a false value" do
-            size = -100
-            socket.setsockopt ZMQ::RCVBUF, size
-            socket.getsockopt(ZMQ::RCVBUF).should == size.abs
           end
         end # context using option ZMQ::RCVBUF
 

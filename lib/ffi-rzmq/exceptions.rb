@@ -43,6 +43,13 @@ module ZMQ
     # thread.
     #
     def efault?() EFAULT == @error_code; end
+    
+    if LibZMQ.version3? || LibZMQ.version4?
+      
+      def eterm?() ETERM == @error_code; end
+      
+      def eintr?() EINTR == @error_code; end
+    end
 
   end # class PollError
 
@@ -128,6 +135,15 @@ module ZMQ
     # parameter of #Context.
     #
     def emthread?() EMTHREAD == @error_code; end
+    
+    if LibZMQ.version3? || LibZMQ.version4?
+      
+      def enotsock?() ENOTSOCK == @error_code; end
+      
+      def eintr?() EINTR == @error_code; end
+      
+      def efault?() EFAULT == @error_code; end
+    end
 
   end # class SocketError
 

@@ -1,14 +1,6 @@
 
 module ZMQ
 
-  ZMQ_MSG_INIT_SIZE_STR = 'zmq_msg_init_size'.freeze
-  ZMQ_MSG_INIT_DATA_STR = 'zmq_msg_init_data'.freeze
-  ZMQ_MSG_INIT_STR = 'zmq_msg_init'.freeze
-  ZMQ_MSG_CLOSE_STR = 'zmq_msg_close'.freeze
-  ZMQ_MSG_COPY_STR = 'zmq_msg_copy'.freeze
-  ZMQ_MSG_MOVE_STR = 'zmq_msg_move'.freeze
-  ZMQ_MSG_SIZE_STR = 'zmq_msg_size'.freeze
-
   # The constructor optionally takes a string as an argument. It will
   # copy this string to native memory in preparation for transmission.
   # So, don't pass a string unless you intend to send it. Internally it
@@ -99,7 +91,7 @@ module ZMQ
       else
         # initialize an empty message structure to receive a message
         result_code = LibZMQ.zmq_msg_init @pointer
-        error_check ZMQ_MSG_INIT_STR, result_code
+        error_check 'zmq_msg_init', result_code
       end
     end
 
@@ -137,7 +129,7 @@ module ZMQ
       # support that and there are issues with the other runtimes too
       result_code = LibZMQ.zmq_msg_init_data @pointer, data_buffer, len, LibC::Free, nil
 
-      error_check ZMQ_MSG_INIT_DATA_STR, result_code
+      error_check 'zmq_msg_init_data', result_code
       @state = :initialized
     end
 
@@ -152,13 +144,13 @@ module ZMQ
 
     def copy source
       result_code = LibZMQ.zmq_msg_copy @pointer, source.address
-      error_check ZMQ_MSG_COPY_STR, result_code
+      error_check 'zmq_msg_copy', result_code
       @state = :initialized
     end
 
     def move source
       result_code = LibZMQ.zmq_msg_copy @pointer, source.address
-      error_check ZMQ_MSG_MOVE_STR, result_code
+      error_check 'zmq_msg_move', result_code
       @state = :initialized
     end
 
