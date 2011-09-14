@@ -9,6 +9,15 @@ function interface). It's a pure ruby wrapper so this gem can be loaded
 and run by any ruby runtime that supports FFI. That's all of them:
 MRI 1.9.x, Rubinius and JRuby.
 
+This single gem supports 0mq 2.x, 3.x and 4.x APIs. The 0mq project started
+making backward-incompatible changes to the API with the 3.x release.
+The gem auto-configures itself to expose the API conforming to the loaded
+C library.
+
+(As of this writing [20110914], no code has actually been written to expose
+the 3.x or 4.x APIs. Most of the work to modularize things so that this next
+step will be easy have been taken. I promise to work on this soon-ish.)
+
 The impetus behind this library was to provide support for ZeroMQ in
 JRuby which has native threads. Unlike MRI, IronRuby and
 Rubinius which all have a GIL, JRuby allows for threaded access to ruby
@@ -24,19 +33,22 @@ Check out the latest performance results:
 
 == FEATURES/PROBLEMS:
 
-This gem needs more tests. I'm certain there are a
-ton of bugs, so please open issues for them here or fork this project,
-fix them, and send me a pull request.
+This gem needs more tests. This gem has been battle tested by myself
+and others for over a year, so I am fairly confident that it is solid.
+However, it is inevitable that there will be bugs, so please open 
+issues for them here or fork this project, fix them, and send me a pull
+request.
 
 The 'ffi' gem has dropped support for MRI 1.8.x. Since this project relies
 on that gem to load and run this code, then this project also no longer
-supports MRI 1.8.x. 
+supports MRI 1.8.x. I recommend JRuby for the best performance and
+stability.
 
 All features are implemented.
 
 == SYNOPSIS:
 
-Client code:
+0mq API v2 client code:
   
   require 'rubygems'
   require 'ffi-rzmq'
@@ -61,10 +73,8 @@ Client code:
     s.send_string msg, 0
   end
   
-  # give the lib time to flush any remaining messages
-  sleep 1
 
-Server code:
+0mq API v2 server code:
 
   require 'rubygems'
   require 'ffi-rzmq'
@@ -102,7 +112,7 @@ I highly recommend visiting the Learn Ruby 0mq project for a bunch of good code 
 
 == REQUIREMENTS:
 
-  * 0mq 2.0.10 or 2.1+
+  * 0mq 2.1.x or later; 2.0.x is no longer supported
   
 The ZeroMQ library must be installed on your system in a well-known location
 like /usr/local/lib. This is the default for new ZeroMQ installs.
@@ -140,7 +150,7 @@ To build from git master:
 
 (The MIT License)
 
-Copyright (c) 2010 Chuck Remes
+Copyright (c) 2011 Chuck Remes
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the

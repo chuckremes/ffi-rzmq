@@ -10,6 +10,8 @@ All of the examples assume the gem has been successfully installed.
 
 The ZeroMQ C libraries need to be downloaded, compiled and installed separately from the gem. Please see http://www.zeromq.org/area:download for links to the downloadable files along with some simple installation instructions. Also, be sure to check the FAQ if you run into problems with compiling.
 
+This gem auto-configures itself to conform to the API for 0mq 2.1.x, 3.x and 4.x. The 0mq project started making backward-incompatible changes with the 3.x branch. Rather than create separate gems, this one handles all of them.
+
 3. Two terminal windows
 
 ZeroMQ is used to build network applications. At minimum, there is a "client" application and a "server" application that talk to each other over the network, IPC or an internal thread queue. For the sake of code simplicity, these programs are in separate files and need to be executed in different windows.
