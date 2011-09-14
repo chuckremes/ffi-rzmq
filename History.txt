@@ -1,3 +1,22 @@
+== 0.9.0 / 20110914
+  * Major refactoring of Socket internals so that a single gem can
+    support libzmq 2.x, 3.x and 4.x APIs without any user intervention.
+    The correct libzmq version is detected at runtime and used to
+    configure the Ruby classes to conform to the proper API.
+    
+  * Added Socket#recvmsgs as a convenience method for receiving a
+    multipart message into an array of Messages.
+    
+  * Added support for new 0mq API introduced in the 3.0 branch. 
+    API mostly changed for sending and receiving messages with new
+    POSIX-compliant send() and recv() functions. The original
+    functions were renamed sendmsg() and recvmsg().
+    Additionally, most getsockopt() and setsockopt() calls now use
+    an int (4 bytes) instead of a mish-mash of 32-bit and 64-bit
+    values.
+    For a full list of differences, visit the 0mq wiki page at:
+    http://www.zeromq.org/docs:3-0-upgrade
+
 == 0.8.2 / 20110728
   * Fixed major bug with Socket#setsockopt when writing 8-byte longs.
 
