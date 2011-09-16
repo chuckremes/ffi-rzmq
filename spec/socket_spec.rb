@@ -39,8 +39,8 @@ module ZMQ
         sock.close
       end
     end # context initializing
-    
-    
+
+
     context "calling close" do
       before(:all) { @ctx = Context.new }
       after(:all) { @ctx.terminate }
@@ -57,46 +57,50 @@ module ZMQ
     end # context calling close
 
 
-    context "identity=" do
-      before(:all) { @ctx = Context.new }
-      after(:all) { @ctx.terminate }
+    if version2? || version3?
 
-      it "should raise an exception for identities in excess of 255 bytes" do
-        sock = Socket.new @ctx.pointer, ZMQ::REQ
+      context "identity=" do
+        before(:all) { @ctx = Context.new }
+        after(:all) { @ctx.terminate }
 
-        lambda { sock.identity = ('a' * 256) }.should raise_exception(ZMQ::SocketError)
-        sock.close
-      end
+        it "should raise an exception for identities in excess of 255 bytes" do
+          sock = Socket.new @ctx.pointer, ZMQ::REQ
 
-      it "should raise an exception for identities of length 0" do
-        sock = Socket.new @ctx.pointer, ZMQ::REQ
+          lambda { sock.identity = ('a' * 256) }.should raise_exception(ZMQ::SocketError)
+          sock.close
+        end
 
-        lambda { sock.identity = '' }.should raise_exception(ZMQ::SocketError)
-        sock.close
-      end
+        it "should raise an exception for identities of length 0" do
+          sock = Socket.new @ctx.pointer, ZMQ::REQ
 
-      it "should NOT raise an exception for identities of 1 byte" do
-        sock = Socket.new @ctx.pointer, ZMQ::REQ
+          lambda { sock.identity = '' }.should raise_exception(ZMQ::SocketError)
+          sock.close
+        end
 
-        lambda { sock.identity = 'a' }.should_not raise_exception(ZMQ::SocketError)
-        sock.close
-      end
+        it "should NOT raise an exception for identities of 1 byte" do
+          sock = Socket.new @ctx.pointer, ZMQ::REQ
 
-      it "should NOT raise an exception for identities of 255 bytes" do
-        sock = Socket.new @ctx.pointer, ZMQ::REQ
+          lambda { sock.identity = 'a' }.should_not raise_exception(ZMQ::SocketError)
+          sock.close
+        end
 
-        lambda { sock.identity = ('a' * 255) }.should_not raise_exception(ZMQ::SocketError)
-        sock.close
-      end
+        it "should NOT raise an exception for identities of 255 bytes" do
+          sock = Socket.new @ctx.pointer, ZMQ::REQ
 
-      it "should convert numeric identities to strings" do
-        sock = Socket.new @ctx.pointer, ZMQ::REQ
+          lambda { sock.identity = ('a' * 255) }.should_not raise_exception(ZMQ::SocketError)
+          sock.close
+        end
 
-        sock.identity = 7
-        sock.identity.should == '7'
-        sock.close
-      end
-    end # context identity=
+        it "should convert numeric identities to strings" do
+          sock = Socket.new @ctx.pointer, ZMQ::REQ
+
+          sock.identity = 7
+          sock.identity.should == '7'
+          sock.close
+        end
+      end # context identity=
+
+    end # version2? || version3?
 
 
     [ZMQ::REQ, ZMQ::REP, ZMQ::DEALER, ZMQ::ROUTER, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR].each do |socket_type|
@@ -112,6 +116,81 @@ module ZMQ
         after(:each) do
           socket.close
         end
+
+
+        if version2? || version3?
+
+          context "using option ZMQ::IDENTITY" do
+            it "should set the identity given any string under 255 characters" do
+              length = 4
+              (1..255).each do |length|
+                identity = 'a' * length
+                socket.setsockopt ZMQ::IDENTITY, identity
+                socket.getsockopt(ZMQ::IDENTITY).should == identity
+              end
+            end
+
+            it "should raise a SocketError given a string 256 characters or longer" do
+              identity = 'a' * 256
+              lambda { socket.setsockopt(ZMQ::IDENTITY, identity) }.should raise_error(SocketError)
+            end
+          end # context using option ZMQ::IDENTITY
+
+        end # version2? || version3?
+
+
+        if version2?
+
+          context "using option ZMQ::HWM" do
+            it "should set the high water mark given a positive value" do
+              hwm = 4
+              socket.setsockopt ZMQ::HWM, hwm
+              socket.getsockopt(ZMQ::HWM).should == hwm
+            end
+          end # context using option ZMQ::HWM
+
+
+          context "using option ZMQ::SWAP" do
+            it "should set the swap value given a positive value" do
+              swap = 10_000
+              socket.setsockopt ZMQ::SWAP, swap
+              socket.getsockopt(ZMQ::SWAP).should == swap
+            end
+
+            it "should raise a SocketError given a negative value" do
+              swap = -10_000
+              lambda { socket.setsockopt(ZMQ::SWAP, swap) }.should raise_error(SocketError)
+            end
+          end # context using option ZMQ::SWP
+
+
+          context "using option ZMQ::MCAST_LOOP" do
+            it "should enable the multicast loopback given a 1 (true) value" do
+              socket.setsockopt ZMQ::MCAST_LOOP, 1
+              socket.getsockopt(ZMQ::MCAST_LOOP).should == 1
+            end
+
+            it "should disable the multicast loopback given a 0 (false) value" do
+              socket.setsockopt ZMQ::MCAST_LOOP, 0
+              socket.getsockopt(ZMQ::MCAST_LOOP).should == 0
+            end
+          end # context using option ZMQ::MCAST_LOOP
+
+
+          context "using option ZMQ::RECOVERY_IVL_MSEC" do
+            it "should set the time interval for saving messages measured in milliseconds given a positive value" do
+              value = 200
+              socket.setsockopt ZMQ::RECOVERY_IVL_MSEC, value
+              socket.getsockopt(ZMQ::RECOVERY_IVL_MSEC).should == value
+            end
+
+            it "should default to a value of -1" do
+              value = -1
+              socket.getsockopt(ZMQ::RECOVERY_IVL_MSEC).should == value
+            end
+          end # context using option ZMQ::RECOVERY_IVL_MSEC
+
+        end # version2?
 
 
         context "using option ZMQ::SUBSCRIBE" do
@@ -134,39 +213,12 @@ module ZMQ
               lambda { socket.setsockopt(ZMQ::UNSUBSCRIBE, "topic.string") }.should_not raise_error(SocketError)
             end
 
-#            it "should raise a ZMQ::SocketError given a topic string that was never subscribed" do
-#              socket.setsockopt ZMQ::SUBSCRIBE, "topic.string"
-#              lambda { socket.setsockopt(ZMQ::UNSUBSCRIBE, "unknown") }.should raise_error(SocketError)
-#            end
           else
             it "should raise a ZMQ::SocketError" do
               lambda { socket.setsockopt(ZMQ::UNSUBSCRIBE, "topic.string") }.should raise_error(SocketError)
             end
           end
         end # context using option ZMQ::UNSUBSCRIBE
-
-
-        context "using option ZMQ::HWM" do
-          it "should set the high water mark given a positive value" do
-            hwm = 4
-            socket.setsockopt ZMQ::HWM, hwm
-            socket.getsockopt(ZMQ::HWM).should == hwm
-          end
-        end # context using option ZMQ::HWM
-
-
-        context "using option ZMQ::SWAP" do
-          it "should set the swap value given a positive value" do
-            swap = 10_000
-            socket.setsockopt ZMQ::SWAP, swap
-            socket.getsockopt(ZMQ::SWAP).should == swap
-          end
-
-          it "should raise a SocketError given a negative value" do
-            swap = -10_000
-            lambda { socket.setsockopt(ZMQ::SWAP, swap) }.should raise_error(SocketError)
-          end
-        end # context using option ZMQ::SWP
 
 
         context "using option ZMQ::AFFINITY" do
@@ -176,23 +228,6 @@ module ZMQ
             socket.getsockopt(ZMQ::AFFINITY).should == affinity
           end
         end # context using option ZMQ::AFFINITY
-
-
-        context "using option ZMQ::IDENTITY" do
-          it "should set the identity given any string under 255 characters" do
-            length = 4
-            (1..255).each do |length|
-              identity = 'a' * length
-              socket.setsockopt ZMQ::IDENTITY, identity
-              socket.getsockopt(ZMQ::IDENTITY).should == identity
-            end
-          end
-
-          it "should raise a SocketError given a string 256 characters or longer" do
-            identity = 'a' * 256
-            lambda { socket.setsockopt(ZMQ::IDENTITY, identity) }.should raise_error(SocketError)
-          end
-        end # context using option ZMQ::IDENTITY
 
 
         context "using option ZMQ::RATE" do
@@ -221,19 +256,6 @@ module ZMQ
             lambda { socket.setsockopt ZMQ::RECOVERY_IVL, rate }.should raise_error(SocketError)
           end
         end # context using option ZMQ::RECOVERY_IVL
-
-
-        context "using option ZMQ::MCAST_LOOP" do
-          it "should enable the multicast loopback given a 1 (true) value" do
-            socket.setsockopt ZMQ::MCAST_LOOP, 1
-            socket.getsockopt(ZMQ::MCAST_LOOP).should == 1
-          end
-
-          it "should disable the multicast loopback given a 0 (false) value" do
-            socket.setsockopt ZMQ::MCAST_LOOP, 0
-            socket.getsockopt(ZMQ::MCAST_LOOP).should == 0
-          end
-        end # context using option ZMQ::MCAST_LOOP
 
 
         context "using option ZMQ::SNDBUF" do
@@ -300,20 +322,6 @@ module ZMQ
             socket.getsockopt(ZMQ::BACKLOG).should == value
           end
         end # context using option ZMQ::BACKLOG
-
-
-        context "using option ZMQ::RECOVERY_IVL_MSEC" do
-          it "should set the time interval for saving messages measured in milliseconds given a positive value" do
-            value = 200
-            socket.setsockopt ZMQ::RECOVERY_IVL_MSEC, value
-            socket.getsockopt(ZMQ::RECOVERY_IVL_MSEC).should == value
-          end
-
-          it "should default to a value of -1" do
-            value = -1
-            socket.getsockopt(ZMQ::RECOVERY_IVL_MSEC).should == value
-          end
-        end # context using option ZMQ::RECOVERY_IVL_MSEC
       end # context #setsockopt
 
 
@@ -344,9 +352,9 @@ module ZMQ
               library = ffi_lib(FFI::Library::LIBC).first
               attach_function :getsockopt, [:int, :int, :int, :pointer, :pointer], :int
             end # module LibC
-            
+
             if RUBY_PLATFORM =~ /linux/ || (RUBY_PLATFORM == 'java' && `uname` =~ /linux/i)
-              so_rcvbuf =  8 
+              so_rcvbuf =  8
               sol_socket = 1
             else #OSX
               so_rcvbuf =  0x1002
@@ -357,7 +365,7 @@ module ZMQ
             socklen_size.write_int 8
             rcvbuf = FFI::MemoryPointer.new :int64
             fd = socket.getsockopt(ZMQ::FD)
-            
+
             LibSocket.getsockopt(fd, sol_socket, so_rcvbuf, rcvbuf, socklen_size).should be_zero
           end
         end

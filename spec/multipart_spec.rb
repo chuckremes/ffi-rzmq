@@ -52,7 +52,7 @@ module ZMQ
       context "with identity" do
         include APIHelper
 
-        before(:all) do
+        before(:each) do # was :all
           addr = "tcp://127.0.0.1:#{random_port}"
 
           @rep = Socket.new(@ctx.pointer, ZMQ::XREP)
@@ -63,7 +63,7 @@ module ZMQ
           @req.connect(addr)
         end
 
-        after(:all) do
+        after(:each) do # was :all
           @req.close
           @rep.close
         end

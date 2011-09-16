@@ -12,6 +12,22 @@ def spec_ctx
   SPEC_CTX
 end
 
+# define some version guards so we can turn on/off specs based upon
+# the version of the 0mq library that is loaded
+def version2?
+  LibZMQ.version2?
+end
+
+def version3?
+  LibZMQ.version3?
+end
+
+def version4?
+  LibZMQ.version4?
+end
+
+
+
 module APIHelper
   def stub_libzmq
     @err_str_mock = mock("error string")
