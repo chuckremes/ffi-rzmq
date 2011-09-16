@@ -159,7 +159,7 @@ module ZMQ
       elsif long_long_option?(name)
         value.read_long_long
       elsif string_option?(name)
-        value.read_string(length.read_long_long)
+        value.read_string(length.read_int)
       end
 
       ret
@@ -216,8 +216,8 @@ module ZMQ
       if long_long_option?(name)
         # int64_t or uint64_t
         unless @sockopt_cache[:int64]
-          length = FFI::MemoryPointer.new :int64
-          length.write_long_long 8
+          length = FFI::MemoryPointer.new :size_t
+          length.write_int 8
           @sockopt_cache[:int64] = [FFI::MemoryPointer.new(:int64), length]
         end
         @sockopt_cache[:int64]
@@ -225,16 +225,16 @@ module ZMQ
       elsif int_option?(name)
         # int, 0mq assumes int is 4-bytes
         unless @sockopt_cache[:int32]
-          length = FFI::MemoryPointer.new :int32
+          length = FFI::MemoryPointer.new :size_t
           length.write_int 4
           @sockopt_cache[:int32] = [FFI::MemoryPointer.new(:int32), length]
         end
         @sockopt_cache[:int32]
 
       elsif string_option?(name)
-        length = FFI::MemoryPointer.new :int64
+        length = FFI::MemoryPointer.new :size_t
         # could be a string of up to 255 bytes
-        length.write_long_long 255
+        length.write_int 255
         [FFI::MemoryPointer.new(255), length]
       end
     end
@@ -502,7 +502,7 @@ module ZMQ
         if noblock?(flags)
           error_check_nonblock result_code
         else
-          error_check 'zmq_send', result_code
+          error_check 'zmq_recv', result_code
         end
       end
 
@@ -537,10 +537,280 @@ module ZMQ
       def self.close socket
         Proc.new { LibZMQ.zmq_close socket }
       end
-
-
     end # class Socket for version2
 
-  end # if LibZMQ.version2?
+  end # LibZMQ.version2?
+  
+  
+  if LibZMQ.version3?
+    class Socket
+      include CommonSocketBehavior
+      include IdentitySupport
+
+      # Convenience method for checking if the current message part
+      # is a label or not.
+      #
+      # Equivalent to Socket#getsockopt ZMQ::RCVLABEL
+      #
+      def label?
+        0 != getsockopt(ZMQ::RCVLABEL)
+      end
+
+      # Queues the message for transmission. Message is assumed to conform to the
+      # same public API as #Message.
+      #
+      # +flags+ may take two values:
+      # * 0 (default) - blocking operation
+      # * ZMQ::DONTWAIT - non-blocking operation
+      # * ZMQ::SNDMORE - this message is part of a multi-part message
+      #
+      # Returns true when the message was successfully enqueued.
+      # Returns false under two conditions.
+      # 1. The message could not be enqueued
+      # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
+      #
+      # The application code is responsible for handling the +message+ object
+      # lifecycle when #send returns.
+      #
+      # Can raise two kinds of exceptions depending on the error.
+      # ContextError:: Raised when a socket operation is attempted on a terminated
+      # #Context. See #ContextError.
+      # SocketError:: See all of the possibilities in the docs for #SocketError.
+      #
+      def sendmsg message, flags = 0
+        begin
+          result_code = LibZMQ.zmq_sendmsg @socket, message.address, flags
+
+          # when the flag isn't set, do a normal error check
+          # when set, check to see if the message was successfully queued
+          queued = dontwait?(flags) ? error_check_nonblock(result_code) : error_check('zmq_sendmsg', result_code)
+        end
+
+        # true if sent, false if failed/EAGAIN
+        queued
+      end
+
+      # Helper method to make a new #Message instance out of the +message_string+ passed
+      # in for transmission.
+      #
+      # +flags+ may be ZMQ::DONTWAIT.
+      #
+      # Can raise two kinds of exceptions depending on the error.
+      # ContextError:: Raised when a socket operation is attempted on a terminated
+      # #Context. See #ContextError.
+      # SocketError:: See all of the possibilities in the docs for #SocketError.
+      #
+      def send_string message_string, flags = 0
+        message = Message.new message_string
+        result_code = send_and_close message, flags
+
+        result_code
+      end
+
+      # Send a sequence of strings as a multipart message out of the +parts+
+      # passed in for transmission. Every element of +parts+ should be
+      # a String.
+      #
+      # +flags+ may be ZMQ::DONTWAIT.
+      #
+      # Raises the same exceptions as Socket#send.
+      #
+      def send_strings parts, flags = 0
+        return false if !parts || parts.empty?
+
+        parts[0...-1].each do |part|
+          return false unless send_string part, flags | ZMQ::SNDMORE
+        end
+
+        send_string parts[-1], flags
+      end
+
+      # Sends a message. This will automatically close the +message+ for both successful
+      # and failed sends.
+      #
+      # Raises the same exceptions as Socket#send
+      #
+      def send_and_close message, flags = 0
+        begin
+          result_code = sendmsg message, flags
+        ensure
+          message.close
+        end
+        result_code
+      end
+
+      # Dequeues a message from the underlying queue. By default, this is a blocking operation.
+      #
+      # +flags+ may take two values:
+      #  0 (default) - blocking operation
+      #  ZMQ::DONTWAIT - non-blocking operation
+      #
+      # Returns a true when it successfully dequeues one from the queue. Also, the +message+
+      # object is populated by the library with a data buffer containing the received
+      # data.
+      #
+      # Returns nil when a message could not be dequeued *and* +flags+ is set
+      # with ZMQ::DONTWAIT. The +message+ object is not modified in this situation.
+      #
+      # The application code is *not* responsible for handling the +message+ object lifecycle
+      # when #recv raises an exception. The #recv method takes ownership of the
+      # +message+ and its associated buffers. A failed call will
+      # release the data buffers assigned to the +message+.
+      #
+      # Can raise two kinds of exceptions depending on the error.
+      # ContextError:: Raised when a socket operation is attempted on a terminated
+      # #Context. See #ContextError.
+      # SocketError:: See all of the possibilities in the docs for #SocketError.
+      #
+      def recvmsg message, flags = 0
+        begin
+          dequeued = _recvmsg message, flags
+        rescue ZeroMQError
+          message.close
+          raise
+        end
+
+        dequeued ? true : nil
+      end
+
+      # Helper method to make a new #Message instance and convert its payload
+      # to a string.
+      #
+      # +flags+ may be ZMQ::DONTWAIT.
+      #
+      # Can raise two kinds of exceptions depending on the error.
+      # ContextError:: Raised when a socket operation is attempted on a terminated
+      # #Context. See #ContextError.
+      # SocketError:: See all of the possibilities in the docs for #SocketError.
+      #
+      def recv_string flags = 0
+        message = @receiver_klass.new
+
+        begin
+          dequeued = _recvmsg message, flags
+
+          if dequeued
+            message.copy_out_string
+          else
+            nil
+          end
+        ensure
+          message.close
+        end
+      end
+
+      # Receive a multipart message as a list of strings.
+      #
+      # +flag+ may be ZMQ::DONTWAIT. Any other flag will be
+      # removed.
+      #
+      # Raises the same exceptions as Socket#recv.
+      #
+      def recv_strings flag = 0
+        recvmsgs.map { |message| message.copy_out_string }
+      end
+
+      # Receive a multipart message as an array of objects
+      # (by default these are instances of Message).
+      #
+      # +flag+ may be ZMQ::NOBLOCK. Any other flag will be
+      # removed.
+      #
+      # Raises the same exceptions as Socket#recv.
+      #
+      def recvmsgs flag = 0
+        flag = DONTWAIT if dontwait?(flag)
+        
+        labels, parts = [], []
+        message = @receiver_klass.new
+        rcbool = recvmsg message, flag
+        
+        if label?
+          puts "read label! [#{message.copy_out_string}]"
+          labels << message if rcbool
+        else
+          puts "read regular part! [#{message.copy_out_string}]"
+          parts << message if rcbool
+        end
+        
+        while more_parts?
+          message = @receiver_klass.new
+          rcbool = recvmsg message, flag
+          
+          if rcbool
+            #label? ? labels.push(message) : parts.push(message)
+            if label?
+              puts "read label [#{message.copy_out_string}]"
+              labels.push(message)
+            else
+              puts "read part [#{message.copy_out_string}]"
+              parts.push(message)
+            end
+          end
+        end
+        
+        if labels.empty?
+          parts
+        else
+          labels + [Message.new] + parts
+        end
+      end
+
+
+      private
+
+      def dontwait? flags
+        (DONTWAIT & flags) == DONTWAIT
+      end
+      alias :noblock? :dontwait?
+
+      def _recvmsg message, flags = 0
+        result_code = LibZMQ.zmq_recvmsg @socket, message.address, flags
+
+        if dontwait?(flags)
+          error_check_nonblock result_code
+        else
+          error_check 'zmq_recvmsg', result_code
+        end
+      end
+
+#      def _recv message, flags = 0
+#        result_code = LibZMQ.zmq_recv @socket, message.address, flags
+#
+#        if dontwait?(flags)
+#          error_check_nonblock result_code
+#        else
+#          error_check 'zmq_recv', result_code
+#        end
+#      end
+      
+      def int_option? name
+        super ||
+        RCVLABEL          == name ||
+        RECONNECT_IVL_MAX == name ||
+        RCVHWM            == name ||
+        SNDHWM            == name ||
+        RATE              == name ||
+        RECOVERY_IVL      == name ||
+        SNDBUF            == name ||
+        RCVBUF            == name
+      end
+      
+      # these finalizer-related methods cannot live in the CommonSocketBehavior
+      # module; they *must* be in the class definition directly
+
+      def define_finalizer
+        ObjectSpace.define_finalizer(self, self.class.close(@socket))
+      end
+
+      def remove_finalizer
+        ObjectSpace.undefine_finalizer self
+      end
+
+      def self.close socket
+        Proc.new { LibZMQ.zmq_close socket }
+      end
+    end # Socket for version3
+  end # LibZMQ.version3?
 
 end # module ZMQ

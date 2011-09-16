@@ -4,7 +4,9 @@
 #
 module LibZMQ
   extend FFI::Library
-  ZMQ_LIB_PATHS = %w{/usr/local/lib /opt/local/lib /usr/local/homebrew/lib}.map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
+  
+  inside_gem = File.join(File.dirname(__FILE__), '..', '..', 'ext')
+  ZMQ_LIB_PATHS = [inside_gem, '/usr/local/lib', '/opt/local/lib', '/usr/local/homebrew/lib'].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
   ffi_lib(%w{libzmq} + ZMQ_LIB_PATHS)
 
   # Size_t not working properly on Windows
@@ -106,6 +108,7 @@ end
 # Attaches to those functions specific to the 2.x API
 #
 if LibZMQ.version2?
+  puts "loading version #{LibZMQ.version.inspect}"
   module LibZMQ
     # Socket api
     # @blocking = true is a hint to FFI that the following (and only the following)
@@ -130,9 +133,10 @@ end
 # Attaches to those functions specific to the 3.x and 4.x APIs
 #
 if LibZMQ.version3? || LibZMQ.version4?
+  puts "loading version #{LibZMQ.version.inspect}"
   module LibZMQ
     # Socket api
-    attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :size_t], :int
+    attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :pointer], :int
     attach_function :zmq_recvmsg, [:pointer, :pointer, :int], :int
     attach_function :zmq_recv, [:pointer, :pointer, :size_t, :int], :int
     attach_function :zmq_sendmsg, [:pointer, :pointer, :int], :int

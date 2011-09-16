@@ -6,10 +6,10 @@ module ZMQ
   SUB = 2
   REQ = 3
   REP = 4
-  DEALER = XREQ = 5
-  ROUTER = XREP = 6
-  PULL = UPSTREAM = 7
-  PUSH = DOWNSTREAM = 8
+  XREQ = 5
+  XREP = 6
+  PULL = 7
+  PUSH = 8
 
   SocketTypeNameMap = {
     PAIR => "PAIR",
@@ -17,22 +17,16 @@ module ZMQ
     SUB => "SUB",
     REQ => "REQ",
     REP => "REP",
-    ROUTER => "ROUTER",
-    DEALER => "DEALER",
     PULL => "PULL",
     PUSH => "PUSH"
   }
 
   #  Socket options
-  HWM = 1
-  SWAP = 3
   AFFINITY = 4
-  IDENTITY = 5
   SUBSCRIBE = 6
   UNSUBSCRIBE = 7
   RATE = 8
   RECOVERY_IVL = 9
-  MCAST_LOOP = 10
   SNDBUF = 11
   RCVBUF = 12
   RCVMORE = 13
@@ -42,7 +36,6 @@ module ZMQ
   LINGER = 17
   RECONNECT_IVL = 18
   BACKLOG = 19
-  RECOVERY_IVL_MSEC = 20
   RECONNECT_IVL_MAX = 21
 
   #  Send/recv options
@@ -62,11 +55,6 @@ module ZMQ
   ENOMEM = Errno::ENOMEM::Errno
   ENODEV = Errno::ENODEV::Errno
   EFAULT = Errno::EFAULT::Errno
-
-  #  Device Types
-  STREAMER = 1
-  FORWARDER = 2
-  QUEUE = 3
 
   # ZMQ errors
   HAUSNUMERO     = 156384712
@@ -89,27 +77,43 @@ module ZMQ
 end # module ZMQ
 
 
-if LibZMQ.version3? || LibZMQ.version4?
+if LibZMQ.version2?
+  # Socket types
+  UPSTREAM = PULL
+  DOWNSTREAM = PUSH
+  DEALER = XREQ
+  ROUTER = XREP
+
+  SocketTypeNameMap[ROUTER] = 'ROUTER'
+  SocketTypeNameMap[DEALER] = 'DEALER'
+
+  #  Device Types
+  STREAMER = 1
+  FORWARDER = 2
+  QUEUE = 3
+
+  # Socket options
+  HWM = 1
+  IDENTITY = 5
+  MCAST_LOOP = 10
+  SWAP = 3
+  RECOVERY_IVL_MSEC = 20
+
+  # Send/recv options
+  NOBLOCK = 1
+end
+
+
+if LibZMQ.version3?
   module ZMQ
     # Socket types
-    remove_const UPSTREAM
-    remove_const DOWNSTREAM
-    remove_const ROUTER
-    remove_const DEALER
     XPUB = 9
     XSUB = 10
     ROUTER = 11
     DEALER = 12
-
-    # devices
-    remove_const STREAMER
-    remove_const FORWARDER
-    remove_const QUEUE
     
     # Socket options
-    remove_const MCAST_LOOP
-    remove_const SWAP
-    remove_const RECOVERY_IVL_MSEC
+    IDENTITY = 5
     MAXMSGSIZE = 22
     SNDHWM = 23
     RCVHWM = 24
@@ -119,7 +123,6 @@ if LibZMQ.version3? || LibZMQ.version4?
     RCVLABEL = 29
     
     # Send/recv options
-    remove_const NOBLOCK
     DONTWAIT = 1
     SNDLABEL = 4
     
@@ -128,10 +131,37 @@ if LibZMQ.version3? || LibZMQ.version4?
     ENOTSOCK = Errno::ENOTSOCK::Errno rescue (HAUSNUMERO + 9)
     EINTR = Errnow::EINTR::Errno rescue (HAUSNUMERO + 10)
     EMFILE = Errno::EMFILE::Errno
-    EMTHREAD = HAUSNUMERO + 54
     
-    if LibZMQ.version4?
-      remove_const IDENTITY
-    end
   end
-end
+end # version3?
+
+
+if LibZMQ.version4?
+  module ZMQ
+    # Socket types
+    XPUB = 9
+    XSUB = 10
+    ROUTER = 11
+    DEALER = 12
+    
+    # Socket options
+    MAXMSGSIZE = 22
+    SNDHWM = 23
+    RCVHWM = 24
+    MULTICAST_HOPS = 25
+    RCVTIMEO = 27
+    SNDTIMEO = 28
+    RCVLABEL = 29
+    
+    # Send/recv options
+    DONTWAIT = 1
+    SNDLABEL = 4
+    
+    
+    # Socket & other errors
+    ENOTSOCK = Errno::ENOTSOCK::Errno rescue (HAUSNUMERO + 9)
+    EINTR = Errnow::EINTR::Errno rescue (HAUSNUMERO + 10)
+    EMFILE = Errno::EMFILE::Errno
+    
+  end
+end # version4?

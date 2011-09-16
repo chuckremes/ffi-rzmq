@@ -70,7 +70,7 @@ module ZMQ
     end
 
     def raise_error source, result_code
-      if ['zmq_send', 'zmq_senmsg', 'zmq_recv', 'zmq_recvmsg', 'zmq_socket', 'zmq_setsockopt', 'zmq_getsockopt', 'zmq_bind', 'zmq_connect', 'zmq_close'].include?(source)
+      if ['zmq_send', 'zmq_sendmsg', 'zmq_recv', 'zmq_recvmsg', 'zmq_socket', 'zmq_setsockopt', 'zmq_getsockopt', 'zmq_bind', 'zmq_connect', 'zmq_close'].include?(source)
         raise SocketError.new source, result_code, errno, error_string
 
       elsif ['zmq_init', 'zmq_term'].include?(source)
