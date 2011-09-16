@@ -1,0 +1,5 @@
+To avoid loading a system-wide 0mq library, place
+the C libraries here. This let's you run your Ruby
+code with a 0mq C library build that is different
+from the system-wide one. This can be handy for
+rolling upgrades or testing.
