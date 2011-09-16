@@ -4,10 +4,12 @@
 #
 module LibZMQ
   extend FFI::Library
-  
+
+  # bias the library discovery to a path inside the gem first, then
+  # to the usual system paths
   inside_gem = File.join(File.dirname(__FILE__), '..', '..', 'ext')
   ZMQ_LIB_PATHS = [inside_gem, '/usr/local/lib', '/opt/local/lib', '/usr/local/homebrew/lib'].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
-  ffi_lib(%w{libzmq} + ZMQ_LIB_PATHS)
+  ffi_lib(ZMQ_LIB_PATHS + %w{libzmq})
 
   # Size_t not working properly on Windows
   find_type(:size_t) rescue typedef(:ulong, :size_t)
