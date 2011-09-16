@@ -1,5 +1,7 @@
 module ZMQ
-
+  # Set up all of the constants that are *common* to all API
+  # versions
+  
   #  Socket types
   PAIR = 0
   PUB = 1
@@ -39,7 +41,6 @@ module ZMQ
   RECONNECT_IVL_MAX = 21
 
   #  Send/recv options
-  NOBLOCK = 1
   SNDMORE = 2
 
   #  I/O multiplexing
@@ -78,30 +79,32 @@ end # module ZMQ
 
 
 if LibZMQ.version2?
-  # Socket types
-  UPSTREAM = PULL
-  DOWNSTREAM = PUSH
-  DEALER = XREQ
-  ROUTER = XREP
+  module ZMQ
+    # Socket types
+    UPSTREAM = PULL
+    DOWNSTREAM = PUSH
+    DEALER = XREQ
+    ROUTER = XREP
 
-  SocketTypeNameMap[ROUTER] = 'ROUTER'
-  SocketTypeNameMap[DEALER] = 'DEALER'
+    SocketTypeNameMap[ROUTER] = 'ROUTER'
+    SocketTypeNameMap[DEALER] = 'DEALER'
 
-  #  Device Types
-  STREAMER = 1
-  FORWARDER = 2
-  QUEUE = 3
+    #  Device Types
+    STREAMER = 1
+    FORWARDER = 2
+    QUEUE = 3
 
-  # Socket options
-  HWM = 1
-  IDENTITY = 5
-  MCAST_LOOP = 10
-  SWAP = 3
-  RECOVERY_IVL_MSEC = 20
+    # Socket options
+    HWM = 1
+    IDENTITY = 5
+    MCAST_LOOP = 10
+    SWAP = 3
+    RECOVERY_IVL_MSEC = 20
 
-  # Send/recv options
-  NOBLOCK = 1
-end
+    # Send/recv options
+    NOBLOCK = 1
+  end
+end # version2?
 
 
 if LibZMQ.version3?
@@ -111,7 +114,7 @@ if LibZMQ.version3?
     XSUB = 10
     ROUTER = 11
     DEALER = 12
-    
+
     # Socket options
     IDENTITY = 5
     MAXMSGSIZE = 22
@@ -121,17 +124,17 @@ if LibZMQ.version3?
     RCVTIMEO = 27
     SNDTIMEO = 28
     RCVLABEL = 29
-    
+
     # Send/recv options
     DONTWAIT = 1
     SNDLABEL = 4
-    
-    
+
+
     # Socket & other errors
     ENOTSOCK = Errno::ENOTSOCK::Errno rescue (HAUSNUMERO + 9)
     EINTR = Errnow::EINTR::Errno rescue (HAUSNUMERO + 10)
     EMFILE = Errno::EMFILE::Errno
-    
+
   end
 end # version3?
 
@@ -143,7 +146,7 @@ if LibZMQ.version4?
     XSUB = 10
     ROUTER = 11
     DEALER = 12
-    
+
     # Socket options
     MAXMSGSIZE = 22
     SNDHWM = 23
@@ -152,16 +155,16 @@ if LibZMQ.version4?
     RCVTIMEO = 27
     SNDTIMEO = 28
     RCVLABEL = 29
-    
+
     # Send/recv options
     DONTWAIT = 1
     SNDLABEL = 4
-    
-    
+
+
     # Socket & other errors
     ENOTSOCK = Errno::ENOTSOCK::Errno rescue (HAUSNUMERO + 9)
     EINTR = Errnow::EINTR::Errno rescue (HAUSNUMERO + 10)
     EMFILE = Errno::EMFILE::Errno
-    
+
   end
 end # version4?
