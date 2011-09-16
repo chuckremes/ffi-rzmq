@@ -1,5 +1,10 @@
-require 'rubygems'
-require 'ffi-rzmq'
+
+begin
+  require 'rubygems'
+  require 'ffi-rzmq'
+rescue LoadError
+  require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'ffi-rzmq')
+end
 
 
 link = "tcp://127.0.0.1:5555"

@@ -16,8 +16,13 @@
 #    You should have received a copy of the Lesser GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-require 'rubygems'
-require 'ffi-rzmq'
+
+begin
+  require 'rubygems'
+  require 'ffi-rzmq'
+rescue LoadError
+  require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'ffi-rzmq')
+end
 
 if ARGV.length < 3
   puts "usage: remote_lat <connect-to> <message-size> <roundtrip-count>"

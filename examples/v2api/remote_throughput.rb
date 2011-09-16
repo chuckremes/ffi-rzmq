@@ -1,5 +1,10 @@
-require 'rubygems'
-require 'ffi-rzmq'
+
+begin
+  require 'rubygems'
+  require 'ffi-rzmq'
+rescue LoadError
+  require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'ffi-rzmq')
+end
 
 if ARGV.length != 3
 	puts "usage: remote_thr <connect-to> <message-size> <message-count>"

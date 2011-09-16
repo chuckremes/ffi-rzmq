@@ -14,9 +14,8 @@ making backward-incompatible changes to the API with the 3.x release.
 The gem auto-configures itself to expose the API conforming to the loaded
 C library.
 
-(As of this writing [20110914], no code has actually been written to expose
-the 3.x or 4.x APIs. Most of the work to modularize things so that this next
-step will be easy have been taken. I promise to work on this soon-ish.)
+(As of this writing [20110916], preliminary code has been written to expose
+the 3.x API.)
 
 The impetus behind this library was to provide support for ZeroMQ in
 JRuby which has native threads. Unlike MRI, IronRuby and

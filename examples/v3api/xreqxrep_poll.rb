@@ -1,10 +1,4 @@
-
-begin
-  require 'rubygems'
-  require 'ffi-rzmq'
-rescue LoadError
-  require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'ffi-rzmq')
-end
+require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'ffi-rzmq')
 
 
 link = "tcp://127.0.0.1:5555"
@@ -43,7 +37,7 @@ until @done do
 
     5.times do |i|
       payload = "#{ i.to_s * 40 }"
-      s1.send_string payload, ZMQ::NOBLOCK
+      s1.send_string payload, ZMQ::DONTWAIT
     end
     @unsent = false
   end
@@ -55,11 +49,11 @@ until @done do
       puts
       #p poller.writables
       if sock.identity =~ /xrep/
-        routing_info = sock.recv_string ZMQ::NOBLOCK
+        routing_info = sock.recv_string ZMQ::DONTWAIT
         puts "routing_info received [#{routing_info}] on socket.identity [#{sock.identity}]"
       else
         routing_info = nil
-        received_msg = sock.recv_string ZMQ::NOBLOCK
+        received_msg = sock.recv_string ZMQ::DONTWAIT
         
         # skip to the next iteration if received_msg is nil; that means we got an EAGAIN
         next unless received_msg
@@ -67,13 +61,13 @@ until @done do
       end
 
       while sock.more_parts? do
-        received_msg = sock.recv_string ZMQ::NOBLOCK
+        received_msg = sock.recv_string ZMQ::DONTWAIT
 
         puts "message received [#{received_msg}]"
       end
 
       puts "kick back a reply"
-      sock.send_string routing_info, ZMQ::SNDMORE | ZMQ::NOBLOCK if routing_info
+      sock.send_string routing_info, ZMQ::SNDMORE | ZMQ::DONTWAIT if routing_info
       time = Time.now.strftime "%Y-%m-%dT%H:%M:%S.#{Time.now.usec}"
       reply = "reply " + sock.identity.upcase + " #{time}"
       puts "sent reply [#{reply}], #{time}"
