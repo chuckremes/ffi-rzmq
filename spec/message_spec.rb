@@ -7,36 +7,114 @@ module ZMQ
   describe Message do
 
     context "when initializing with an argument" do
-      
+
+      it "calls zmq_msg_init_data()" do
+        LibZMQ.should_receive(:zmq_msg_init_data)
+        message = Message.new "text"
+      end
+
       it "should *not* define a finalizer on this object" do
         ObjectSpace.should_not_receive(:define_finalizer)
         Message.new "text"
       end
-    end # context initializing
+    end # context initializing with arg
 
+    context "when initializing *without* an argument" do
 
-    context "when copying in data" do
-      it "should raise a MessageError when the Message is being reused" do
-        message = Message.new "text"
-        lambda { message.copy_in_string("new text") }.should raise_error(MessageError)
+      it "calls zmq_msg_init()" do
+        LibZMQ.should_receive(:zmq_msg_init)
+        message = Message.new
       end
-    end
-    
-    context "when copying binary data" do
-      it "should find the correct length by ignoring encoding" do
+
+      it "should *not* define a finalizer on this object" do
+        ObjectSpace.should_not_receive(:define_finalizer)
+        Message.new "text"
+      end
+    end # context initializing with arg
+
+
+    context "#copy_in_string" do
+      it "calls zmq_msg_init_data()" do
+        message = Message.new "text"
+
+        LibZMQ.should_receive(:zmq_msg_init_data)
+        message.copy_in_string("new text")
+      end
+
+      it "correctly finds the length of binary data by ignoring encoding" do
         message = Message.new
         message.copy_in_string("\x83\x6e\x04\x00\x00\x44\xd1\x81")
         message.size.should == 8
       end
     end
 
+
+    context "#copy" do
+      it "calls zmq_msg_copy()" do
+        message = Message.new "text"
+        copy = Message.new
+
+        LibZMQ.should_receive(:zmq_msg_copy)
+        copy.copy(message)
+      end
+    end # context copy
+
+
+    context "#move" do
+      it "calls zmq_msg_move()" do
+        message = Message.new "text"
+        copy = Message.new
+
+        LibZMQ.should_receive(:zmq_msg_move)
+        copy.move(message)
+      end
+    end # context move
+
+
+    context "#size" do
+      it "calls zmq_msg_size()" do
+        message = Message.new "text"
+
+        LibZMQ.should_receive(:zmq_msg_size)
+        message.size
+      end
+    end # context size
+
+
+    context "#data" do
+      it "calls zmq_msg_data()" do
+        message = Message.new "text"
+
+        LibZMQ.should_receive(:zmq_msg_data)
+        message.data
+      end
+    end # context data
+
+
+    context "#close" do
+      it "calls zmq_msg_close() the first time" do
+        message = Message.new "text"
+
+        LibZMQ.should_receive(:zmq_msg_close)
+        message.close
+      end
+
+      it "*does not* call zmq_msg_close() on subsequent invocations" do
+        message = Message.new "text"
+        message.close
+
+        LibZMQ.should_not_receive(:zmq_msg_close)
+        message.close
+      end
+    end # context close
+
   end # describe Message
-  
-  
+
+
   describe ManagedMessage do
 
     context "when initializing with an argument" do
-      
+
       it "should define a finalizer on this object" do
         ObjectSpace.should_receive(:define_finalizer)
         ManagedMessage.new "text"

@@ -51,27 +51,14 @@ module ZMQ
         LibZMQ.should_receive(:zmq_term).with(ctx.pointer).and_return(0)
         ctx.terminate
       end
-
-      it "should raise a ZMQ::ContextError exception when it fails" do
-        ctx = Context.new # can't use a shared context here because we are terminating it!
-        LibZMQ.stub(:zmq_term => -1)
-        lambda { ctx.terminate }.should raise_error(ZMQ::ContextError)
-      end
     end # context terminate
 
 
     context "when allocating a socket" do
-#      it "should return a ZMQ::Socket" do
-#        ctx = spec_ctx
-#        sock = ctx.socket ZMQ::REQ
-#        sock.should be_kind_of(ZMQ::Socket)
-#        # need to do something with the socket so it's in a state that can return ETERM
-#      end
-
       it "should raise a ZMQ::SocketError exception when allocation fails" do
         ctx = spec_ctx
-        Socket.stub(:new => nil)
-        lambda { ctx.socket(ZMQ::REQ) }.should raise_error(ZMQ::SocketError)
+        LibZMQ.stub!(:zmq_socket => nil)
+        lambda { ctx.socket(ZMQ::REQ) }.should raise_error(ZMQ::ContextError)
       end
     end # context socket
 

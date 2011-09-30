@@ -9,20 +9,37 @@ function interface). It's a pure ruby wrapper so this gem can be loaded
 and run by any ruby runtime that supports FFI. That's all of them:
 MRI 1.9.x, Rubinius and JRuby.
 
-This single gem supports 0mq 2.x, 3.x and 4.x APIs. The 0mq project started
+This single gem supports 0mq 2.x and 3.x 0mq APIs. The 0mq project started
 making backward-incompatible changes to the API with the 3.x release.
 The gem auto-configures itself to expose the API conforming to the loaded
 C library.
 
-(As of this writing [20110916], preliminary code has been written to expose
-the 3.x API.)
-
 The impetus behind this library was to provide support for ZeroMQ in
-JRuby which has native threads. Unlike MRI, IronRuby and
-Rubinius which all have a GIL, JRuby allows for threaded access to ruby
-code from outside extensions. ZeroMQ is heavily threaded, so until the
-other runtimes remove their GIL, JRuby will likely be the best
-environment to run this library.
+JRuby which has native threads. Unlike MRI, which has a GIL, JRuby and
+Rubinius allow for threaded access to Ruby code from outside extensions. 
+ZeroMQ is heavily threaded, so until the MRI runtime removes its GIL, 
+JRuby and Rubinius will likely be the best environments to run this library.
+
+== Breaking API Changes from 0.8.x to 0.9.0
+
+There has been a major change in API from the 0.8.x series to 0.9.0. 
+Previously the Socket#send and Socket#recv methods could raise exceptions
+when there was an error. They also returned true or false depending on
+the success of failure of the operation. Mixing and matching return codes
+and exceptions is a terrible idea in practice, so all of the exception
+code from Socket has been removed.
+
+The Poller and Message class have also had their exceptions removed for
+returning errors on instance methods. They can return exceptions during
+allocation since there is no other clean way of indicating that the
+call to #new has failed.
+
+This is a *breaking* change. I'm sorry but the old API's inconsistency was
+causing too many problems. It now more closely mimics the 0mq C API. If you
+prefer the original API, it should be relatively simple to wrap these
+classes up to provide the original API.
+
+All example code has been updated to use the new Ruby API.
 
 == PERFORMANCE
 

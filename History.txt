@@ -1,4 +1,14 @@
-== 0.9.0 / 20110914
+== 0.9.0 / 20110930
+  * Changed the behavior of every method that used to produce exceptions.
+    The methods now behave more like the C API functions. They return
+    result codes instead of raising exceptions. Further, the "receive"
+    methods on Socket now all take an empty string as a buffer to read
+    the message into.
+    This is a BREAKING CHANGE and is NOT backward compatible with earlier
+    releases. I apologize for the inconvenience, but this API will be
+    much easier to test/spec and maintain. It will also allow for the
+    production of more logical code.
+    
   * Major refactoring of Socket internals so that a single gem can
     support libzmq 2.x, 3.x and 4.x APIs without any user intervention.
     The correct libzmq version is detected at runtime and used to
@@ -16,6 +26,12 @@
     values.
     For a full list of differences, visit the 0mq wiki page at:
     http://www.zeromq.org/docs:3-0-upgrade
+    
+  * Created a new ext/ directory so that users can copy the libzmq*
+    library files directly into the gem for easier distribution. This
+    path is checked *before* the usual system paths.
+    
+  * Rewrote all examples to use the revised API.
 
 == 0.8.2 / 20110728
   * Fixed major bug with Socket#setsockopt when writing 8-byte longs.
