@@ -38,7 +38,7 @@ until @done do
     payload = "#{ '3' * 1024 }"
 
     puts "sending payload nonblocking"
-    assert(s1.send_string(payload, ZMQ::NOBLOCK))
+    assert(s1.send_string(payload, ZMQ::DONTWAIT))
     @unsent = false
   end
 
@@ -46,7 +46,7 @@ until @done do
   if Time.now - start_time > 1
     poller.readables.each do |sock|
       received_msg = ''
-      assert(sock.recv_string(received_msg, ZMQ::NOBLOCK))
+      assert(sock.recv_string(received_msg, ZMQ::DONTWAIT))
 
       puts "message received [#{received_msg}]"
       @done = true

@@ -71,7 +71,7 @@ assert(s4.recv_string(body)) if s4.more_parts?
 puts "s4 received topic [#{topic}], body [#{body}]"
 
 s5_string = ''
-rc = s5.recv_string(s5_string, ZMQ::NOBLOCK)
+rc = s5.recv_string(s5_string, ZMQ::DONTWAIT)
 eagain = (rc == -1 && ZMQ::Util.errno == ZMQ::EAGAIN)
 puts(eagain ? "s5 received no messages" : "s5 FAILED")
 

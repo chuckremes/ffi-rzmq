@@ -22,19 +22,26 @@ rescue ContextError => e
   raise
 end
 
-assert(s.setsockopt(ZMQ::LINGER, 100))
+#assert(s.setsockopt(ZMQ::LINGER, 100))
 assert(s.setsockopt(ZMQ::SUBSCRIBE, ""))
+#assert(s.setsockopt(ZMQ::RCVHWM, 0))
+#assert(s.setsockopt(ZMQ::SNDHWM, 0))
 
 assert(s.bind(bind_to))
+sleep 1
 
 msg = ZMQ::Message.new
-assert(s.recv(msg))
+msg = ''
+assert(s.recv_string(msg))
+#assert(s.recvmsg(msg))
 
 start_time = Time.now
 
 i = 1
 while i < message_count
-  assert(s.recv(msg))
+  #assert(s.recvmsg(msg))
+  assert(s.recv_string(msg))
+  puts i
   i += 1
 end
 

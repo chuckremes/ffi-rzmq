@@ -16,15 +16,10 @@
 #    You should have received a copy of the Lesser GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-begin
-  require 'rubygems'
-  require 'ffi-rzmq'
-rescue LoadError
-  require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'ffi-rzmq')
-end
+require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'ffi-rzmq')
 
 if ARGV.length < 3
-  puts "usage: local_lat <connect-to> <message-size> <roundtrip-count>"
+  puts "usage: ruby local_lat.rb <connect-to> <message-size> <roundtrip-count>"
   exit
 end
 
@@ -32,16 +27,32 @@ bind_to = ARGV[0]
 message_size = ARGV[1].to_i
 roundtrip_count = ARGV[2].to_i
 
-ctx = ZMQ::Context.new 1
-s = ctx.socket ZMQ::REP
-s.setsockopt(ZMQ::HWM, 100)
-s.bind(bind_to)
-
-roundtrip_count.times do
-  msg = s.recv_string 0
-  raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
-  s.send_string msg, 0
+def assert(rc)
+  raise "Last API call failed at #{caller(1)}" unless rc >= 0
 end
 
-# give the lib time to flush any remaining messages
-sleep 1
+begin
+  ctx = ZMQ::Context.new
+  s = ctx.socket(ZMQ::REP)
+rescue ContextError => e
+  STDERR.puts "Failed to allocate context or socket!"
+  raise
+end
+
+assert(s.setsockopt(ZMQ::LINGER, 100))
+assert(s.setsockopt(ZMQ::HWM, 100))
+
+assert(s.bind(bind_to))
+
+roundtrip_count.times do
+  string = ''
+  assert(s.recv_string(string, 0))
+
+  raise "Message size doesn't match, expected [#{message_size}] but received [#{string.size}]" if message_size != string.size
+
+  assert(s.send_string(string, 0))
+end
+
+assert(s.close)
+
+ctx.terminate

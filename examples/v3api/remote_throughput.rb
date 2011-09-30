@@ -22,18 +22,26 @@ rescue ContextError => e
   raise
 end
 
-assert(s.setsockopt(ZMQ::LINGER, 1_000))
+#assert(s.setsockopt(ZMQ::LINGER, 1_000))
+#assert(s.setsockopt(ZMQ::RCVHWM, 0))
+#assert(s.setsockopt(ZMQ::SNDHWM, 0))
 assert(s.connect(connect_to))
+
+# the sleep gives the downstream SUB socket a chance to register its
+# subscription filters with this PUB socket
+sleep 1
 
 contents = "#{'0'*message_size}"
 
 i = 0
 while i < message_count
   msg = ZMQ::Message.new(contents)
-  assert(s.send(msg))
+  assert(s.sendmsg(msg))
+  puts i
   i += 1
 end
 
+sleep 10
 assert(s.close)
 
 ctx.terminate
