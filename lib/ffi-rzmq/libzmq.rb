@@ -120,7 +120,9 @@ if LibZMQ.version2?
     # release the GIL will result in a hang; the hint *may* allow things to run
     # smoothly for Ruby runtimes hampered by a GIL.
     #
-    # This is really only honored by the MRI implementation.
+    # This is really only honored by the MRI implementation but it *is* necessary
+    # otherwise the runtime hangs (and requires a kill -9 to terminate)
+    #
     attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :pointer], :int
     @blocking = true
     attach_function :zmq_recv, [:pointer, :pointer, :int], :int
@@ -139,9 +141,13 @@ if LibZMQ.version3? || LibZMQ.version4?
   module LibZMQ
     # Socket api
     attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :pointer], :int
+    @blocking = true
     attach_function :zmq_recvmsg, [:pointer, :pointer, :int], :int
+    @blocking = true
     attach_function :zmq_recv, [:pointer, :pointer, :size_t, :int], :int
+    @blocking = true
     attach_function :zmq_sendmsg, [:pointer, :pointer, :int], :int
+    @blocking = true
     attach_function :zmq_send, [:pointer, :pointer, :size_t, :int], :int
   end
 end
