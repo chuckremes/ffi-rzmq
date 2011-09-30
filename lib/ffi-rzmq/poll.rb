@@ -14,7 +14,7 @@ module ZMQ
       @writables = []
     end
 
-    # Checks each poll item for selectability based on the poll items'
+    # Checks each registered socket for selectability based on the poll items'
     # registered +events+. Will block for up to +timeout+ milliseconds
     # A millisecond is 1/1000 of a second, so to block for 1 second
     # pass the value "1000" to #poll.
@@ -22,25 +22,34 @@ module ZMQ
     # Pass "-1" or +:blocking+ for +timeout+ for this call to block
     # indefinitely.
     #
-    # May raise a ZMQ::PollError exception. This occurs when one of the
-    # registered sockets belongs to an application thread in another
-    # Context.
-    #
     # This method will return *immediately* when there are no registered
     # sockets. In that case, the +timeout+ parameter is not honored. To
     # prevent a CPU busy-loop, the caller of this method should detect
     # this possible condition (via #size) and throttle the call
     # frequency.
     #
+    # Returns 0 when there are no registered sockets that are readable
+    # or writable. 
+    # 
+    # Return 1 (or greater) to indicate the number of readable or writable
+    # sockets. These sockets should be processed using the #readables and
+    # #writables accessors.
+    #
+    # Returns -1 when there is an error. Use #errno to get the related
+    # error number.
+    #
     def poll timeout = :blocking
       unless @items.empty?
         timeout = adjust timeout
         items_triggered = LibZMQ.zmq_poll @items.address, @items.size, timeout
-        error_check 'zmq_poll', items_triggered >= 0 ? 0 : items_triggered
-        update_selectables
-        items_hash
+        
+        if resultcode_ok?(items_triggered)
+          update_selectables
+        end
+        
+        items_triggered
       else
-        {}
+        0
       end
     end
 
@@ -166,14 +175,10 @@ module ZMQ
 
     private
 
-    def items_hash
-      hsh = {}
-
+    def items_hash hash
       @items.each do |poll_item|
-        hsh[@raw_to_socket[poll_item[:socket].address]] = poll_item
+        hash[@raw_to_socket[poll_item[:socket].address]] = poll_item
       end
-
-      hsh
     end
 
     def update_selectables

@@ -43,23 +43,21 @@ module ZMQ
 
     # Call to release the context and any remaining data associated
     # with past sockets. This will close any sockets that remain
-    # open; further calls to those sockets will raise failure
-    # exceptions.
+    # open; further calls to those sockets will return -1 to indicate
+    # the operation failed.
     #
-    # Returns nil.
-    #
-    # Will raise a #ContextError when the call fails. Failures occur when
-    # the context has somehow become null (indicates a libzmq bug).
+    # Returns 0 for success, -1 for failure.
     #
     def terminate
       unless @context.nil? || @context.null?
-        result_code = LibZMQ.zmq_term @context
-        error_check 'zmq_term', result_code
+        rc = LibZMQ.zmq_term @context
         @context = nil
         @sockets = nil
         remove_finalizer
+        rc
+      else
+        0
       end
-      nil
     end
 
     # Short-cut to allocate a socket for a specific context.
@@ -77,12 +75,10 @@ module ZMQ
     #
     # Returns a #ZMQ::Socket.
     #
-    # May raise a #ContextError or #SocketError.
+    # May raise a #ContextError if the socket allocation fails.
     #
     def socket type
-      sock = Socket.new @context, type
-      error_check 'zmq_socket', sock.nil? ? -1 : 0
-      sock
+      Socket.new @context, type
     end
 
 

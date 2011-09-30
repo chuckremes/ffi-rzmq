@@ -118,8 +118,6 @@ module ZMQ
     # called multiple times on the same instance. 
     #
     def copy_in_bytes bytes, len
-      raise MessageError.new "#{self}", -1, -1, "This object cannot be reused; allocate a new one!" if initialized?
-
       data_buffer = LibC.malloc len
       # writes the exact number of bytes, no null byte to terminate string
       data_buffer.write_string bytes, len
@@ -127,10 +125,7 @@ module ZMQ
       # use libC to call free on the data buffer; earlier versions used an
       # FFI::Function here that called back into Ruby, but Rubinius won't 
       # support that and there are issues with the other runtimes too
-      result_code = LibZMQ.zmq_msg_init_data @pointer, data_buffer, len, LibC::Free, nil
-
-      error_check 'zmq_msg_init_data', result_code
-      @state = :initialized
+      LibZMQ.zmq_msg_init_data @pointer, data_buffer, len, LibC::Free, nil
     end
 
     # Provides the memory address of the +zmq_msg_t+ struct. Used mostly for
@@ -143,15 +138,11 @@ module ZMQ
     alias :pointer :address
 
     def copy source
-      result_code = LibZMQ.zmq_msg_copy @pointer, source.address
-      error_check 'zmq_msg_copy', result_code
-      @state = :initialized
+      LibZMQ.zmq_msg_copy @pointer, source.address
     end
 
     def move source
-      result_code = LibZMQ.zmq_msg_copy @pointer, source.address
-      error_check 'zmq_msg_move', result_code
-      @state = :initialized
+      LibZMQ.zmq_msg_move @pointer, source.address
     end
 
     # Provides the size of the data buffer for this +zmq_msg_t+ C struct.
@@ -190,11 +181,6 @@ module ZMQ
       end
     end
 
-
-    private
-
-    def initialized?(); :initialized == @state; end
-
   end # class Message
 
 
@@ -229,19 +215,21 @@ module ZMQ
     # handles deallocation of the native memory buffer.
     #
     def copy_in_bytes bytes, len
-      super
+      rc = super
       
       # make sure we have a way to deallocate this memory if the object goes
       # out of scope
       define_finalizer
+      rc
     end
 
     # Manually release the message struct and its associated data
     # buffer.
     #
     def close
-      super
+      rc = super
       remove_finalizer
+      rc
     end
 
 

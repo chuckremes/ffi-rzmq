@@ -5,17 +5,27 @@ module ZMQ
   # in the #Context, #Socket and #Poller classes.
   #
   module Util
+    
+    # Returns true when +rc+ is greater than or equal to 0, false otherwise.
+    #
+    # We use the >= test because zmq_poll() returns the number of sockets
+    # that had a read or write event triggered. So, a >= 0 result means
+    # it succeeded.
+    #
+    def resultcode_ok? rc
+      rc >= 0
+    end
 
     # Returns the +errno+ as set by the libzmq library.
     #
-    def errno
+    def self.errno
       LibZMQ.zmq_errno
     end
 
     # Returns a string corresponding to the currently set #errno. These
     # error strings are defined by libzmq.
     #
-    def error_string
+    def self.error_string
       LibZMQ.zmq_strerror(errno).read_string
     end
 
@@ -43,7 +53,7 @@ module ZMQ
     # used internally by #send and #recv.
     #
     def error_check source, result_code
-      if result_code == -1
+      if -1 == result_code
         raise_error source, result_code
       end
 
@@ -51,45 +61,22 @@ module ZMQ
       true
     end
 
-    # :doc:
-    # Only called on sockets in non-blocking mode.
-    #
-    # Checks the #errno and +result_code+ values for a failed non-blocking
-    # send/recv. True only when #errno is EGAIN and +result_code+ is non-zero.
-    #
-    def error_check_nonblock result_code
-      if result_code >= 0
-        true
-      else
-        # need to check result_code again because !eagain? could be true
-        # and we need the result_code test to fail again to give the right result
-        #  !eagain? is true, result_code is -1 => return false
-        #  !eagain? is false, result_code is -1 => return false
-        !eagain? && result_code >= 0
-      end
-    end
-
     def raise_error source, result_code
-      if ['zmq_send', 'zmq_sendmsg', 'zmq_recv', 'zmq_recvmsg', 'zmq_socket', 'zmq_setsockopt', 'zmq_getsockopt', 'zmq_bind', 'zmq_connect', 'zmq_close'].include?(source)
-        raise SocketError.new source, result_code, errno, error_string
-
-      elsif ['zmq_init', 'zmq_term'].include?(source)
-        raise ContextError.new source, result_code, errno, error_string
-
-      elsif 'zmq_poll' == source
-        raise PollError.new source, result_code, errno, error_string
+      if 'zmq_init' == source || 'zmq_socket' == source
+        raise ContextError.new source, result_code, ZMQ::Util.errno, ZMQ::Util.error_string
 
       elsif ['zmq_msg_init', 'zmq_msg_init_data', 'zmq_msg_copy', 'zmq_msg_move'].include?(source)
-        raise MessageError.new source, result_code, errno, error_string
+        raise MessageError.new source, result_code, ZMQ::Util.errno, ZMQ::Util.error_string
 
       else
+        puts "else"
         raise ZeroMQError.new source, result_code, -1,
-        "Source [#{source}] does not match any zmq_* strings, rc [#{result_code}], errno [#{errno}], error_string [#{error_string}]"
+        "Source [#{source}] does not match any zmq_* strings, rc [#{result_code}], errno [#{ZMQ::Util.errno}], error_string [#{ZMQ::Util.error_string}]"
       end
     end
 
     def eagain?
-      EAGAIN == errno
+      EAGAIN == ZMQ::Util.errno
     end
 
   end # module Util
