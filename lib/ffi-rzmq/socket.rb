@@ -87,7 +87,7 @@ module ZMQ
     # cause.
     #
     #  rc = socket.setsockopt(ZMQ::LINGER, 1_000)
-    #  resultcode_ok?(rc) ? puts("succeeded") : puts("failed")
+    #  ZMQ::Util.resultcode_ok?(rc) ? puts("succeeded") : puts("failed")
     #
     def setsockopt name, value, length = nil
       if long_long_option?(name)
@@ -123,7 +123,7 @@ module ZMQ
     #  message_parts = []
     #  message = Message.new
     #  rc = socket.recv(message)
-    #  if resultcode_ok?(rc)
+    #  if ZMQ::Util.resultcode_ok?(rc)
     #    message_parts << message
     #    while more_parts?
     #      message = Message.new
@@ -136,7 +136,7 @@ module ZMQ
       array = []
       rc = getsockopt ZMQ::RCVMORE, array
       
-      resultcode_ok?(rc) ? array.at(0) : false
+      Util.resultcode_ok?(rc) ? array.at(0) : false
     end
 
     # Binds the socket to an +address+.
@@ -184,7 +184,7 @@ module ZMQ
 
       rc = LibZMQ.zmq_getsockopt @socket, name, value, length
 
-      if resultcode_ok?(rc)
+      if Util.resultcode_ok?(rc)
         result = if int_option?(name)
           value.read_int
         elsif long_long_option?(name)
@@ -348,12 +348,12 @@ module ZMQ
       #  # retrieve high water mark
       #  array = []
       #  rc = socket.getsockopt(ZMQ::HWM, array)
-      #  hwm = array.first if resultcode_ok?(rc)
+      #  hwm = array.first if ZMQ::Util.resultcode_ok?(rc)
       #
       def getsockopt name, array
         rc = __getsockopt__ name, array
         
-        if resultcode_ok?(rc) && (RCVMORE == name || MCAST_LOOP == name)
+        if Util.resultcode_ok?(rc) && (RCVMORE == name || MCAST_LOOP == name)
           # convert to boolean
           array[0] = 1 == array[0]
         end
@@ -422,7 +422,7 @@ module ZMQ
 
         parts[0..-2].each do |part|
           rc = send_string part, flags | ZMQ::SNDMORE
-          return rc unless resultcode_ok?(rc)
+          return rc unless Util.resultcode_ok?(rc)
         end
 
         send_string parts[-1], flags
@@ -447,7 +447,7 @@ module ZMQ
 
         parts[0..-2].each do |part|
           rc = send part, flags | ZMQ::SNDMORE
-          return rc unless resultcode_ok?(rc)
+          return rc unless Util.resultcode_ok?(rc)
         end
 
         send parts[-1], flags
@@ -508,7 +508,7 @@ module ZMQ
       def recv_string string, flags = 0
         message = @receiver_klass.new
         rc = recv message, flags
-        string.replace(message.copy_out_string) if resultcode_ok?(rc)
+        string.replace(message.copy_out_string) if Util.resultcode_ok?(rc)
         message.close
         rc
       end
@@ -531,7 +531,7 @@ module ZMQ
         array = []
         rc = recvmsgs array, flag
         
-        if resultcode_ok?(rc)
+        if Util.resultcode_ok?(rc)
           array.each { |message| list << message.copy_out_string }
         end
         
@@ -562,7 +562,7 @@ module ZMQ
         rc = recv message, flag
         parts << message
 
-        while more_parts? && resultcode_ok?(rc)
+        while more_parts? && Util.resultcode_ok?(rc)
           message = @receiver_klass.new
           rc = recv message, flag
           parts << message
@@ -572,7 +572,7 @@ module ZMQ
         # FIXME:
         # need to detect EAGAIN if flag is set; EAGAIN means we have read all that we
         # can and should return whatever was already read; need a spec!
-        if resultcode_ok?(rc)
+        if Util.resultcode_ok?(rc)
           parts.each { |part| list << part }
         end
 
@@ -660,12 +660,12 @@ module ZMQ
       #  # retrieve high water mark
       #  array = []
       #  rc = socket.getsockopt(ZMQ::HWM, array)
-      #  hwm = array.first if resultcode_ok?(rc)
+      #  hwm = array.first if ZMQ::Util.resultcode_ok?(rc)
       #
       def getsockopt name, array
         rc = __getsockopt__ name, array
         
-        if resultcode_ok?(rc) && (RCVMORE == name)
+        if Util.resultcode_ok?(rc) && (RCVMORE == name)
           # convert to boolean
           array[0] = 1 == array[0]
         end
@@ -684,11 +684,11 @@ module ZMQ
       #  message_parts = []
       #  message = Message.new
       #  rc = socket.recv(message)
-      #  if resultcode_ok?(rc)
+      #  if ZMQ::Util.resultcode_ok?(rc)
       #    label? ? labels.push(message) : message_parts.push(message)
       #    while more_parts?
       #      message = Message.new
-      #      if resulcode_ok?(socket.recv(message))
+      #      if ZMQ::Util.resulcode_ok?(socket.recv(message))
       #        label? ? labels.push(message) : message_parts.push(message)
       #      end
       #    end
@@ -698,7 +698,7 @@ module ZMQ
         array = []
         rc = getsockopt ZMQ::RCVLABEL, array
         
-        resultcode_ok?(rc) ? array.at(0) : false
+        Util.resultcode_ok?(rc) ? array.at(0) : false
       end
 
       # Queues the message for transmission. Message is assumed to conform to the
@@ -759,7 +759,7 @@ module ZMQ
         
         parts[0..-2].each do |part|
           rc = send_string part, (flags | ZMQ::SNDMORE)
-          return rc unless resultcode_ok?(rc)
+          return rc unless Util.resultcode_ok?(rc)
         end
 
         send_string parts[-1], flags
@@ -785,7 +785,7 @@ module ZMQ
         
         parts[0..-2].each do |part|
           rc = sendmsg part, (flags | ZMQ::SNDMORE)
-          return rc unless resultcode_ok?(rc)
+          return rc unless Util.resultcode_ok?(rc)
         end
 
         sendmsg parts[-1], flags
@@ -848,7 +848,7 @@ module ZMQ
       def recv_string string, flags = 0
         message = @receiver_klass.new
         rc = recvmsg message, flags
-        string.replace(message.copy_out_string) if resultcode_ok?(rc)
+        string.replace(message.copy_out_string) if Util.resultcode_ok?(rc)
         message.close
         rc
       end
@@ -862,7 +862,7 @@ module ZMQ
         array = []
         rc = recvmsgs array, flag
         
-        if resultcode_ok?(rc)
+        if Util.resultcode_ok?(rc)
           array.each { |message| list << message.copy_out_string }
         end
         
@@ -885,14 +885,14 @@ module ZMQ
         rc = recvmsg message, flag
         parts << message
 
-        while more_parts? && resultcode_ok?(rc)
+        while Util.resultcode_ok?(rc) && more_parts?
           message = @receiver_klass.new
           rc = recvmsg message, flag
           parts << message
         end
 
         # only append the received parts if there were no errors
-        if resultcode_ok?(rc)
+        if Util.resultcode_ok?(rc)
           parts.each { |part| list << part }
         end
 

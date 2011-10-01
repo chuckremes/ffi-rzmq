@@ -12,7 +12,7 @@ module ZMQ
     # that had a read or write event triggered. So, a >= 0 result means
     # it succeeded.
     #
-    def resultcode_ok? rc
+    def self.resultcode_ok? rc
       rc >= 0
     end
 
