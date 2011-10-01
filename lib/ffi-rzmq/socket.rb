@@ -428,6 +428,31 @@ module ZMQ
         send_string parts[-1], flags
       end
 
+      # Send a sequence of messages as a multipart message out of the +parts+
+      # passed in for transmission. Every element of +parts+ should be
+      # a Message (or subclass).
+      #
+      # +flags+ may be ZMQ::NOBLOCK.
+      #
+      # Returns 0 when the message was successfully enqueued.
+      # Returns -1 under two conditions.
+      # 1. The message could not be enqueued
+      # 2. When +flags+ is set with ZMQ::NOBLOCK and the socket returned EAGAIN.
+      #
+      # With a -1 return code, the user must check ZMQ.errno to determine the
+      # cause.
+      #
+      def send_messages parts, flags = 0
+        return -1 if !parts || parts.empty?
+
+        parts[0..-2].each do |part|
+          rc = send part, flags | ZMQ::SNDMORE
+          return rc unless resultcode_ok?(rc)
+        end
+
+        send parts[-1], flags
+      end
+
       # Sends a message. This will automatically close the +message+ for both successful
       # and failed sends.
       #
@@ -544,6 +569,9 @@ module ZMQ
         end
 
         # only append the received parts if there were no errors
+        # FIXME:
+        # need to detect EAGAIN if flag is set; EAGAIN means we have read all that we
+        # can and should return whatever was already read; need a spec!
         if resultcode_ok?(rc)
           parts.each { |part| list << part }
         end
@@ -735,6 +763,32 @@ module ZMQ
         end
 
         send_string parts[-1], flags
+      end
+
+      # Send a sequence of messages as a multipart message out of the +parts+
+      # passed in for transmission. Every element of +parts+ should be
+      # a Message (or subclass).
+      #
+      # +flags+ may be ZMQ::DONTWAIT.
+      #
+      # Returns 0 when the messages were successfully enqueued.
+      # Returns -1 under two conditions.
+      # 1. A message could not be enqueued
+      # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
+      #
+      # With a -1 return code, the user must check ZMQ.errno to determine the
+      # cause.
+      #
+      def send_messages parts, flags = 0
+        return -1 if !parts || parts.empty?
+        flags = DONTWAIT if dontwait?(flags)
+        
+        parts[0..-2].each do |part|
+          rc = sendmsg part, (flags | ZMQ::SNDMORE)
+          return rc unless resultcode_ok?(rc)
+        end
+
+        sendmsg parts[-1], flags
       end
 
       # Sends a message. This will automatically close the +message+ for both successful
