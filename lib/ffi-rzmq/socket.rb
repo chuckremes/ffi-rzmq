@@ -532,7 +532,7 @@ module ZMQ
         rc = recvmsgs array, flag
         
         if Util.resultcode_ok?(rc)
-          array.each { |message| list << message.copy_out_string }
+          array.each do |message|
             list << message.copy_out_string
             message.close
           end
