@@ -130,7 +130,7 @@ module ZMQ
               (1..255).each do |length|
                 identity = 'a' * length
                 socket.setsockopt ZMQ::IDENTITY, identity
-                
+
                 array = []
                 rc = socket.getsockopt(ZMQ::IDENTITY, array)
                 rc.should == 0
@@ -441,7 +441,7 @@ module ZMQ
             array = []
             rc = socket.getsockopt(ZMQ::FD, array)
             fd = array[0]
-            
+
             LibSocket.getsockopt(fd, sol_socket, so_rcvbuf, rcvbuf, socklen_size).should be_zero
           end
         end
@@ -486,6 +486,7 @@ module ZMQ
         @pub.send_string('test')
         sleep 0.2
       end
+
       after(:all) do
         @sub.close
         @pub.close
