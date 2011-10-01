@@ -51,7 +51,7 @@ module ZMQ
 
           rc = @ping.send sent_message, ZMQ::NOBLOCK
           rc.should == 0
-          sleep 0.001 # give it time for delivery
+          sleep 0.1 # give it time for delivery
           rc = @pong.recv received_message, ZMQ::NOBLOCK
           rc.should == 0
 
