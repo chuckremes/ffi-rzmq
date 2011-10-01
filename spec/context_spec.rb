@@ -55,7 +55,7 @@ module ZMQ
 
 
     context "when allocating a socket" do
-      it "should raise a ZMQ::SocketError exception when allocation fails" do
+      it "should raise a ZMQ::ContextError exception when allocation fails" do
         ctx = spec_ctx
         LibZMQ.stub!(:zmq_socket => nil)
         lambda { ctx.socket(ZMQ::REQ) }.should raise_error(ZMQ::ContextError)

@@ -1,3 +1,4 @@
 *.rbc
 *.swp
 pkg
+.redcar/

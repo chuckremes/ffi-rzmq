@@ -18,6 +18,11 @@ namespace :win do
   end
 end
 
+require 'rspec/core/rake_task'
+RSpec::Core::RakeTask.new(:spec)
+
+task :default => :spec
+
 Bones {
   name 'ffi-rzmq'
   authors 'Chuck Remes'

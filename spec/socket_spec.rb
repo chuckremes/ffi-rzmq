@@ -21,7 +21,7 @@ module ZMQ
           sock = nil
           lambda { sock = Socket.new(@ctx.pointer, socket_type) }.should_not raise_error
           sock.close
-        end
+        end        
       end # each socket_type
 
       it "should set the :socket accessor to the raw socket allocated by libzmq" do
