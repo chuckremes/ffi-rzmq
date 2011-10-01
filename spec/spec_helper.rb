@@ -22,6 +22,8 @@ def version4?
 end
 
 
+NonBlockingFlag = (LibZMQ.version2? ? ZMQ::NOBLOCK : ZMQ::DONTWAIT) unless defined?(NonBlockingFlag)
+
 
 module APIHelper
   def stub_libzmq
@@ -63,5 +65,9 @@ module APIHelper
     end
     
     random
+  end
+  
+  def assert_ok(rc)
+    raise "Failed with rc [#{rc}] and errno [#{ZMQ::Util.errno}], msg [#{ZMQ::Util.error_string}]! #{caller(0)}" unless rc >= 0
   end
 end
