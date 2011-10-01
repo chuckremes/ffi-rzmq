@@ -533,6 +533,9 @@ module ZMQ
         
         if Util.resultcode_ok?(rc)
           array.each { |message| list << message.copy_out_string }
+            list << message.copy_out_string
+            message.close
+          end
         end
         
         rc
