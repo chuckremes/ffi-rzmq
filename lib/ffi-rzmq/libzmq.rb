@@ -110,7 +110,7 @@ end
 # Attaches to those functions specific to the 2.x API
 #
 if LibZMQ.version2?
-  puts "loading version #{LibZMQ.version.inspect}"
+
   module LibZMQ
     # Socket api
     # @blocking = true is a hint to FFI that the following (and only the following)
@@ -134,10 +134,10 @@ if LibZMQ.version2?
 end
 
 
-# Attaches to those functions specific to the 3.x and 4.x APIs
+# Attaches to those functions specific to the 3.x API
 #
 if LibZMQ.version3? || LibZMQ.version4?
-  puts "loading version #{LibZMQ.version.inspect}"
+
   module LibZMQ
     # Socket api
     attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :pointer], :int
