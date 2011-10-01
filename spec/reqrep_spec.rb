@@ -15,9 +15,8 @@ module ZMQ
         context = ZMQ::Context.new 1
         @ping = context.socket ZMQ::REQ
         @pong = context.socket ZMQ::REP
-        link = "tcp://127.0.0.1:#{random_port}"
-        @pong.bind link
-        @ping.connect link
+        port = bind_to_random_tcp_port(@pong)
+        @ping.connect "tcp://127.0.0.1:#{port}"
       end
 
       after(:each) do

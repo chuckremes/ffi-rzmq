@@ -16,13 +16,12 @@ if version2?
       end
       
       def create_streamer
-        @back_addr  = "tcp://127.0.0.1:#{random_port}"
-        @front_addr = "tcp://127.0.0.1:#{random_port}"
+        @backport = @frontport = nil
         Thread.new do
           back  = @ctx.socket(ZMQ::PULL)
-          back.bind(@back_addr)
+          @backport = bind_to_random_tcp_port(back)
           front = @ctx.socket(ZMQ::PUSH)
-          front.bind(@front_addr)
+          @frontport = bind_to_random_tcp_port(front)
           Device.new(ZMQ::STREAMER, back, front)
           back.close
           front.close
@@ -38,9 +37,9 @@ if version2?
         create_streamer
       
         pusher = @ctx.socket(ZMQ::PUSH)
-        pusher.connect(@back_addr)
+        pusher.connect("tcp://127.0.0.1:#{@backport}")
         puller = @ctx.socket(ZMQ::PULL)
-        puller.connect(@front_addr)
+        puller.connect("tcp://127.0.0.1:#{@frontport}")
       
         pusher.send_string("hello")
         sleep 0.5
@@ -60,13 +59,11 @@ if version2?
       end
       
       it "should be able to create a forwarder device without error" do
-        back_addr  = "tcp://127.0.0.1:#{random_port}"
-        front_addr = "tcp://127.0.0.1:#{random_port}"
         Thread.new do
           back  = @ctx.socket(ZMQ::SUB)
-          back.bind(back_addr)
+          bind_to_random_tcp_port(back)
           front = @ctx.socket(ZMQ::PUB)
-          front.bind(front_addr)
+          bind_to_random_tcp_port(front)
           Device.new(ZMQ::FORWARDER, back, front)
           back.close
           front.close
@@ -75,13 +72,11 @@ if version2?
       end
       
       it "should be able to create a queue device without error" do
-        back_addr  = "tcp://127.0.0.1:#{random_port}"
-        front_addr = "tcp://127.0.0.1:#{random_port}"
         Thread.new do
           back  = @ctx.socket(ZMQ::ROUTER)
-          back.bind(back_addr)
+          bind_to_random_tcp_port(back)
           front = @ctx.socket(ZMQ::DEALER)
-          front.bind(front_addr)
+          bind_to_random_tcp_port(front)
           Device.new(ZMQ::QUEUE, back, front)
           back.close
           front.close

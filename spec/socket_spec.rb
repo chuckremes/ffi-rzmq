@@ -21,7 +21,7 @@ module ZMQ
           sock = nil
           lambda { sock = Socket.new(@ctx.pointer, socket_type) }.should_not raise_error
           sock.close
-        end        
+        end
       end # each socket_type
 
       it "should set the :socket accessor to the raw socket allocated by libzmq" do
@@ -408,43 +408,48 @@ module ZMQ
           socket.close
         end
 
-        context "using option ZMQ::FD" do
-          it "should return an FD as a positive integer" do
-            array = []
-            rc = socket.getsockopt(ZMQ::FD, array)
-            rc.should == 0
-            array[0].should be_a(Fixnum)
-          end
+        if RUBY_PLATFORM =~ /linux|darwin/
+          # this spec doesn't work on Windows; hints welcome
 
-          it "should return a valid FD" do
-            # Use FFI to wrap the C library function +getsockopt+ so that we can execute it
-            # on the 0mq file descriptor. If it returns 0, then it succeeded and the FD
-            # is valid!
-            module LibSocket
-              extend FFI::Library
-              # figures out the correct libc for each platform including Windows
-              library = ffi_lib(FFI::Library::LIBC).first
-              attach_function :getsockopt, [:int, :int, :int, :pointer, :pointer], :int
-            end # module LibC
-
-            if RUBY_PLATFORM =~ /linux/ || (RUBY_PLATFORM == 'java' && `uname` =~ /linux/i)
-              so_rcvbuf =  8
-              sol_socket = 1
-            else #OSX
-              so_rcvbuf =  0x1002
-              sol_socket = 0xffff
+          context "using option ZMQ::FD" do
+            it "should return an FD as a positive integer" do
+              array = []
+              rc = socket.getsockopt(ZMQ::FD, array)
+              rc.should == 0
+              array[0].should be_a(Fixnum)
             end
 
-            socklen_size = FFI::MemoryPointer.new :uint32
-            socklen_size.write_int 8
-            rcvbuf = FFI::MemoryPointer.new :int64
-            array = []
-            rc = socket.getsockopt(ZMQ::FD, array)
-            fd = array[0]
+            it "should return a valid FD" do
+              # Use FFI to wrap the C library function +getsockopt+ so that we can execute it
+              # on the 0mq file descriptor. If it returns 0, then it succeeded and the FD
+              # is valid!
+              module LibSocket
+                extend FFI::Library
+                # figures out the correct libc for each platform including Windows
+                library = ffi_lib(FFI::Library::LIBC).first
+                attach_function :getsockopt, [:int, :int, :int, :pointer, :pointer], :int
+              end # module LibC
 
-            LibSocket.getsockopt(fd, sol_socket, so_rcvbuf, rcvbuf, socklen_size).should be_zero
+              if RUBY_PLATFORM =~ /linux/ || (RUBY_PLATFORM == 'java' && `uname` =~ /linux/i)
+                so_rcvbuf =  8
+                sol_socket = 1
+              else #OSX
+                so_rcvbuf =  0x1002
+                sol_socket = 0xffff
+              end
+
+              socklen_size = FFI::MemoryPointer.new :uint32
+              socklen_size.write_int 8
+              rcvbuf = FFI::MemoryPointer.new :int64
+              array = []
+              rc = socket.getsockopt(ZMQ::FD, array)
+              fd = array[0]
+
+              LibSocket.getsockopt(fd, sol_socket, so_rcvbuf, rcvbuf, socklen_size).should be_zero
+            end
           end
-        end
+
+        end # posix platform
 
         context "using option ZMQ::EVENTS" do
           it "should return a mask of events as a Fixnum" do

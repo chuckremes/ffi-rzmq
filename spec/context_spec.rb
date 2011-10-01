@@ -24,17 +24,17 @@ module ZMQ
       end
 
       it "should set the :pointer accessor to non-nil" do
-        ctx = spec_ctx
+        ctx = Context.new
         ctx.pointer.should_not be_nil
       end
 
       it "should set the :context accessor to non-nil" do
-        ctx = spec_ctx
+        ctx = Context.new
         ctx.context.should_not be_nil
       end
 
       it "should set the :pointer and :context accessors to the same value" do
-        ctx = spec_ctx
+        ctx = Context.new
         ctx.pointer.should == ctx.context
       end
       
@@ -56,7 +56,7 @@ module ZMQ
 
     context "when allocating a socket" do
       it "should raise a ZMQ::ContextError exception when allocation fails" do
-        ctx = spec_ctx
+        ctx = Context.new
         LibZMQ.stub!(:zmq_socket => nil)
         lambda { ctx.socket(ZMQ::REQ) }.should raise_error(ZMQ::ContextError)
       end

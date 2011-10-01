@@ -11,13 +11,11 @@ module ZMQ
 
       before(:all) do
         @ctx = Context.new
-        addr = "tcp://127.0.0.1:#{random_port}"
-
         @sub = @ctx.socket ZMQ::SUB
         @sub.setsockopt ZMQ::SUBSCRIBE, ''
-        @sub.bind addr
+        port = bind_to_random_tcp_port(@sub)
         @pub = @ctx.socket ZMQ::PUB
-        @pub.connect addr
+        @pub.connect "tcp://127.0.0.1:#{port}"
         sleep 0.2
       end
 

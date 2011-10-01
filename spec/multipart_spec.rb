@@ -10,13 +10,11 @@ module ZMQ
         include APIHelper
 
         before(:all) do
-          addr = "tcp://127.0.0.1:#{random_port}"
-
           @rep = Socket.new(@ctx.pointer, ZMQ::REP)
-          @rep.bind(addr)
+          port = bind_to_random_tcp_port(@rep)
 
           @req = Socket.new(@ctx.pointer, ZMQ::REQ)
-          @req.connect(addr)
+          @req.connect("tcp://127.0.0.1:#{port}")
         end
 
         after(:all) do
@@ -62,14 +60,12 @@ module ZMQ
           include APIHelper
 
           before(:each) do # was :all
-            addr = "tcp://127.0.0.1:#{random_port}"
-
             @rep = Socket.new(@ctx.pointer, ZMQ::XREP)
-            @rep.bind(addr)
+            port = bind_to_random_tcp_port(@rep)
 
             @req = Socket.new(@ctx.pointer, ZMQ::REQ)
             @req.identity = 'foo'
-            @req.connect(addr)
+            @req.connect("tcp://127.0.0.1:#{port}")
           end
 
           after(:each) do # was :all
@@ -114,14 +110,12 @@ module ZMQ
           include APIHelper
 
           before(:each) do # was :all
-            addr = "tcp://127.0.0.1:#{random_port}"
-
             @rep = Socket.new(@ctx.pointer, ZMQ::ROUTER)
-            @rep.bind(addr)
+            port = bind_to_random_tcp_port(@rep)
 
             @req = Socket.new(@ctx.pointer, ZMQ::DEALER)
             @req.identity = 'foo'
-            @req.connect(addr)
+            @req.connect("tcp://127.0.0.1:#{port}")
           end
 
           after(:each) do # was :all

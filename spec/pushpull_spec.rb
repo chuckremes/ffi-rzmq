@@ -15,8 +15,8 @@ module ZMQ
         @pull = @context.socket ZMQ::PULL
         @push.setsockopt ZMQ::LINGER, 0
         @pull.setsockopt ZMQ::LINGER, 0
-        @link = "tcp://127.0.0.1:#{random_port}"
-        @pull.connect @link
+        port = connect_to_random_tcp_port(@pull)
+        @link = "tcp://127.0.0.1:#{port}"
         @push.bind    @link
       end
 

@@ -7,11 +7,6 @@ File.join(File.dirname(__FILE__), %w[.. lib ffi-rzmq]))
 
 Thread.abort_on_exception = true
 
-SPEC_CTX = ZMQ::Context.new 1
-def spec_ctx
-  SPEC_CTX
-end
-
 # define some version guards so we can turn on/off specs based upon
 # the version of the 0mq library that is loaded
 def version2?
@@ -42,5 +37,31 @@ module APIHelper
   # generate a random port between 10_000 and 65534
   def random_port
     rand(55534) + 10_000
+  end
+  
+  def bind_to_random_tcp_port socket, max_tries = 500
+    tries = 0
+    rc = -1
+    
+    while !ZMQ::Util.resultcode_ok?(rc) && tries < max_tries
+      tries += 1
+      random = random_port
+      rc = socket.bind "tcp://127.0.0.1:#{random}"
+    end
+    
+    random
+  end
+  
+  def connect_to_random_tcp_port socket, max_tries = 500
+    tries = 0
+    rc = -1
+    
+    while !ZMQ::Util.resultcode_ok?(rc) && tries < max_tries
+      tries += 1
+      random = random_port
+      rc = socket.connect "tcp://127.0.0.1:#{random}"
+    end
+    
+    random
   end
 end
