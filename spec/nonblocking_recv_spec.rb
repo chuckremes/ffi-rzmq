@@ -5,51 +5,315 @@ module ZMQ
 
 
   describe Socket do
+    before(:all) do
+      @ctx = Context.new
+    end
+    
+    after(:all) do
+      @ctx.terminate
+    end
+    
+    
+    shared_examples_for "any socket" do
 
-    describe "non-blocking #recvmsgs" do
-      include APIHelper
-
-      before(:all) do
-        @ctx = Context.new
-        @sub = @ctx.socket ZMQ::SUB
-        @sub.setsockopt ZMQ::SUBSCRIBE, ''
-        port = bind_to_random_tcp_port(@sub)
-        @pub = @ctx.socket ZMQ::PUB
-        @pub.connect "tcp://127.0.0.1:#{port}"
-        sleep 0.2
+      it "returns -1 and gets EAGAIN when there are no messages to read" do
+        array = []
+        rc = @receiver.recvmsgs(array, NonBlockingFlag)
+        Util.resultcode_ok?(rc).should be_false
+        array.size.should == 0
+        ZMQ::Util.errno.should == ZMQ::EAGAIN
       end
 
-      after(:all) do
-        @sub.close
-        @pub.close
-        # must call close on *every* socket before calling terminate otherwise it blocks indefinitely
-        @ctx.terminate
+    end
+    
+    shared_examples_for "sockets without exposed envelopes" do
+
+      it "reads the single message and returns a successful result code" do
+        rc = @sender.send_string('test')
+        Util.resultcode_ok?(rc).should be_true
+        sleep 0.1 # give it time to deliver to the receiver
+
+        array = []
+        rc = @receiver.recvmsgs(array, NonBlockingFlag)
+        Util.resultcode_ok?(rc).should be_true
+        array.size.should == 1
       end
 
-      NonBlockingFlag = LibZMQ.version2? ? NOBLOCK : DONTWAIT
+      it "reads all message parts transmitted and returns a successful result code" do
+        strings = Array.new(10, 'test')
+        rc = @sender.send_strings(strings)
+        Util.resultcode_ok?(rc).should be_true
+        sleep 0.1 # give it time to deliver to the sub socket
 
-        it "reads all message parts transmitted and returns a successful result code" do
-          strings = Array.new(10, 'test')
-          rc = @pub.send_strings(strings)
-          rc.should == 0
-          sleep 0.1 # give it time to deliver to the sub socket
+        array = []
+        rc = @receiver.recvmsgs(array, NonBlockingFlag)
+        Util.resultcode_ok?(rc).should be_true
+        array.size.should == 10
+      end
 
-          array = []
-          rc = @sub.recvmsgs(array, NonBlockingFlag)
-          rc.should == 0
-          array.size.should == 10
-          @sub.recvmsgs(array, NonBlockingFlag).should == -1
+    end
+    
+    shared_examples_for "sockets with exposed envelopes" do
+
+      it "reads the single message and returns a successful result code" do
+        rc = @sender.send_string('test')
+        Util.resultcode_ok?(rc).should be_true
+        sleep 0.1 # give it time to deliver to the receiver
+
+        array = []
+        rc = @receiver.recvmsgs(array, NonBlockingFlag)
+        Util.resultcode_ok?(rc).should be_true
+        array.size.should == 1 + 1 # extra 1 for envelope
+      end
+
+      it "reads all message parts transmitted and returns a successful result code" do
+        strings = Array.new(10, 'test')
+        rc = @sender.send_strings(strings)
+        Util.resultcode_ok?(rc).should be_true
+        sleep 0.1 # give it time to deliver to the sub socket
+
+        array = []
+        rc = @receiver.recvmsgs(array, NonBlockingFlag)
+        Util.resultcode_ok?(rc).should be_true
+        array.size.should == 10 + 1 # add 1 for the envelope
+      end
+
+    end
+
+    describe PUB do
+
+      describe "non-blocking #recvmsgs where sender connects & receiver binds" do
+        include APIHelper
+
+        before(:each) do
+          @receiver = @ctx.socket ZMQ::SUB
+          port = bind_to_random_tcp_port(@receiver)
+          assert_ok(@receiver.setsockopt(ZMQ::SUBSCRIBE, ''))
+          @sender = @ctx.socket ZMQ::PUB
+          assert_ok(@sender.connect("tcp://127.0.0.1:#{port}"))
+          sleep 1
         end
 
-        it "returns -1 and gets EAGAIN when there are no messages to read" do
-          array = []
-          rc = @sub.recvmsgs(array, NonBlockingFlag)
-          rc.should == -1
-          array.size.should == 0
-          ZMQ::Util.errno.should == ZMQ::EAGAIN
+        after(:each) do
+          @receiver.close
+          @sender.close
         end
 
-    end # describe 'non-blocking recvmsgs'
+        it_behaves_like "any socket"
+        it_behaves_like "sockets without exposed envelopes"
+
+      end # describe 'non-blocking recvmsgs'
+
+      describe "non-blocking #recvmsgs where sender binds & receiver connects" do
+        include APIHelper
+
+        before(:each) do
+          @receiver = @ctx.socket ZMQ::SUB
+          port = connect_to_random_tcp_port(@receiver)
+          assert_ok(@receiver.setsockopt(ZMQ::SUBSCRIBE, ''))
+          @sender = @ctx.socket ZMQ::PUB
+          assert_ok(@sender.bind("tcp://127.0.0.1:#{port}"))
+          sleep 1
+        end
+
+        after(:each) do
+          @receiver.close
+          @sender.close
+        end
+
+        it_behaves_like "any socket"
+        it_behaves_like "sockets without exposed envelopes"
+
+      end # describe 'non-blocking recvmsgs'
+
+    end # Pub
+
+    describe REQ do
+
+      describe "non-blocking #recvmsgs where sender connects & receiver binds" do
+        include APIHelper
+
+        before(:each) do
+          @receiver = @ctx.socket ZMQ::REP
+          port = bind_to_random_tcp_port(@receiver)
+          @sender = @ctx.socket ZMQ::REQ
+          assert_ok(@sender.connect("tcp://127.0.0.1:#{port}"))
+          sleep 0.1
+        end
+
+        after(:each) do
+          @receiver.close
+          @sender.close
+        end
+
+        it_behaves_like "any socket"
+        it_behaves_like "sockets without exposed envelopes"
+
+      end # describe 'non-blocking recvmsgs'
+
+      describe "non-blocking #recvmsgs where sender binds & receiver connects" do
+        include APIHelper
+
+        before(:each) do
+          @receiver = @ctx.socket ZMQ::REP
+          port = connect_to_random_tcp_port(@receiver)
+          @sender = @ctx.socket ZMQ::REQ
+          assert_ok(@sender.bind("tcp://127.0.0.1:#{port}"))
+          sleep 0.1
+        end
+
+        after(:each) do
+          @receiver.close
+          @sender.close
+        end
+
+        it_behaves_like "any socket"
+        it_behaves_like "sockets without exposed envelopes"
+
+      end # describe 'non-blocking recvmsgs'
+
+    end # REQ
+
+
+    describe PUSH do
+
+      describe "non-blocking #recvmsgs where sender connects & receiver binds" do
+        include APIHelper
+
+        before(:each) do
+          @receiver = @ctx.socket ZMQ::PULL
+          port = bind_to_random_tcp_port(@receiver)
+          @sender = @ctx.socket ZMQ::PUSH
+          assert_ok(@sender.connect("tcp://127.0.0.1:#{port}"))
+          sleep 0.1
+        end
+
+        after(:each) do
+          @receiver.close
+          @sender.close
+        end
+
+        it_behaves_like "any socket"
+        it_behaves_like "sockets without exposed envelopes"
+
+      end # describe 'non-blocking recvmsgs'
+
+      describe "non-blocking #recvmsgs where sender binds & receiver connects" do
+        include APIHelper
+
+        before(:each) do
+          @receiver = @ctx.socket ZMQ::PULL
+          port = connect_to_random_tcp_port(@receiver)
+          @sender = @ctx.socket ZMQ::PUSH
+          assert_ok(@sender.bind("tcp://127.0.0.1:#{port}"))
+          sleep 0.1
+        end
+
+        after(:each) do
+          @receiver.close
+          @sender.close
+        end
+
+        it_behaves_like "any socket"
+        it_behaves_like "sockets without exposed envelopes"
+
+      end # describe 'non-blocking recvmsgs'
+
+    end # PUSH
+
+
+    describe DEALER do
+
+      describe "non-blocking #recvmsgs where sender connects & receiver binds" do
+        include APIHelper
+
+        before(:each) do
+          @receiver = @ctx.socket ZMQ::ROUTER
+          port = bind_to_random_tcp_port(@receiver)
+          @sender = @ctx.socket ZMQ::DEALER
+          assert_ok(@sender.connect("tcp://127.0.0.1:#{port}"))
+          sleep 0.1
+        end
+
+        after(:each) do
+          @receiver.close
+          @sender.close
+        end
+
+        it_behaves_like "any socket"
+        it_behaves_like "sockets with exposed envelopes"
+
+      end # describe 'non-blocking recvmsgs'
+
+      describe "non-blocking #recvmsgs where sender binds & receiver connects" do
+        include APIHelper
+
+        before(:each) do
+          @receiver = @ctx.socket ZMQ::ROUTER
+          port = connect_to_random_tcp_port(@receiver)
+          @sender = @ctx.socket ZMQ::DEALER
+          assert_ok(@sender.bind("tcp://127.0.0.1:#{port}"))
+          sleep 0.1
+        end
+
+        after(:each) do
+          @receiver.close
+          @sender.close
+        end
+
+        it_behaves_like "any socket"
+        it_behaves_like "sockets with exposed envelopes"
+
+      end # describe 'non-blocking recvmsgs'
+
+    end # DEALER
+
+
+    describe XREQ do
+
+      describe "non-blocking #recvmsgs where sender connects & receiver binds" do
+        include APIHelper
+
+        before(:each) do
+          @receiver = @ctx.socket ZMQ::XREP
+          port = bind_to_random_tcp_port(@receiver)
+          @sender = @ctx.socket ZMQ::XREQ
+          assert_ok(@sender.connect("tcp://127.0.0.1:#{port}"))
+          sleep 0.1
+        end
+
+        after(:each) do
+          @receiver.close
+          @sender.close
+        end
+
+        it_behaves_like "any socket"
+        it_behaves_like "sockets with exposed envelopes"
+
+      end # describe 'non-blocking recvmsgs'
+
+      describe "non-blocking #recvmsgs where sender binds & receiver connects" do
+        include APIHelper
+
+        before(:each) do
+          @receiver = @ctx.socket ZMQ::XREP
+          port = connect_to_random_tcp_port(@receiver)
+          @sender = @ctx.socket ZMQ::XREQ
+          assert_ok(@sender.bind("tcp://127.0.0.1:#{port}"))
+          sleep 0.1
+        end
+
+        after(:each) do
+          @receiver.close
+          @sender.close
+        end
+
+        it_behaves_like "any socket"
+        it_behaves_like "sockets with exposed envelopes"
+
+      end # describe 'non-blocking recvmsgs'
+
+    end # XREQ
 
   end # describe Socket
 
