@@ -23,6 +23,7 @@ module ZMQ
       after(:each) do
         @push.close
         @pull.close
+        @context.terminate
       end
 
       it "should receive an exact copy of the sent message using Message objects directly on one pull socket" do
