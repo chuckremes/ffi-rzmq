@@ -782,7 +782,7 @@ module ZMQ
       # With a -1 return code, the user must check ZMQ.errno to determine the
       # cause.
       #
-      def send_messages parts, flags = 0
+      def sendmsgs parts, flags = 0
         return -1 if !parts || parts.empty?
         flags = DONTWAIT if dontwait?(flags)
         
