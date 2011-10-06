@@ -30,9 +30,16 @@ and exceptions is a terrible idea in practice, so all of the exception
 code from Socket has been removed.
 
 The Poller and Message class have also had their exceptions removed for
-returning errors on instance methods. They can return exceptions during
-allocation since there is no other clean way of indicating that the
-call to #new has failed.
+returning errors on instance methods.
+
+Unfortunately, it isn't possible to indicate that a call to #new has failed
+by returning nil. A call to #new that fails needs to raise an exception to
+indicate failure. (This isn't strictly true; this behavior can be changed
+but it is not a standard Ruby idiom and is therefore a surprising, and
+poor, thing to do.) Classes that formerly raised exceptions during allocation
+now offer a factory method #create that will either return a successfully
+constructed object or nil. Code should check for nil returns before using
+the object.
 
 This is a *breaking* change. I'm sorry but the old API's inconsistency was
 causing too many problems. It now more closely mimics the 0mq C API. If you
