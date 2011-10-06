@@ -2,6 +2,17 @@ module ZMQ
   if LibZMQ.version2?
     class Device
       attr_reader :device
+      
+      def self.create(device_type, frontend, backend)
+        dev = nil
+        begin
+          dev = new device_type, frontend, backend
+        rescue ArgumentError
+          dev = nil
+        end
+        
+        dev
+      end
 
       def initialize(device_type,frontend,backend)
         [["frontend", frontend],["backend", backend]].each do |name,socket|

@@ -16,6 +16,38 @@ module ZMQ
     # memory management. For automatic garbage collection of received messages,
     # it is possible to override the :receiver_class to use ZMQ::ManagedMessage.
     #
+    #  sock = Socket.create(Context.create, ZMQ::REQ, :receiver_class => ZMQ::ManagedMessage)
+    #
+    # Advanced users may want to replace the receiver class with their
+    # own custom class. The custom class must conform to the same public API
+    # as ZMQ::Message.
+    #
+    # Creation of a new Socket object can return nil when socket creation
+    # fails.
+    #
+    #  if (socket = Socket.new(context.pointer, ZMQ::REQ))
+    #    ...
+    #  else
+    #    STDERR.puts "Socket creation failed"
+    #  end
+    #
+    def self.create context_ptr, type, opts = {:receiver_class => ZMQ::Message}
+      new(context_ptr, type, opts) rescue nil
+    end
+    
+    # To avoid rescuing exceptions, use the factory method #create for
+    # all socket creation.
+    #
+    # Allocates a socket of type +type+ for sending and receiving data.
+    #
+    # +type+ can be one of ZMQ::REQ, ZMQ::REP, ZMQ::PUB,
+    # ZMQ::SUB, ZMQ::PAIR, ZMQ::PULL, ZMQ::PUSH, ZMQ::XREQ, ZMQ::REP,
+    # ZMQ::DEALER or ZMQ::ROUTER.
+    #
+    # By default, this class uses ZMQ::Message for manual
+    # memory management. For automatic garbage collection of received messages,
+    # it is possible to override the :receiver_class to use ZMQ::ManagedMessage.
+    #
     #  sock = Socket.new(Context.new, ZMQ::REQ, :receiver_class => ZMQ::ManagedMessage)
     #
     # Advanced users may want to replace the receiver class with their
@@ -442,7 +474,7 @@ module ZMQ
       # With a -1 return code, the user must check ZMQ.errno to determine the
       # cause.
       #
-      def send_messages parts, flags = 0
+      def sendmsgs parts, flags = 0
         return -1 if !parts || parts.empty?
 
         parts[0..-2].each do |part|

@@ -35,7 +35,7 @@ module ZMQ
     # sockets. These sockets should be processed using the #readables and
     # #writables accessors.
     #
-    # Returns -1 when there is an error. Use #errno to get the related
+    # Returns -1 when there is an error. Use ZMQ::Util.errno to get the related
     # error number.
     #
     def poll timeout = :blocking
@@ -56,9 +56,8 @@ module ZMQ
     # The non-blocking version of #poll. See the #poll description for
     # potential exceptions.
     #
-    # May raise a ZMQ::PollError exception. This occurs when one of the
-    # registered sockets belongs to an application thread in another
-    # Context.
+    # May return -1 when an error is encounted. Check ZMQ::Util.errno
+    # to determine the underlying cause.
     #
     def poll_nonblock
       poll 0
@@ -68,8 +67,6 @@ module ZMQ
     # it can be called multiple times with the same data and the socket
     # will only get registered at most once. Calling multiple times with
     # different values for +events+ will OR the event information together.
-    #
-    # Does not raise any exceptions.
     #
     def register sock, events = ZMQ::POLLIN | ZMQ::POLLOUT, fd = 0
       return false if (sock.nil? && fd.zero?) || events.zero?
@@ -97,8 +94,6 @@ module ZMQ
 
     # Deregister the +sock+ for +events+. When there are no events left,
     # this also deletes the socket from the poll items.
-    #
-    # Does not raise any exceptions.
     #
     def deregister sock, events, fd = 0
       return unless sock || !fd.zero?

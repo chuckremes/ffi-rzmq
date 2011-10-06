@@ -40,33 +40,33 @@ module APIHelper
   def random_port
     rand(55534) + 10_000
   end
-  
+
   def bind_to_random_tcp_port socket, max_tries = 500
     tries = 0
     rc = -1
-    
+
     while !ZMQ::Util.resultcode_ok?(rc) && tries < max_tries
       tries += 1
       random = random_port
       rc = socket.bind "tcp://127.0.0.1:#{random}"
     end
-    
+
     random
   end
-  
+
   def connect_to_random_tcp_port socket, max_tries = 500
     tries = 0
     rc = -1
-    
+
     while !ZMQ::Util.resultcode_ok?(rc) && tries < max_tries
       tries += 1
       random = random_port
       rc = socket.connect "tcp://127.0.0.1:#{random}"
     end
-    
+
     random
   end
-  
+
   def assert_ok(rc)
     raise "Failed with rc [#{rc}] and errno [#{ZMQ::Util.errno}], msg [#{ZMQ::Util.error_string}]! #{caller(0)}" unless rc >= 0
   end

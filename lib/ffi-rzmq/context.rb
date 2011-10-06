@@ -1,36 +1,55 @@
 
 module ZMQ
 
+
+  # Recommended to use the default for +io_threads+
+  # since most programs will not saturate I/O. 
+  #
+  # The rule of thumb is to make +io_threads+ equal to the number 
+  # gigabits per second that the application will produce.
+  #
+  # The +io_threads+ number specifies the size of the thread pool
+  # allocated by 0mq for processing incoming/outgoing messages.
+  #
+  # Returns a context object when allocation succeeds. It's necessary
+  # for passing to the
+  # #Socket constructor when allocating new sockets. All sockets
+  # live within a context.
+  #
+  # Also, Sockets should *only* be accessed from the thread where they
+  # were first created. Do *not* pass sockets between threads; pass
+  # in the context and allocate a new socket per thread. If you must
+  # use threads, then make sure to execute a full memory barrier (e.g.
+  # mutex) as you pass a socket from one thread to the next.
+  #
+  # To connect sockets between contexts, use +inproc+ or +ipc+
+  # transport and set up a 0mq socket between them. This is also the
+  # recommended technique for allowing sockets to communicate between
+  # threads.
+  #
+  #  context = ZMQ::Context.create
+  #  if context
+  #    socket = context.socket(ZMQ::REQ)
+  #    if socket
+  #      ...
+  #    else
+  #      STDERR.puts "Socket allocation failed"
+  #    end
+  #  else
+  #    STDERR.puts "Context allocation failed"
+  #  end
+  #
+  #
   class Context
     include ZMQ::Util
 
     attr_reader :context, :pointer
 
-    # Recommended to use the default for +io_threads+
-    # since most programs will not saturate I/O. 
-    #
-    # The rule of thumb is to make +io_threads+ equal to the number 
-    # gigabits per second that the application will produce.
-    #
-    # The +io_threads+ number specifies the size of the thread pool
-    # allocated by 0mq for processing incoming/outgoing messages.
-    #
-    # Returns a context object. It's necessary for passing to the
-    # #Socket constructor when allocating new sockets. All sockets
-    # live within a context. Sockets in one context may not be accessed
-    # from another context; doing so raises an exception.
-    #
-    # Also, Sockets should *only* be accessed from the thread where they
-    # were first created. Do *not* pass sockets between threads; pass
-    # in the context and allocate a new socket per thread.
-    #
-    # To connect sockets between contexts, use +inproc+ or +ipc+
-    # transport and set up a 0mq socket between them. This is also the
-    # recommended technique for allowing sockets to communicate between
-    # threads.
-    #
-    # Will raise a #ContextError when the native library context cannot be
-    # be allocated.
+    def self.create io_threads = 1
+      new(io_threads) rescue nil
+    end
+    
+    # Use the factory method Context#create to make contexts.
     #
     def initialize io_threads = 1
       @sockets = []
@@ -73,12 +92,18 @@ module ZMQ
     #   #ZMQ::DEALER
     #   #ZMQ::ROUTER
     #
-    # Returns a #ZMQ::Socket.
-    #
-    # May raise a #ContextError if the socket allocation fails.
+    # Returns a #ZMQ::Socket when the allocation succeeds, nil
+    # if it fails.
     #
     def socket type
-      Socket.new @context, type
+      sock = nil
+      begin
+        sock = Socket.new @context, type
+      rescue SocketError, ContextError => e
+        sock = nil
+      end
+      
+      sock
     end
 
 

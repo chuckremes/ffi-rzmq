@@ -1,13 +1,12 @@
 
 module ZMQ
 
-  # The constructor optionally takes a string as an argument. It will
+  # The factory constructor optionally takes a string as an argument. It will
   # copy this string to native memory in preparation for transmission.
   # So, don't pass a string unless you intend to send it. Internally it
   # calls #copy_in_string.
   #
-  # Call #close to release buffers when you have *not* passed this on
-  # to Socket#send. That method calls #close on your behalf.
+  # Call #close to release buffers when you are done with the data.
   #
   # (This class is not really zero-copy. Ruby makes this near impossible
   # since Ruby objects can be relocated in memory by the GC at any
@@ -29,8 +28,17 @@ module ZMQ
   # When you are done using a *received* message object, call #close to
   # release the associated buffers.
   #
-  # As noted above, for sent objects the underlying library will call close
-  # for you.
+  #  received_message = Message.create
+  #  if received_message
+  #    rc = socket.recv(received_message)
+  #    if ZMQ::Util.resultcode_ok?(rc)
+  #      puts "Message contained: #{received_message.copy_out_string}"
+  #    else
+  #      STDERR.puts "Error when receiving message: #{ZMQ::Util.error_string}"
+  #    end
+  #
+  #
+  # Define a custom layout for the data sent between 0mq peers.
   #
   #  class MyMessage
   #    class Layout < FFI::Struct
@@ -77,6 +85,13 @@ module ZMQ
   #
   class Message
     include ZMQ::Util
+    
+    # Recommended way to create a standard message. A Message object is 
+    # returned upon success, nil when allocation fails.
+    #
+    def self.create message = nil
+      new(message) rescue nil
+    end
 
     def initialize message = nil
       @state = :uninitialized
@@ -91,7 +106,7 @@ module ZMQ
       else
         # initialize an empty message structure to receive a message
         result_code = LibZMQ.zmq_msg_init @pointer
-        error_check 'zmq_msg_init', result_code
+        raise unless Util.resultcode_ok?(result_code)
       end
     end
 
@@ -100,9 +115,6 @@ module ZMQ
     # deallocation of the native memory buffer.
     #
     # Can only be initialized via #copy_in_string or #copy_in_bytes once.
-    #
-    # Can raise a MessageError when #copy_in_string or #copy_in_bytes is
-    # called multiple times on the same instance. 
     #
     def copy_in_string string
       string_size = string.respond_to?(:bytesize) ? string.bytesize : string.size
@@ -113,9 +125,6 @@ module ZMQ
     # handles deallocation of the native memory buffer.
     #
     # Can only be initialized via #copy_in_string or #copy_in_bytes once.
-    #
-    # Can raise a MessageError when #copy_in_string or #copy_in_bytes is
-    # called multiple times on the same instance. 
     #
     def copy_in_bytes bytes, len
       data_buffer = LibC.malloc len
@@ -175,10 +184,14 @@ module ZMQ
     # no ops.
     #
     def close
+      rc = 0
+      
       if @pointer
-        LibZMQ.zmq_msg_close @pointer
+        rc = LibZMQ.zmq_msg_close @pointer
         @pointer = nil
       end
+      
+      rc
     end
 
   end # class Message
