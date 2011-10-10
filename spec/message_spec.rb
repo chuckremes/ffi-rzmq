@@ -22,7 +22,7 @@ module ZMQ
     context "when initializing *without* an argument" do
 
       it "calls zmq_msg_init()" do
-        LibZMQ.should_receive(:zmq_msg_init)
+        LibZMQ.should_receive(:zmq_msg_init).and_return(0)
         message = Message.new
       end
 
