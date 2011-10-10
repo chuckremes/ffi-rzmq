@@ -68,6 +68,8 @@ module ZMQ
       # users may override the classes used for receiving; class must conform to the
       # same public API as ZMQ::Message
       @receiver_klass = opts[:receiver_class]
+      
+      context_ptr = context_ptr.pointer if context_ptr.kind_of?(ZMQ::Context)
 
       unless context_ptr.null?
         @socket = LibZMQ.zmq_socket context_ptr, type
