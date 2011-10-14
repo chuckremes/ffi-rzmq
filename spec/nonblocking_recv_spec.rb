@@ -80,7 +80,7 @@ module ZMQ
 
     end
 
-    describe PUB do
+    context "PUB" do
 
       describe "non-blocking #recvmsgs where sender connects & receiver binds" do
         include APIHelper
@@ -91,7 +91,7 @@ module ZMQ
           assert_ok(@receiver.setsockopt(ZMQ::SUBSCRIBE, ''))
           @sender = @ctx.socket ZMQ::PUB
           assert_ok(@sender.connect("tcp://127.0.0.1:#{port}"))
-          sleep 1
+          sleep 0.3
         end
 
         after(:each) do
@@ -113,7 +113,7 @@ module ZMQ
           assert_ok(@receiver.setsockopt(ZMQ::SUBSCRIBE, ''))
           @sender = @ctx.socket ZMQ::PUB
           assert_ok(@sender.bind("tcp://127.0.0.1:#{port}"))
-          sleep 1
+          sleep 0.3
         end
 
         after(:each) do
@@ -128,7 +128,7 @@ module ZMQ
 
     end # Pub
 
-    describe REQ do
+    context "REQ" do
 
       describe "non-blocking #recvmsgs where sender connects & receiver binds" do
         include APIHelper
@@ -175,7 +175,7 @@ module ZMQ
     end # REQ
 
 
-    describe PUSH do
+    context "PUSH" do
 
       describe "non-blocking #recvmsgs where sender connects & receiver binds" do
         include APIHelper
@@ -224,7 +224,7 @@ module ZMQ
 
     unless LibZMQ.version4?
 
-      describe DEALER do
+      context "DEALER" do
 
         describe "non-blocking #recvmsgs where sender connects & receiver binds" do
           include APIHelper
@@ -273,7 +273,7 @@ module ZMQ
     end # unless version4?
 
 
-    describe XREQ do
+    context "XREQ" do
 
       describe "non-blocking #recvmsgs where sender connects & receiver binds" do
         include APIHelper
