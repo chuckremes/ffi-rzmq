@@ -104,7 +104,7 @@ module ZMQ
           end
         end
 
-      else # version3 or 4
+      elsif LibZMQ.version3? # version3
 
         context "with identity" do
           include APIHelper

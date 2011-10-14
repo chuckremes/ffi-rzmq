@@ -659,7 +659,7 @@ module ZMQ
   end # LibZMQ.version2?
 
 
-  if LibZMQ.version3?
+  if LibZMQ.version3? || LibZMQ.version4?
     class Socket
       include CommonSocketBehavior
       include IdentitySupport

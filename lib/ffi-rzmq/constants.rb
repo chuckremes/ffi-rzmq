@@ -20,7 +20,9 @@ module ZMQ
     REQ => "REQ",
     REP => "REP",
     PULL => "PULL",
-    PUSH => "PUSH"
+    PUSH => "PUSH",
+    XREQ => "XREQ",
+    XREP => "XREP"
   }
 
   #  Socket options
@@ -75,6 +77,7 @@ module ZMQ
   EADDRNOTAVAIL   = Errno::EADDRNOTAVAIL::Errno rescue (HAUSNUMERO + 6)
   ECONNREFUSED    = Errno::ECONNREFUSED::Errno rescue (HAUSNUMERO + 7)
   EINPROGRESS     = Errno::EINPROGRESS::Errno rescue (HAUSNUMERO + 8)
+  EINTR = Errnow::EINTR::Errno rescue (HAUSNUMERO + 10)
 end # module ZMQ
 
 
@@ -115,6 +118,11 @@ if LibZMQ.version3?
     ROUTER = 11
     DEALER = 12
 
+    SocketTypeNameMap[ROUTER] = 'ROUTER'
+    SocketTypeNameMap[DEALER] = 'DEALER'
+    SocketTypeNameMap[XPUB] = 'XPUB'
+    SocketTypeNameMap[XSUB] = 'XSUB'
+
     # Socket options
     IDENTITY = 5
     MAXMSGSIZE = 22
@@ -132,7 +140,6 @@ if LibZMQ.version3?
 
     # Socket & other errors
     ENOTSOCK = Errno::ENOTSOCK::Errno rescue (HAUSNUMERO + 9)
-    EINTR = Errnow::EINTR::Errno rescue (HAUSNUMERO + 10)
     EMFILE = Errno::EMFILE::Errno
 
   end
@@ -144,8 +151,11 @@ if LibZMQ.version4?
     # Socket types
     XPUB = 9
     XSUB = 10
-    ROUTER = 11
-    DEALER = 12
+    ROUTER = 13
+
+    SocketTypeNameMap[ROUTER] = 'ROUTER'
+    SocketTypeNameMap[XPUB] = 'XPUB'
+    SocketTypeNameMap[XSUB] = 'XSUB'
 
     # Socket options
     MAXMSGSIZE = 22
@@ -163,7 +173,6 @@ if LibZMQ.version4?
 
     # Socket & other errors
     ENOTSOCK = Errno::ENOTSOCK::Errno rescue (HAUSNUMERO + 9)
-    EINTR = Errnow::EINTR::Errno rescue (HAUSNUMERO + 10)
     EMFILE = Errno::EMFILE::Errno
 
   end

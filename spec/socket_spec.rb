@@ -6,6 +6,14 @@ module ZMQ
 
   describe Socket do
 
+    socket_types = if LibZMQ.version2?
+      [ZMQ::REQ, ZMQ::REP, ZMQ::DEALER, ZMQ::ROUTER, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR]
+    elsif LibZMQ.version3?
+      [ZMQ::REQ, ZMQ::REP, ZMQ::DEALER, ZMQ::ROUTER, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR, ZMQ::XPUB, ZMQ::XSUB]
+    elsif LibZMQ.version4?
+      [ZMQ::REQ, ZMQ::REP, ZMQ::ROUTER, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR, ZMQ::XPUB, ZMQ::XSUB]
+    end
+
     context "when initializing" do
       before(:all) { @ctx = Context.new }
       after(:all) { @ctx.terminate }
@@ -23,9 +31,10 @@ module ZMQ
         lambda { Socket.new(@ctx, ZMQ::REQ) }.should_not raise_exception(ZMQ::ContextError)
       end
 
-      [ZMQ::REQ, ZMQ::REP, ZMQ::DEALER, ZMQ::ROUTER, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR].each do |socket_type|
+      
+      socket_types.each do |socket_type|
 
-        it "should not raise an error for a #{ZMQ::SocketTypeNameMap[socket_type]} socket type" do
+        it "should not raise an error for a [#{ZMQ::SocketTypeNameMap[socket_type]}] socket type" do
           sock = nil
           lambda { sock = Socket.new(@ctx.pointer, socket_type) }.should_not raise_error
           sock.close
@@ -115,7 +124,7 @@ module ZMQ
     end # version2? || version3?
 
 
-    [ZMQ::REQ, ZMQ::REP, ZMQ::DEALER, ZMQ::ROUTER, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR].each do |socket_type|
+    socket_types.each do |socket_type|
 
       context "#setsockopt for a #{ZMQ::SocketTypeNameMap[socket_type]} socket" do
         before(:all) { @ctx = Context.new }
