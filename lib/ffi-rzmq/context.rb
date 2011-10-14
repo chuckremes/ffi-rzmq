@@ -99,7 +99,7 @@ module ZMQ
       sock = nil
       begin
         sock = Socket.new @context, type
-      rescue SocketError, ContextError => e
+      rescue ContextError => e
         sock = nil
       end
       
