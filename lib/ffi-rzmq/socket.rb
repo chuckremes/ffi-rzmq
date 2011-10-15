@@ -599,7 +599,10 @@ module ZMQ
         rc = recv message, flag
         parts << message
 
-        while more_parts? && Util.resultcode_ok?(rc)
+        # check rc *first*; necessary because the call to #more_parts? can reset
+        # the zmq_errno to a weird value, so the zmq_errno that was set on the
+        # call to #recv gets lost
+        while Util.resultcode_ok?(rc) && more_parts?
           message = @receiver_klass.new
           rc = recv message, flag
           parts << message
@@ -925,6 +928,9 @@ module ZMQ
         rc = recvmsg message, flag
         parts << message
 
+        # check rc *first*; necessary because the call to #more_parts? can reset
+        # the zmq_errno to a weird value, so the zmq_errno that was set on the
+        # call to #recv gets lost
         while Util.resultcode_ok?(rc) && more_parts?
           message = @receiver_klass.new
           rc = recvmsg message, flag
