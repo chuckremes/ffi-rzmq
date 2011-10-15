@@ -77,7 +77,8 @@ module ZMQ
   EADDRNOTAVAIL   = Errno::EADDRNOTAVAIL::Errno rescue (HAUSNUMERO + 6)
   ECONNREFUSED    = Errno::ECONNREFUSED::Errno rescue (HAUSNUMERO + 7)
   EINPROGRESS     = Errno::EINPROGRESS::Errno rescue (HAUSNUMERO + 8)
-  EINTR = Errnow::EINTR::Errno rescue (HAUSNUMERO + 10)
+  ENOTSOCK        = Errno::ENOTSOCK::Errno rescue (HAUSNUMERO + 9)
+  EINTR           = Errno::EINTR::Errno rescue (HAUSNUMERO + 10)
 end # module ZMQ
 
 
@@ -139,7 +140,6 @@ if LibZMQ.version3?
 
 
     # Socket & other errors
-    ENOTSOCK = Errno::ENOTSOCK::Errno rescue (HAUSNUMERO + 9)
     EMFILE = Errno::EMFILE::Errno
 
   end
@@ -172,7 +172,6 @@ if LibZMQ.version4?
 
 
     # Socket & other errors
-    ENOTSOCK = Errno::ENOTSOCK::Errno rescue (HAUSNUMERO + 9)
     EMFILE = Errno::EMFILE::Errno
 
   end
