@@ -5,7 +5,7 @@ module ZMQ
   # in the #Context, #Socket and #Poller classes.
   #
   module Util
-    
+
     # Returns true when +rc+ is greater than or equal to 0, false otherwise.
     #
     # We use the >= test because zmq_poll() returns the number of sockets
@@ -40,6 +40,23 @@ module ZMQ
       patch = FFI::MemoryPointer.new :int
       LibZMQ.zmq_version major, minor, patch
       [major.read_int, minor.read_int, patch.read_int]
+    end
+
+    # Returns the proper flag value for non-blocking regardless of 0mq
+    # version.
+    #
+    if LibZMQ.version2?
+
+      def self.nonblocking_flag
+        NOBLOCK
+      end
+
+    elsif LibZMQ.version3? || LibZMQ.version4?
+      
+      def self.nonblocking_flag
+        DONTWAIT
+      end
+
     end
 
 
