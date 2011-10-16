@@ -15,11 +15,17 @@ module LibZMQ
   find_type(:size_t) rescue typedef(:ulong, :size_t)
 
   # Context and misc api
+  @blocking = true
   attach_function :zmq_init, [:int], :pointer
+  @blocking = true
   attach_function :zmq_socket, [:pointer, :int], :pointer
+  @blocking = true
   attach_function :zmq_term, [:pointer], :int
+  @blocking = true
   attach_function :zmq_errno, [], :int
+  @blocking = true
   attach_function :zmq_strerror, [:int], :pointer
+  @blocking = true
   attach_function :zmq_version, [:pointer, :pointer, :pointer], :void
 
   def self.version
@@ -42,13 +48,21 @@ module LibZMQ
 
 
   # Message api
+  @blocking = true
   attach_function :zmq_msg_init, [:pointer], :int
+  @blocking = true
   attach_function :zmq_msg_init_size, [:pointer, :size_t], :int
+  @blocking = true
   attach_function :zmq_msg_init_data, [:pointer, :pointer, :size_t, :pointer, :pointer], :int
+  @blocking = true
   attach_function :zmq_msg_close, [:pointer], :int
+  @blocking = true
   attach_function :zmq_msg_data, [:pointer], :pointer
+  @blocking = true
   attach_function :zmq_msg_size, [:pointer], :size_t
+  @blocking = true
   attach_function :zmq_msg_copy, [:pointer, :pointer], :int
+  @blocking = true
   attach_function :zmq_msg_move, [:pointer, :pointer], :int
 
   # Used for casting pointers back to the struct
@@ -61,12 +75,17 @@ module LibZMQ
   end # class Msg
 
   # Socket api
+  @blocking = true
   attach_function :zmq_setsockopt, [:pointer, :int, :pointer, :int], :int
+  @blocking = true
   attach_function :zmq_bind, [:pointer, :string], :int
+  @blocking = true
   attach_function :zmq_connect, [:pointer, :string], :int
+  @blocking = true
   attach_function :zmq_close, [:pointer], :int
 
   # Poll api
+  @blocking = true
   attach_function :zmq_poll, [:pointer, :int, :long], :int
 
   module PollItemLayout
@@ -123,6 +142,7 @@ if LibZMQ.version2?
     # This is really only honored by the MRI implementation but it *is* necessary
     # otherwise the runtime hangs (and requires a kill -9 to terminate)
     #
+    @blocking = true
     attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :pointer], :int
     @blocking = true
     attach_function :zmq_recv, [:pointer, :pointer, :int], :int
@@ -140,6 +160,7 @@ if LibZMQ.version3? || LibZMQ.version4?
 
   module LibZMQ
     # Socket api
+    @blocking = true
     attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :pointer], :int
     @blocking = true
     attach_function :zmq_recvmsg, [:pointer, :pointer, :int], :int
