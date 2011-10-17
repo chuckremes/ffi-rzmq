@@ -442,33 +442,39 @@ module ZMQ
               array[0].should be_a(Fixnum)
             end
 
-            it "should return a valid FD" do
-              # Use FFI to wrap the C library function +getsockopt+ so that we can execute it
+            it "returns a valid FD that is accepted by the system poll() function" do
+              # Use FFI to wrap the C library function +poll+ so that we can execute it
               # on the 0mq file descriptor. If it returns 0, then it succeeded and the FD
               # is valid!
               module LibSocket
                 extend FFI::Library
                 # figures out the correct libc for each platform including Windows
                 library = ffi_lib(FFI::Library::LIBC).first
-                attach_function :getsockopt, [:int, :int, :int, :pointer, :pointer], :int
-              end # module LibC
+                
+                find_type(:nfds_t) rescue typedef(:uint32, :nfds_t)
+                
+                attach_function :poll, [:pointer, :nfds_t, :int], :int
+                
+                class PollFD < FFI::Struct
+                    layout :fd,    :int,
+                    :events, :short,
+                    :revents, :short
+                end
+              end # module LibSocket
 
-              if RUBY_PLATFORM =~ /linux/ || (RUBY_PLATFORM == 'java' && `uname` =~ /linux/i)
-                so_rcvbuf =  8
-                sol_socket = 1
-              else #OSX
-                so_rcvbuf =  0x1002
-                sol_socket = 0xffff
-              end
-
-              socklen_size = FFI::MemoryPointer.new :uint32
-              socklen_size.write_int 8
-              rcvbuf = FFI::MemoryPointer.new :int64
               array = []
               rc = socket.getsockopt(ZMQ::FD, array)
+              rc.should be_zero
               fd = array[0]
-
-              LibSocket.getsockopt(fd, sol_socket, so_rcvbuf, rcvbuf, socklen_size).should be_zero
+              
+              # setup the BSD poll_fd struct
+              pollfd = LibSocket::PollFD.new
+              pollfd[:fd] = fd
+              pollfd[:events] = 0
+              pollfd[:revents] = 0
+              
+              rc = LibSocket.poll(pollfd, 1, 0)
+              rc.should be_zero
             end
           end
 
