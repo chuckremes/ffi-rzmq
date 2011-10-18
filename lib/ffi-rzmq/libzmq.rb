@@ -8,13 +8,26 @@ module LibZMQ
   # bias the library discovery to a path inside the gem first, then
   # to the usual system paths
   inside_gem = File.join(File.dirname(__FILE__), '..', '..', 'ext')
-  ZMQ_LIB_PATHS = [inside_gem, '/usr/local/lib', '/opt/local/lib', '/usr/local/homebrew/lib'].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
+  ZMQ_LIB_PATHS = [
+    inside_gem, '/usr/local/lib', '/opt/local/lib', '/usr/local/homebrew/lib', '/usr/lib64'
+    ].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
   ffi_lib(ZMQ_LIB_PATHS + %w{libzmq})
 
   # Size_t not working properly on Windows
   find_type(:size_t) rescue typedef(:ulong, :size_t)
 
   # Context and misc api
+  #
+  # @blocking = true is a hint to FFI that the following (and only the following)
+  # function may block, therefore it should release the GIL before calling it.
+  # This can aid in situations where the function call will/may block and another
+  # thread within the lib may try to call back into the ruby runtime. Failure to
+  # release the GIL will result in a hang; the hint *may* allow things to run
+  # smoothly for Ruby runtimes hampered by a GIL.
+  #
+  # This is really only honored by the MRI implementation but it *is* necessary
+  # otherwise the runtime hangs (and requires a kill -9 to terminate)
+  #
   @blocking = true
   attach_function :zmq_init, [:int], :pointer
   @blocking = true
@@ -132,16 +145,6 @@ if LibZMQ.version2?
 
   module LibZMQ
     # Socket api
-    # @blocking = true is a hint to FFI that the following (and only the following)
-    # function may block, therefore it should release the GIL before calling it.
-    # This can aid in situations where the function call will/may block and another
-    # thread within the lib may try to call back into the ruby runtime. Failure to
-    # release the GIL will result in a hang; the hint *may* allow things to run
-    # smoothly for Ruby runtimes hampered by a GIL.
-    #
-    # This is really only honored by the MRI implementation but it *is* necessary
-    # otherwise the runtime hangs (and requires a kill -9 to terminate)
-    #
     @blocking = true
     attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :pointer], :int
     @blocking = true
