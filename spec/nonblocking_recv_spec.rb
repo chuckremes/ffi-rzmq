@@ -28,7 +28,7 @@ module ZMQ
 
     shared_examples_for "sockets without exposed envelopes" do
 
-      it "reads the single message and returns a successful result code" do
+      it "read the single message and returns a successful result code" do
         rc = @sender.send_string('test')
         Util.resultcode_ok?(rc).should be_true
         sleep 0.1 # give it time to deliver to the receiver
@@ -39,7 +39,7 @@ module ZMQ
         array.size.should == 1
       end
 
-      it "reads all message parts transmitted and returns a successful result code" do
+      it "read all message parts transmitted and returns a successful result code" do
         strings = Array.new(10, 'test')
         rc = @sender.send_strings(strings)
         Util.resultcode_ok?(rc).should be_true
@@ -55,7 +55,7 @@ module ZMQ
 
     shared_examples_for "sockets with exposed envelopes" do
 
-      it "reads the single message and returns a successful result code" do
+      it "read the single message and returns a successful result code" do
         rc = @sender.send_string('test')
         Util.resultcode_ok?(rc).should be_true
         sleep 0.1 # give it time to deliver to the receiver
@@ -66,7 +66,7 @@ module ZMQ
         array.size.should == 1 + 1 # extra 1 for envelope
       end
 
-      it "reads all message parts transmitted and returns a successful result code" do
+      it "read all message parts transmitted and returns a successful result code" do
         strings = Array.new(10, 'test')
         rc = @sender.send_strings(strings)
         Util.resultcode_ok?(rc).should be_true
