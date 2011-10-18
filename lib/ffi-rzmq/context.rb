@@ -69,10 +69,10 @@ module ZMQ
     #
     def terminate
       unless @context.nil? || @context.null?
+        remove_finalizer
         rc = LibZMQ.zmq_term @context
         @context = nil
         @sockets = nil
-        remove_finalizer
         rc
       else
         0
