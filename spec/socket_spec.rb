@@ -22,22 +22,22 @@ module ZMQ
       it "should raise an error for a nil context" do
         lambda { Socket.new(FFI::Pointer.new(0), ZMQ::REQ) }.should raise_exception(ZMQ::ContextError)
       end
-      
+
       it "works with a Context#pointer as the context_ptr" do
         lambda do
           s = Socket.new(@ctx.pointer, ZMQ::REQ)
           s.close
         end.should_not raise_exception(ZMQ::ContextError)
       end
-      
+
       it "works with a Context instance as the context_ptr" do
         lambda do
-          s = Socket.new(@ctx, ZMQ::SUB) 
+          s = Socket.new(@ctx, ZMQ::SUB)
           s.close
         end.should_not raise_exception(ZMQ::ContextError)
       end
 
-      
+
       socket_types.each do |socket_type|
 
         it "should not raise an error for a [#{ZMQ::SocketTypeNameMap[socket_type]}] socket type" do
@@ -450,15 +450,15 @@ module ZMQ
                 extend FFI::Library
                 # figures out the correct libc for each platform including Windows
                 library = ffi_lib(FFI::Library::LIBC).first
-                
+
                 find_type(:nfds_t) rescue typedef(:uint32, :nfds_t)
-                
+
                 attach_function :poll, [:pointer, :nfds_t, :int], :int
-                
+
                 class PollFD < FFI::Struct
-                    layout :fd,    :int,
-                    :events, :short,
-                    :revents, :short
+                  layout :fd,    :int,
+                  :events, :short,
+                  :revents, :short
                 end
               end # module LibSocket
 
@@ -466,13 +466,13 @@ module ZMQ
               rc = socket.getsockopt(ZMQ::FD, array)
               rc.should be_zero
               fd = array[0]
-              
+
               # setup the BSD poll_fd struct
               pollfd = LibSocket::PollFD.new
               pollfd[:fd] = fd
               pollfd[:events] = 0
               pollfd[:revents] = 0
-              
+
               rc = LibSocket.poll(pollfd, 1, 0)
               rc.should be_zero
             end
@@ -502,59 +502,87 @@ module ZMQ
     end # each socket_type
 
 
-    describe "Events mapping to POLLIN and POLLOUT" do
+    describe "Mapping socket EVENTS to POLLIN and POLLOUT" do
       include APIHelper
+      
+      shared_examples_for "pubsub sockets where" do
+        it "SUB socket that received a message always has POLLIN set" do
+          events = []
+          rc = @sub.getsockopt(ZMQ::EVENTS, events)
+          rc.should == 0
+          events[0].should == ZMQ::POLLIN
+        end
 
-      before(:all) do
-        @ctx = Context.new
-        addr = "tcp://127.0.0.1:#{random_port}"
+        it "PUB socket always has POLLOUT set" do
+          events = []
+          rc = @pub.getsockopt(ZMQ::EVENTS, events)
+          rc.should == 0
+          events[0].should == ZMQ::POLLOUT
+        end
 
-        @sub = @ctx.socket ZMQ::SUB
-        @sub.setsockopt ZMQ::SUBSCRIBE, ''
-        @sub.bind addr
-        sleep 0.1
+        it "PUB socket never has POLLIN set" do
+          events = []
+          rc = @pub.getsockopt(ZMQ::EVENTS, events)
+          rc.should == 0
+          events[0].should_not == ZMQ::POLLIN
+        end
 
-        @pub = @ctx.socket ZMQ::PUB
-        @pub.connect addr
+        it "SUB socket never has POLLOUT set" do
+          events = []
+          rc = @sub.getsockopt(ZMQ::EVENTS, events)
+          rc.should == 0
+          events[0].should_not == ZMQ::POLLOUT
+        end
+      end # shared example for pubsub
 
-        @pub.send_string('test')
-        sleep 0.2
-      end
+      context "when SUB binds and PUB connects" do
 
-      after(:all) do
+        before(:each) do
+          @ctx = Context.new
+
+          @sub = @ctx.socket ZMQ::SUB
+          rc = @sub.setsockopt ZMQ::SUBSCRIBE, ''
+
+          @pub = @ctx.socket ZMQ::PUB
+          port = bind_to_random_tcp_port(@sub)
+          rc = @pub.connect "tcp://127.0.0.1:#{port}"
+          sleep 0.5
+
+          rc = @pub.send_string('test')
+          sleep 0.2
+        end
+
+        it_behaves_like "pubsub sockets where"
+      end # context SUB binds PUB connects
+
+      context "when SUB connects and PUB binds" do
+
+        before(:each) do
+          @ctx = Context.new
+
+          @sub = @ctx.socket ZMQ::SUB
+          rc = @sub.setsockopt ZMQ::SUBSCRIBE, ''
+
+          @pub = @ctx.socket ZMQ::PUB
+          port = bind_to_random_tcp_port(@pub)
+          rc = @sub.connect "tcp://127.0.0.1:#{port}"
+          sleep 0.5
+
+          rc = @pub.send_string('test')
+          sleep 0.2
+        end
+
+        it_behaves_like "pubsub sockets where"
+      end # context SUB binds PUB connects
+
+
+      after(:each) do
         @sub.close
         @pub.close
         # must call close on *every* socket before calling terminate otherwise it blocks indefinitely
         @ctx.terminate
       end
 
-      it "should *always* have only POLLIN set for a SUB socket that received a message" do
-        array = []
-        rc = @sub.getsockopt(ZMQ::EVENTS, array)
-        rc.should == 0
-        array[0].should == ZMQ::POLLIN
-      end
-
-      it "should *always* have only POLLOUT set for a PUB socket" do
-        array = []
-        rc = @pub.getsockopt(ZMQ::EVENTS, array)
-        rc.should == 0
-        array[0].should == ZMQ::POLLOUT
-      end
-
-      it "should *never* have only POLLIN set for a PUB socket" do
-        array = []
-        rc = @pub.getsockopt(ZMQ::EVENTS, array)
-        rc.should == 0
-        array[0].should_not == ZMQ::POLLIN
-      end
-
-      it "should *never* have only POLLOUT set for a SUB socket" do
-        array = []
-        rc = @sub.getsockopt(ZMQ::EVENTS, array)
-        rc.should == 0
-        array[0].should_not == ZMQ::POLLOUT
-      end
     end # describe 'events mapping to pollin and pollout'
 
   end # describe Socket
