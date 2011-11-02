@@ -589,15 +589,14 @@ module ZMQ
       # 2. When +flags+ is set with ZMQ::NOBLOCK and the socket returned EAGAIN.
       #
       # With a -1 return code, the user must check ZMQ.errno to determine the
-      # cause. Also, the +list+ will not be modified when there was an error.
+      # cause. Also, the +list+ *may* be modified when there was an error.
       #
       def recvmsgs list, flag = 0
         flag = NOBLOCK if noblock?(flag)
 
-        parts = []
         message = @receiver_klass.new
         rc = recv message, flag
-        parts << message
+        list << message
 
         # check rc *first*; necessary because the call to #more_parts? can reset
         # the zmq_errno to a weird value, so the zmq_errno that was set on the
@@ -605,17 +604,40 @@ module ZMQ
         while Util.resultcode_ok?(rc) && more_parts?
           message = @receiver_klass.new
           rc = recv message, flag
-          parts << message
+          list << message
         end
 
-        # only append the received parts if there were no errors
-        # FIXME:
-        # need to detect EAGAIN if flag is set; EAGAIN means we have read all that we
-        # can and should return whatever was already read; need a spec!
+        rc
+      end
+      
+      # Should only be used for XREQ, XREP, DEALER and ROUTER type sockets. Takes
+      # a +list+ for receiving the message body parts and a +routing_envelope+
+      # for receiving the message parts comprising the 0mq routing information.
+      #
+      # Returns 0 when all messages were successfully dequeued.
+      # Returns -1 under two conditions.
+      # 1. A message could not be dequeued
+      # 2. When +flags+ is set with ZMQ::NOBLOCK and the socket returned EAGAIN.
+      #
+      # With a -1 return code, the user must check ZMQ.errno to determine the
+      # cause. Also, the +list+ *may* be modified when there was an error.
+      #
+      def recv_multipart list, routing_envelope, flag = 0
+        parts = []
+        rc = recvmsgs parts, flag
+        
         if Util.resultcode_ok?(rc)
-          parts.each { |part| list << part }
+          routing = true
+          parts.each do |part|
+            if routing
+              routing_envelope << part
+              routing = part.size > 0
+            else
+              list << part
+            end
+          end
         end
-
+        
         rc
       end
 
@@ -926,7 +948,7 @@ module ZMQ
         parts = []
         message = @receiver_klass.new
         rc = recvmsg message, flag
-        parts << message
+        list << message
 
         # check rc *first*; necessary because the call to #more_parts? can reset
         # the zmq_errno to a weird value, so the zmq_errno that was set on the
@@ -934,12 +956,41 @@ module ZMQ
         while Util.resultcode_ok?(rc) && more_parts?
           message = @receiver_klass.new
           rc = recvmsg message, flag
-          parts << message
+          list << message
         end
 
-        # only append the received parts if there were no errors
+        rc
+      end
+      
+      # Should only be used for XREQ, XREP, DEALER and ROUTER type sockets. Takes
+      # a +list+ for receiving the message body parts and a +routing_envelope+
+      # for receiving the message parts comprising the 0mq routing information.
+      #
+      def recv_multipart list, routing_envelope, flag = 0
+        flag = DONTWAIT if dontwait?(flag)
+
+        message = @receiver_klass.new
+        rc = recvmsg message, flag
+        
         if Util.resultcode_ok?(rc)
-          parts.each { |part| list << part }
+          if label?
+            routing_envelope << message
+          else
+            list << message
+          end
+
+          # check rc *first*; necessary because the call to #more_parts? can reset
+          # the zmq_errno to a weird value, so the zmq_errno that was set on the
+          # call to #recv gets lost
+          while Util.resultcode_ok?(rc) && more_parts?
+            message = @receiver_klass.new
+            rc = recvmsg message, flag
+            if Util.resultcode_ok?(rc) && label?
+              routing_envelope << message
+            elsif Util.resultcode_ok?(rc)
+              list << message
+            end
+          end
         end
 
         rc
