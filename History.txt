@@ -1,3 +1,15 @@
+== 0.9.1 / 20111027
+  * Moved LibC and LibZMQ into the ZMQ module namespace. Necessary to
+    avoid namespace collisions with other libraries that also use
+    the constants LibC and/or LibZMQ.
+    
+  * Fixed a bug where file descriptors registered on Poll were never 
+    returned as readable or writable.
+    
+  * Added Socket#recv_multipart. This returns the message body and
+    return address envelope as separate arrays. Only to be used with
+    XREQ/XREP/DEALER/ROUTER sockets.
+
 == 0.9.0 / 20110930
   * Changed the behavior of every method that used to produce exceptions.
     The methods now behave more like the C API functions. They return

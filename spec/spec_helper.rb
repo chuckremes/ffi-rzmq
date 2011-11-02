@@ -10,15 +10,15 @@ Thread.abort_on_exception = true
 # define some version guards so we can turn on/off specs based upon
 # the version of the 0mq library that is loaded
 def version2?
-  LibZMQ.version2?
+  ZMQ::LibZMQ.version2?
 end
 
 def version3?
-  LibZMQ.version3?
+  ZMQ::LibZMQ.version3?
 end
 
 def version4?
-  LibZMQ.version4?
+  ZMQ::LibZMQ.version4?
 end
 
 
