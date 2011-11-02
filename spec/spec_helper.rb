@@ -22,7 +22,7 @@ def version4?
 end
 
 
-NonBlockingFlag = (LibZMQ.version2? ? ZMQ::NOBLOCK : ZMQ::DONTWAIT) unless defined?(NonBlockingFlag)
+NonBlockingFlag = (ZMQ::LibZMQ.version2? ? ZMQ::NOBLOCK : ZMQ::DONTWAIT) unless defined?(NonBlockingFlag)
 
 
 module APIHelper
