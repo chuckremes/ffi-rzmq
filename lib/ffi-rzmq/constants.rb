@@ -82,7 +82,7 @@ module ZMQ
 end # module ZMQ
 
 
-if LibZMQ.version2?
+if ZMQ::LibZMQ.version2?
   module ZMQ
     # Socket types
     UPSTREAM = PULL
@@ -111,7 +111,7 @@ if LibZMQ.version2?
 end # version2?
 
 
-if LibZMQ.version3?
+if ZMQ::LibZMQ.version3?
   module ZMQ
     # Socket types
     XPUB = 9
@@ -146,7 +146,7 @@ if LibZMQ.version3?
 end # version3?
 
 
-if LibZMQ.version4?
+if ZMQ::LibZMQ.version4?
   module ZMQ
     # Socket types
     XPUB = 9
