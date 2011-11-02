@@ -34,7 +34,7 @@ module ZMQ
     def self.create context_ptr, type, opts = {:receiver_class => ZMQ::Message}
       new(context_ptr, type, opts) rescue nil
     end
-    
+
     # To avoid rescuing exceptions, use the factory method #create for
     # all socket creation.
     #
@@ -68,7 +68,7 @@ module ZMQ
       # users may override the classes used for receiving; class must conform to the
       # same public API as ZMQ::Message
       @receiver_klass = opts[:receiver_class]
-      
+
       context_ptr = context_ptr.pointer if context_ptr.kind_of?(ZMQ::Context)
 
       unless context_ptr.null?
@@ -169,7 +169,7 @@ module ZMQ
     def more_parts?
       array = []
       rc = getsockopt ZMQ::RCVMORE, array
-      
+
       Util.resultcode_ok?(rc) ? array.at(0) : false
     end
 
@@ -197,7 +197,7 @@ module ZMQ
     #
     #  rc = socket.close
     #  puts("Given socket was invalid!") unless 0 == rc
-    # 
+    #
     def close
       if @socket
         remove_finalizer
@@ -244,7 +244,7 @@ module ZMQ
           length.write_int 8
           @sockopt_cache[:int64] = [FFI::MemoryPointer.new(:int64), length]
         end
-        
+
         @sockopt_cache[:int64]
 
       elsif int_option?(name)
@@ -254,7 +254,7 @@ module ZMQ
           length.write_int 4
           @sockopt_cache[:int32] = [FFI::MemoryPointer.new(:int32), length]
         end
-        
+
         @sockopt_cache[:int32]
 
       elsif string_option?(name)
@@ -262,7 +262,7 @@ module ZMQ
         # could be a string of up to 255 bytes
         length.write_int 255
         [FFI::MemoryPointer.new(255), length]
-        
+
       else
         # uh oh, someone passed in an unknown option; use a slop buffer
         unless @sockopt_cache[:unknown]
@@ -270,7 +270,7 @@ module ZMQ
           length.write_int 4
           @sockopt_cache[:unknown] = [FFI::MemoryPointer.new(:int32), length]
         end
-        
+
         @sockopt_cache[:unknown]
       end
     end
@@ -386,12 +386,12 @@ module ZMQ
       #
       def getsockopt name, array
         rc = __getsockopt__ name, array
-        
+
         if Util.resultcode_ok?(rc) && (RCVMORE == name || MCAST_LOOP == name)
           # convert to boolean
           array[0] = 1 == array[0]
         end
-          
+
         rc
       end
 
@@ -564,14 +564,14 @@ module ZMQ
       def recv_strings list, flag = 0
         array = []
         rc = recvmsgs array, flag
-        
+
         if Util.resultcode_ok?(rc)
           array.each do |message|
             list << message.copy_out_string
             message.close
           end
         end
-        
+
         rc
       end
 
@@ -589,27 +589,39 @@ module ZMQ
       # 2. When +flags+ is set with ZMQ::NOBLOCK and the socket returned EAGAIN.
       #
       # With a -1 return code, the user must check ZMQ.errno to determine the
-      # cause. Also, the +list+ *may* be modified when there was an error.
+      # cause. Also, the +list+ will not be modified when there was an error.
       #
       def recvmsgs list, flag = 0
         flag = NOBLOCK if noblock?(flag)
 
         message = @receiver_klass.new
         rc = recv message, flag
-        list << message
 
-        # check rc *first*; necessary because the call to #more_parts? can reset
-        # the zmq_errno to a weird value, so the zmq_errno that was set on the
-        # call to #recv gets lost
-        while Util.resultcode_ok?(rc) && more_parts?
-          message = @receiver_klass.new
-          rc = recv message, flag
+        if Util.resultcode_ok?(rc)
           list << message
+
+          # check rc *first*; necessary because the call to #more_parts? can reset
+          # the zmq_errno to a weird value, so the zmq_errno that was set on the
+          # call to #recv gets lost
+          while Util.resultcode_ok?(rc) && more_parts?
+            message = @receiver_klass.new
+            rc = recv message, flag
+
+            if Util.resultcode_ok?(rc)
+              list << message
+            else
+              message.close
+              list.each { |msg| msg.close }
+              list.clear
+            end
+          end
+        else
+          message.close
         end
 
         rc
       end
-      
+
       # Should only be used for XREQ, XREP, DEALER and ROUTER type sockets. Takes
       # a +list+ for receiving the message body parts and a +routing_envelope+
       # for receiving the message parts comprising the 0mq routing information.
@@ -625,7 +637,7 @@ module ZMQ
       def recv_multipart list, routing_envelope, flag = 0
         parts = []
         rc = recvmsgs parts, flag
-        
+
         if Util.resultcode_ok?(rc)
           routing = true
           parts.each do |part|
@@ -637,7 +649,7 @@ module ZMQ
             end
           end
         end
-        
+
         rc
       end
 
@@ -726,12 +738,12 @@ module ZMQ
       #
       def getsockopt name, array
         rc = __getsockopt__ name, array
-        
+
         if Util.resultcode_ok?(rc) && (RCVMORE == name)
           # convert to boolean
           array[0] = 1 == array[0]
         end
-          
+
         rc
       end
 
@@ -759,7 +771,7 @@ module ZMQ
       def label?
         array = []
         rc = getsockopt ZMQ::RCVLABEL, array
-        
+
         Util.resultcode_ok?(rc) ? array.at(0) : false
       end
 
@@ -818,7 +830,7 @@ module ZMQ
       def send_strings parts, flags = 0
         return -1 if !parts || parts.empty?
         flags = DONTWAIT if dontwait?(flags)
-        
+
         parts[0..-2].each do |part|
           rc = send_string part, (flags | ZMQ::SNDMORE)
           return rc unless Util.resultcode_ok?(rc)
@@ -844,7 +856,7 @@ module ZMQ
       def sendmsgs parts, flags = 0
         return -1 if !parts || parts.empty?
         flags = DONTWAIT if dontwait?(flags)
-        
+
         parts[0..-2].each do |part|
           rc = sendmsg part, (flags | ZMQ::SNDMORE)
           return rc unless Util.resultcode_ok?(rc)
@@ -923,14 +935,14 @@ module ZMQ
       def recv_strings list, flag = 0
         array = []
         rc = recvmsgs array, flag
-        
+
         if Util.resultcode_ok?(rc)
           array.each do |message|
             list << message.copy_out_string
             message.close
           end
         end
-        
+
         rc
       end
 
@@ -940,28 +952,38 @@ module ZMQ
       # +flag+ may be ZMQ::DONTWAIT. Any other flag will be
       # removed.
       #
-      # Raises the same exceptions as Socket#recv.
-      #
       def recvmsgs list, flag = 0
         flag = DONTWAIT if dontwait?(flag)
 
         parts = []
         message = @receiver_klass.new
         rc = recvmsg message, flag
-        list << message
 
-        # check rc *first*; necessary because the call to #more_parts? can reset
-        # the zmq_errno to a weird value, so the zmq_errno that was set on the
-        # call to #recv gets lost
-        while Util.resultcode_ok?(rc) && more_parts?
-          message = @receiver_klass.new
-          rc = recvmsg message, flag
+        if Util.resultcode_ok?(rc)
           list << message
+
+          # check rc *first*; necessary because the call to #more_parts? can reset
+          # the zmq_errno to a weird value, so the zmq_errno that was set on the
+          # call to #recv gets lost
+          while Util.resultcode_ok?(rc) && more_parts?
+            message = @receiver_klass.new
+            rc = recvmsg message, flag
+            
+            if Util.resultcode_ok?(rc)
+              list << message
+            else
+              message.close
+              list.each { |msg| msg.close }
+              list.clear
+            end
+          end
+        else
+          message.close
         end
 
         rc
       end
-      
+
       # Should only be used for XREQ, XREP, DEALER and ROUTER type sockets. Takes
       # a +list+ for receiving the message body parts and a +routing_envelope+
       # for receiving the message parts comprising the 0mq routing information.
@@ -971,7 +993,7 @@ module ZMQ
 
         message = @receiver_klass.new
         rc = recvmsg message, flag
-        
+
         if Util.resultcode_ok?(rc)
           if label?
             routing_envelope << message
@@ -989,8 +1011,15 @@ module ZMQ
               routing_envelope << message
             elsif Util.resultcode_ok?(rc)
               list << message
+            else
+              message.close
+              (routing_envelope + list).each { |msg| msg.close }
+              routing_envelope.clear
+              list.clear
             end
           end
+        else
+          message.close
         end
 
         rc

@@ -28,11 +28,10 @@ module ZMQ
         ZMQ::Util.errno.should == ZMQ::EAGAIN
       end
 
-      it "returns 1 empty ZMQ::Message in the array when there are no messages to read" do
+      it "returns the given array unmodified when there are no messages to read" do
         array = []
         rc = @receiver.recvmsgs(array, NonBlockingFlag)
-        array.size.should == 1
-        array.at(0).copy_out_string.should == ''
+        array.size.should be_zero
       end
 
     end
