@@ -42,6 +42,22 @@ module ZMQ
       [major.read_int, minor.read_int, patch.read_int]
     end
 
+    # Attempts to bind to a random tcp port on +host+ up to +max_tries+
+    # times. Returns the port number upon success or nil upon failure.
+    #
+    def self.bind_to_random_tcp_port host = '127.0.0.1', max_tries = 500
+      tries = 0
+      rc = -1
+
+      while !resultcode_ok?(rc) && tries < max_tries
+        tries += 1
+        random = random_port
+        rc = socket.bind "tcp://#{host}:#{random}"
+      end
+
+      resultcode_ok?(rc) ? random : nil
+    end
+
     # Returns the proper flag value for non-blocking regardless of 0mq
     # version.
     #
@@ -61,6 +77,11 @@ module ZMQ
 
 
     private
+
+    # generate a random port between 10_000 and 65534
+    def self.random_port
+      rand(55534) + 10_000
+    end
 
     # :doc:
     # Called by most library methods to verify there were no errors during
