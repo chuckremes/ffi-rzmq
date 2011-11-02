@@ -16,12 +16,23 @@ module ZMQ
 
     shared_examples_for "any socket" do
 
-      it "returns -1 and gets EAGAIN when there are no messages to read" do
+      it "returns -1 when there are no messages to read" do
         array = []
         rc = @receiver.recvmsgs(array, NonBlockingFlag)
         Util.resultcode_ok?(rc).should be_false
-        array.size.should == 0
+      end
+
+      it "gets EAGAIN when there are no messages to read" do
+        array = []
+        rc = @receiver.recvmsgs(array, NonBlockingFlag)
         ZMQ::Util.errno.should == ZMQ::EAGAIN
+      end
+
+      it "returns 1 empty ZMQ::Message in the array when there are no messages to read" do
+        array = []
+        rc = @receiver.recvmsgs(array, NonBlockingFlag)
+        array.size.should == 1
+        array.at(0).copy_out_string.should == ''
       end
 
     end
