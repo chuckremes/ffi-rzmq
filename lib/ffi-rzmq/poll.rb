@@ -85,7 +85,7 @@ module ZMQ
           item[:fd] = fd
         end
 
-        @raw_to_socket[item[:socket].address] = sock
+        @raw_to_socket[item.socket.address] = sock
         @items << item
       end
 
@@ -172,7 +172,7 @@ module ZMQ
 
     def items_hash hash
       @items.each do |poll_item|
-        hash[@raw_to_socket[poll_item[:socket].address]] = poll_item
+        hash[@raw_to_socket[poll_item.socket.address]] = poll_item
       end
     end
 
@@ -181,8 +181,14 @@ module ZMQ
       @writables.clear
 
       @items.each do |poll_item|
-        @readables << @raw_to_socket[poll_item[:socket].address] if poll_item.readable?
-        @writables << @raw_to_socket[poll_item[:socket].address] if poll_item.writable?
+        #FIXME: spec for sockets *and* file descriptors
+        if poll_item.readable?
+          @readables << (poll_item.socket.address.zero? ? poll_item.fd : @raw_to_socket[poll_item.socket.address])
+        end
+        
+        if poll_item.writable?
+          @writables << (poll_item.socket.address.zero? ? poll_item.fd : @raw_to_socket[poll_item.socket.address])
+        end
       end
     end
 
