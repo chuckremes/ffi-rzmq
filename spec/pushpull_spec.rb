@@ -17,6 +17,7 @@ module ZMQ
         @pull.setsockopt ZMQ::LINGER, 0
         port = connect_to_random_tcp_port(@pull)
         @link = "tcp://127.0.0.1:#{port}"
+        @link = "inproc://push_pull_test"
         @push.bind    @link
       end
 
@@ -63,11 +64,12 @@ module ZMQ
 
       if version2?
 
-        it "should receive a single message for each message sent on each socket listening, when an equal number pulls to messages" do
+        it "should receive a single message for each message sent on each socket listening, when an equal number pulls to messages and a unique socket per thread" do
           received = []
           threads  = []
           count    = 4
           @pull.close # close this one since we aren't going to use it below and we don't want it to receive a message
+          mutex = Mutex.new
 
           count.times do |i|
             threads << Thread.new do
@@ -78,7 +80,7 @@ module ZMQ
               buffer = ''
               rc = pull.recv_string buffer
               rc.should == 0
-              received << buffer
+              mutex.synchronize { received << buffer }
               pull.close
             end
             sleep 0.01 # give each thread time to spin up
@@ -87,6 +89,36 @@ module ZMQ
           count.times { @push.send_string(string) }
 
           threads.each {|t| t.join}
+
+          received.find_all {|r| r == string}.length.should == count
+        end
+
+        it "should receive a single message for each message sent on each socket listening, when an equal number pulls to messages and a single shared socket protected by a mutex" do
+          received = []
+          threads  = []
+          count    = 4
+          @pull.close # close this one since we aren't going to use it below and we don't want it to receive a message
+          pull = @context.socket ZMQ::PULL
+          rc = pull.setsockopt ZMQ::LINGER, 0
+          rc = pull.connect @link
+          rc.should == 0
+          mutex = Mutex.new
+
+          count.times do |i|
+            threads << Thread.new do
+              buffer = ''
+              rc = 0
+              mutex.synchronize { rc = pull.recv_string buffer }
+              rc.should == 0
+              mutex.synchronize { received << buffer }
+            end
+            sleep 0.01 # give each thread time to spin up
+          end
+
+          count.times { @push.send_string(string) }
+
+          threads.each {|t| t.join}
+          pull.close
 
           received.find_all {|r| r == string}.length.should == count
         end
