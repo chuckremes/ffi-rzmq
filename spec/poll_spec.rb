@@ -5,7 +5,7 @@ require File.join(File.dirname(__FILE__), %w[spec_helper])
 module ZMQ
 
 
-  describe Context do
+  describe Poller do
 
     context "when initializing" do
       include APIHelper
@@ -53,18 +53,28 @@ module ZMQ
     context "#delete" do
       let(:poller) { Poller.new }
       let(:socket) { mock('socket') }
+      let(:context) { Context.new }
       
       it "should return false for an unregistered socket (i.e. not found)" do
         poller.delete(socket).should be_false
       end
       
-      it "should return true for a sucessfully deleted socket" do
-        raw_socket = FFI::MemoryPointer.new(4)
-        socket.stub(:kind_of? => true, :socket => raw_socket)
+      it "returns true for a sucessfully deleted socket when only 1 is registered" do
+        socket1 = context.socket ZMQ::REP
 
-        poller.register socket
-        poller.delete(socket).should be_true
+        poller.register socket1
+        poller.delete(socket1).should be_true
       end
+      
+      it "returns true for a sucessfully deleted socket when more than 1 is registered" do
+        socket1 = context.socket ZMQ::REP
+        socket2 = context.socket ZMQ::REP
+
+        poller.register socket1
+        poller.register socket2
+        poller.delete(socket2).should be_true
+      end
+      
     end
 
 

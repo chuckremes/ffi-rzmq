@@ -143,7 +143,7 @@ module ZMQ
       removed_readable = deregister_readable sock
       removed_writable = deregister_writable sock
 
-      if (size = @sockets.size) > 0
+      unless (removed_readable || removed_writable) || (size = @sockets.size).zero?
         @sockets.delete_if { |socket| socket.socket.address == sock.socket.address }
         socket_deleted = size != @sockets.size
 
