@@ -100,14 +100,13 @@ module ZMQ
     #  ZMQ::RECONNECT_IVL
     #  ZMQ::BACKLOG
     #  ZMQ::RECOVER_IVL_MSEC (version 2 only)
-    #  ZMQ::RECONNECT_IVL_MAX (version 3/4 only)
-    #  ZMQ::MAXMSGSIZE (version 3/4 only)
-    #  ZMQ::SNDHWM (version 3/4 only)
-    #  ZMQ::RCVHWM (version 3/4 only)
-    #  ZMQ::MULTICAST_HOPS (version 3/4 only)
-    #  ZMQ::RCVTIMEO (version 3/4 only)
-    #  ZMQ::SNDTIMEO (version 3/4 only)
-    #  ZMQ::RCVLABEL (version 3/4 only)
+    #  ZMQ::RECONNECT_IVL_MAX (version 3 only)
+    #  ZMQ::MAXMSGSIZE (version 3 only)
+    #  ZMQ::SNDHWM (version 3 only)
+    #  ZMQ::RCVHWM (version 3 only)
+    #  ZMQ::MULTICAST_HOPS (version 3 only)
+    #  ZMQ::RCVTIMEO (version 3 only)
+    #  ZMQ::SNDTIMEO (version 3 only)
     #
     # Valid +name+ values that take a string +value+ are:
     #  ZMQ::IDENTITY (version 2/3 only)
@@ -696,7 +695,7 @@ module ZMQ
   end # LibZMQ.version2?
 
 
-  if LibZMQ.version3? || LibZMQ.version4?
+  if LibZMQ.version3?
     class Socket
       include CommonSocketBehavior
       include IdentitySupport
@@ -745,34 +744,6 @@ module ZMQ
         end
 
         rc
-      end
-
-      # The last message part received is tested to see if it is a label.
-      #
-      # Equivalent to calling Socket#getsockopt with ZMQ::RCVLABEL.
-      #
-      # Warning: if the call to #getsockopt fails, this method will return
-      # false and swallow the error.
-      #
-      #  labels = []
-      #  message_parts = []
-      #  message = Message.new
-      #  rc = socket.recv(message)
-      #  if ZMQ::Util.resultcode_ok?(rc)
-      #    label? ? labels.push(message) : message_parts.push(message)
-      #    while more_parts?
-      #      message = Message.new
-      #      if ZMQ::Util.resulcode_ok?(socket.recv(message))
-      #        label? ? labels.push(message) : message_parts.push(message)
-      #      end
-      #    end
-      #  end
-      #
-      def label?
-        array = []
-        rc = getsockopt ZMQ::RCVLABEL, array
-
-        Util.resultcode_ok?(rc) ? array.at(0) : false
       end
 
       # Queues the message for transmission. Message is assumed to conform to the
@@ -955,7 +926,6 @@ module ZMQ
       def recvmsgs list, flag = 0
         flag = DONTWAIT if dontwait?(flag)
 
-        parts = []
         message = @receiver_klass.new
         rc = recvmsg message, flag
 
@@ -989,37 +959,19 @@ module ZMQ
       # for receiving the message parts comprising the 0mq routing information.
       #
       def recv_multipart list, routing_envelope, flag = 0
-        flag = DONTWAIT if dontwait?(flag)
-
-        message = @receiver_klass.new
-        rc = recvmsg message, flag
+        parts = []
+        rc = recvmsgs parts, flag
 
         if Util.resultcode_ok?(rc)
-          if label?
-            routing_envelope << message
-          else
-            list << message
-          end
-
-          # check rc *first*; necessary because the call to #more_parts? can reset
-          # the zmq_errno to a weird value, so the zmq_errno that was set on the
-          # call to #recv gets lost
-          while Util.resultcode_ok?(rc) && more_parts?
-            message = @receiver_klass.new
-            rc = recvmsg message, flag
-            if Util.resultcode_ok?(rc) && label?
-              routing_envelope << message
-            elsif Util.resultcode_ok?(rc)
-              list << message
+          routing = true
+          parts.each do |part|
+            if routing
+              routing_envelope << part
+              routing = part.size > 0
             else
-              message.close
-              (routing_envelope + list).each { |msg| msg.close }
-              routing_envelope.clear
-              list.clear
+              list << part
             end
           end
-        else
-          message.close
         end
 
         rc
@@ -1035,7 +987,6 @@ module ZMQ
 
       def int_option? name
         super ||
-        RCVLABEL          == name ||
         RECONNECT_IVL_MAX == name ||
         RCVHWM            == name ||
         SNDHWM            == name ||

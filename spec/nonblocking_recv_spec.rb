@@ -232,55 +232,51 @@ module ZMQ
     end # PUSH
 
 
-    unless LibZMQ.version4?
+    context "DEALER" do
 
-      context "DEALER" do
+      describe "non-blocking #recvmsgs where sender connects & receiver binds" do
+        include APIHelper
 
-        describe "non-blocking #recvmsgs where sender connects & receiver binds" do
-          include APIHelper
+        before(:each) do
+          @receiver = @ctx.socket ZMQ::ROUTER
+          port = bind_to_random_tcp_port(@receiver)
+          @sender = @ctx.socket ZMQ::DEALER
+          assert_ok(@sender.connect("tcp://127.0.0.1:#{port}"))
+          sleep 0.1
+        end
 
-          before(:each) do
-            @receiver = @ctx.socket ZMQ::ROUTER
-            port = bind_to_random_tcp_port(@receiver)
-            @sender = @ctx.socket ZMQ::DEALER
-            assert_ok(@sender.connect("tcp://127.0.0.1:#{port}"))
-            sleep 0.1
-          end
+        after(:each) do
+          @receiver.close
+          @sender.close
+        end
 
-          after(:each) do
-            @receiver.close
-            @sender.close
-          end
+        it_behaves_like "any socket"
+        it_behaves_like "sockets with exposed envelopes"
 
-          it_behaves_like "any socket"
-          it_behaves_like "sockets with exposed envelopes"
+      end # describe 'non-blocking recvmsgs'
 
-        end # describe 'non-blocking recvmsgs'
+      describe "non-blocking #recvmsgs where sender binds & receiver connects" do
+        include APIHelper
 
-        describe "non-blocking #recvmsgs where sender binds & receiver connects" do
-          include APIHelper
+        before(:each) do
+          @receiver = @ctx.socket ZMQ::ROUTER
+          port = connect_to_random_tcp_port(@receiver)
+          @sender = @ctx.socket ZMQ::DEALER
+          assert_ok(@sender.bind("tcp://127.0.0.1:#{port}"))
+          sleep 0.1
+        end
 
-          before(:each) do
-            @receiver = @ctx.socket ZMQ::ROUTER
-            port = connect_to_random_tcp_port(@receiver)
-            @sender = @ctx.socket ZMQ::DEALER
-            assert_ok(@sender.bind("tcp://127.0.0.1:#{port}"))
-            sleep 0.1
-          end
+        after(:each) do
+          @receiver.close
+          @sender.close
+        end
 
-          after(:each) do
-            @receiver.close
-            @sender.close
-          end
+        it_behaves_like "any socket"
+        it_behaves_like "sockets with exposed envelopes"
 
-          it_behaves_like "any socket"
-          it_behaves_like "sockets with exposed envelopes"
+      end # describe 'non-blocking recvmsgs'
 
-        end # describe 'non-blocking recvmsgs'
-
-      end # DEALER
-
-    end # unless version4?
+    end # DEALER
 
 
     context "XREQ" do

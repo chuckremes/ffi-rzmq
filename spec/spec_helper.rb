@@ -17,10 +17,6 @@ def version3?
   ZMQ::LibZMQ.version3?
 end
 
-def version4?
-  ZMQ::LibZMQ.version4?
-end
-
 
 NonBlockingFlag = (ZMQ::LibZMQ.version2? ? ZMQ::NOBLOCK : ZMQ::DONTWAIT) unless defined?(NonBlockingFlag)
 

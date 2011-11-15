@@ -1,3 +1,18 @@
+== 0.9.2 / 20111115
+  * Removed all references to the version4 API.
+  
+  * Dropped support for 3.0.x and added support for 3.1.x. The 0mq
+    community has pretty much voted to abandon the path taken in 3.0
+    so the 3.1 branch is the API that will be supported.
+    
+  * Fixed a bug in Poller#delete where it would erroneously return
+    false even when it successfully deleted a socket. Issue 46.
+    
+  * All specs pass for 2.1.x API.
+  
+  * 3 specs fail when run with 3.1 API; these are due to bugs in the
+    0mq library and are *not* ffi-rzmq bugs.
+
 == 0.9.1 / 20111027
   * Moved LibC and LibZMQ into the ZMQ module namespace. Necessary to
     avoid namespace collisions with other libraries that also use

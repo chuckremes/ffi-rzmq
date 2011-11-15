@@ -17,7 +17,7 @@ module ZMQ
         @pull.setsockopt ZMQ::LINGER, 0
         port = connect_to_random_tcp_port(@pull)
         @link = "tcp://127.0.0.1:#{port}"
-        @link = "inproc://push_pull_test"
+        #@link = "inproc://push_pull_test" # can't connect to inproc *before* bind
         @push.bind    @link
       end
 
@@ -31,6 +31,7 @@ module ZMQ
         @push.send_string string
         received = ''
         rc = @pull.recv_string received
+        assert_ok(rc)
         received.should == string
       end
 

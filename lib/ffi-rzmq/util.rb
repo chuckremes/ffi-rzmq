@@ -67,7 +67,7 @@ module ZMQ
         NOBLOCK
       end
 
-    elsif LibZMQ.version3? || LibZMQ.version4?
+    elsif LibZMQ.version3?
       
       def self.nonblocking_flag
         DONTWAIT

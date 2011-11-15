@@ -9,10 +9,11 @@ function interface). It's a pure ruby wrapper so this gem can be loaded
 and run by any ruby runtime that supports FFI. That's all of them:
 MRI 1.9.x, Rubinius and JRuby.
 
-This single gem supports 0mq 2.x and 3.x 0mq APIs. The 0mq project started
-making backward-incompatible changes to the API with the 3.x release.
+This single gem supports 0mq 2.x and 3.1.x 0mq APIs. The 0mq project started
+making backward-incompatible changes to the API with the 3.1.x release.
 The gem auto-configures itself to expose the API conforming to the loaded
-C library.
+C library. 0mq API 3.0 is *not* supported; the 0mq community voted to
+abandon it. 
 
 The impetus behind this library was to provide support for ZeroMQ in
 JRuby which has native threads. Unlike MRI, which has a GIL, JRuby and
@@ -25,9 +26,12 @@ JRuby and Rubinius will likely be the best environments to run this library.
 There has been a major change in API from the 0.8.x series to 0.9.0. 
 Previously the Socket#send and Socket#recv methods could raise exceptions
 when there was an error. They also returned true or false depending on
-the success of failure of the operation. Mixing and matching return codes
-and exceptions is a terrible idea in practice, so all of the exception
-code from Socket has been removed.
+the success or failure of the operation. The exceptions were also used
+for managing flow control when doing non-blocking send/recv.
+
+Mixing and matching return codes and exceptions is a terrible idea in 
+practice. Using them for flow control is an even worse sin. So all of 
+the exception code from Socket has been removed.
 
 The Poller and Message class have also had their exceptions removed for
 returning errors on instance methods.
@@ -42,9 +46,11 @@ constructed object or nil. Code should check for nil returns before using
 the object.
 
 This is a *breaking* change. I'm sorry but the old API's inconsistency was
-causing too many problems. It now more closely mimics the 0mq C API. If you
-prefer the original API, it should be relatively simple to wrap these
-classes up to provide the original API.
+causing too many problems. It now more closely mimics the 0mq C API. IF YOU
+PREFER THE ORIGINAL API WHICH WAS CLOSER TO IDIOMATIC RUBY, IT SHOULD BE
+EASY TO WRAP THESE CLASSES UP TO PROVIDE A MORE IDIOMATIC API. I SUGGEST
+YOU CREATE A PATCH *OR* CREATE A SEPARATE GEM TO WRAP THIS ONE. Sorry for
+shouting but I wanted to make sure this stood out.
 
 All example code has been updated to use the new Ruby API.
 
@@ -135,7 +141,7 @@ I highly recommend visiting the Learn Ruby 0mq project for a bunch of good code 
 
 == REQUIREMENTS:
 
-  * 0mq 2.1.x or later; 2.0.x is no longer supported
+  * 0mq 2.1.x, 3.1.x or later; 2.0.x and 3.0.x are no longer supported
   
 The ZeroMQ library must be installed on your system in a well-known location
 like /usr/local/lib. This is the default for new ZeroMQ installs.

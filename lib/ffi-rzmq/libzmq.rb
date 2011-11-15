@@ -56,7 +56,7 @@ module ZMQ
 
     def self.version2?() version[:major] == 2 && version[:minor] >= 1  end
 
-    def self.version3?() version[:major] == 3 end
+    def self.version3?() version[:major] == 3 && version[:minor] >= 1 end
 
     def self.version4?() version[:major] == 4 end
 
@@ -162,7 +162,7 @@ module ZMQ
 
   # Attaches to those functions specific to the 3.x API
   #
-  if LibZMQ.version3? || LibZMQ.version4?
+  if LibZMQ.version3?
 
     module LibZMQ
       # Socket api
@@ -183,7 +183,7 @@ module ZMQ
   # Sanity check; print an error and exit if we are trying to load an unsupported
   # version of libzmq.
   #
-  unless LibZMQ.version2? || LibZMQ.version3? || LibZMQ.version4?
+  unless LibZMQ.version2? || LibZMQ.version3?
     hash = LibZMQ.version
     version = "#{hash[:major]}.#{hash[:minor]}.#{hash[:patch]}"
     STDERR.puts "Unable to load this gem. The libzmq version #{version} is incompatible with ffi-rzmq."

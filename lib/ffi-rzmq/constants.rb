@@ -116,8 +116,8 @@ if ZMQ::LibZMQ.version3?
     # Socket types
     XPUB = 9
     XSUB = 10
-    ROUTER = 11
-    DEALER = 12
+    DEALER = XREQ
+    ROUTER = XREP
 
     SocketTypeNameMap[ROUTER] = 'ROUTER'
     SocketTypeNameMap[DEALER] = 'DEALER'
@@ -132,7 +132,6 @@ if ZMQ::LibZMQ.version3?
     MULTICAST_HOPS = 25
     RCVTIMEO = 27
     SNDTIMEO = 28
-    RCVLABEL = 29
 
     # Send/recv options
     DONTWAIT = 1
@@ -144,35 +143,3 @@ if ZMQ::LibZMQ.version3?
 
   end
 end # version3?
-
-
-if ZMQ::LibZMQ.version4?
-  module ZMQ
-    # Socket types
-    XPUB = 9
-    XSUB = 10
-    ROUTER = 13
-
-    SocketTypeNameMap[ROUTER] = 'ROUTER'
-    SocketTypeNameMap[XPUB] = 'XPUB'
-    SocketTypeNameMap[XSUB] = 'XSUB'
-
-    # Socket options
-    MAXMSGSIZE = 22
-    SNDHWM = 23
-    RCVHWM = 24
-    MULTICAST_HOPS = 25
-    RCVTIMEO = 27
-    SNDTIMEO = 28
-    RCVLABEL = 29
-
-    # Send/recv options
-    DONTWAIT = 1
-    SNDLABEL = 4
-
-
-    # Socket & other errors
-    EMFILE = Errno::EMFILE::Errno
-
-  end
-end # version4?
