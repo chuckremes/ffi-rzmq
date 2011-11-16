@@ -200,11 +200,22 @@ module ZMQ
     # Users will pass in values measured as
     # milliseconds, so we need to convert that value to
     # microseconds for the library.
-    def adjust timeout
-      if :blocking == timeout || -1 == timeout
-        -1
-      else
-        (timeout * 1000).to_i
+    if LibZMQ.version2?
+      def adjust timeout
+        if :blocking == timeout || -1 == timeout
+          -1
+        else
+          (timeout * 1000).to_i
+        end
+      end
+    else
+      # version3 changed units from microseconds to milliseconds
+      def adjust timeout
+        if :blocking == timeout || -1 == timeout
+          -1
+        else
+          timeout.to_i
+        end
       end
     end
   end
