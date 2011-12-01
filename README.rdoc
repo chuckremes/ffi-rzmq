@@ -173,7 +173,11 @@ To build from git master:
  % gem build ffi-rzmq.gemspec
  % gem install ffi-rzmq-*.gem
  
- 
+
+NOTE for Windows users!
+In order for this gem to find the libzmq.dll, it *must* be on the Windows PATH. Google
+for "modify windows path" for instructions on how to do that if you are unfamiliar with
+that activity.
 
 == LICENSE:
 

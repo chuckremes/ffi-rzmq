@@ -6,13 +6,21 @@ module ZMQ
   module LibZMQ
     extend FFI::Library
 
-    # bias the library discovery to a path inside the gem first, then
-    # to the usual system paths
-    inside_gem = File.join(File.dirname(__FILE__), '..', '..', 'ext')
-    ZMQ_LIB_PATHS = [
+    begin
+      # bias the library discovery to a path inside the gem first, then
+      # to the usual system paths
+      inside_gem = File.join(File.dirname(__FILE__), '..', '..', 'ext')
+      ZMQ_LIB_PATHS = [
       inside_gem, '/usr/local/lib', '/opt/local/lib', '/usr/local/homebrew/lib', '/usr/lib64'
-    ].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
-    ffi_lib(ZMQ_LIB_PATHS + %w{libzmq})
+      ].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
+      ffi_lib(ZMQ_LIB_PATHS + %w{libzmq})
+    rescue LoadError
+      STDERR.puts "Unable to load this gem. The libzmq library (or DLL) could not be found."
+      STDERR.puts "If this is a Windows platform, make sure libzmq.dll is on the PATH."
+      STDERR.puts "For non-Windows platforms, make sure libzmq is located in this search path:"
+      STDERR.puts ZMQ_LIB_PATHS.inspect
+      exit 255
+    end
 
     # Size_t not working properly on Windows
     find_type(:size_t) rescue typedef(:ulong, :size_t)

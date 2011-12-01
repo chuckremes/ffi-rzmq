@@ -12,6 +12,10 @@
   
   * 3 specs fail when run with 3.1 API; these are due to bugs in the
     0mq library and are *not* ffi-rzmq bugs.
+    
+  * Rescue LoadErrors when loading libzmq. Print a warning about
+    adding libzmq.dll to the Windows PATH for that platform. Print
+    the search paths where the gem looks for libzmq.
 
 == 0.9.1 / 20111027
   * Moved LibC and LibZMQ into the ZMQ module namespace. Necessary to
