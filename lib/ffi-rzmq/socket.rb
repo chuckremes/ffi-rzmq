@@ -83,6 +83,7 @@ module ZMQ
       end
 
       @sockopt_cache = {}
+      @more_parts_array = []
 
       define_finalizer
     end
@@ -166,10 +167,9 @@ module ZMQ
     #  end
     #
     def more_parts?
-      array = []
-      rc = getsockopt ZMQ::RCVMORE, array
+      rc = getsockopt ZMQ::RCVMORE, @more_parts_array
 
-      Util.resultcode_ok?(rc) ? array.at(0) : false
+      Util.resultcode_ok?(rc) ? @more_parts_array.at(0) : false
     end
 
     # Binds the socket to an +address+.
@@ -226,7 +226,7 @@ module ZMQ
           value.read_string(length.read_int)
         end
 
-        array << result
+        array[0] = result
       end
 
       rc
