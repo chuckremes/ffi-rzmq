@@ -82,8 +82,9 @@ module ZMQ
         raise ContextError.new 'zmq_socket', 0, ETERM, "Context pointer was null"
       end
 
-      @sockopt_cache = {}
       @more_parts_array = []
+      @option_lookup = []
+      populate_option_lookup
 
       define_finalizer
     end
@@ -124,17 +125,17 @@ module ZMQ
     #  ZMQ::Util.resultcode_ok?(rc) ? puts("succeeded") : puts("failed")
     #
     def setsockopt name, value, length = nil
-      if long_long_option?(name)
+      if 1 == @option_lookup[name]
         length = 8
         pointer = LibC.malloc length
         pointer.write_long_long value
 
-      elsif int_option?(name)
+      elsif 0 == @option_lookup[name]
         length = 4
         pointer = LibC.malloc length
         pointer.write_int value
 
-      elsif string_option?(name)
+      elsif 2 == @option_lookup[name]
         length ||= value.size
 
         # note: not checking errno for failed memory allocations :(
@@ -213,20 +214,22 @@ module ZMQ
     private
 
     def __getsockopt__ name, array
-      value, length = sockopt_buffers name
+      # a small optimization so we only have to determine the option
+      # type a single time; gives approx 5% speedup to do it this way.
+      option_type = @option_lookup[name]
+      
+      value, length = sockopt_buffers option_type
 
       rc = LibZMQ.zmq_getsockopt @socket, name, value, length
 
       if Util.resultcode_ok?(rc)
-        result = if int_option?(name)
-          value.read_int
-        elsif long_long_option?(name)
+        array[0] = if 1 == option_type
           value.read_long_long
-        elsif string_option?(name)
+        elsif 0 == option_type
+          value.read_int
+        elsif 2 == option_type
           value.read_string(length.read_int)
         end
-
-        array[0] = result
       end
 
       rc
@@ -235,28 +238,28 @@ module ZMQ
     # Calls to ZMQ.getsockopt require us to pass in some pointers. We can cache and save those buffers
     # for subsequent calls. This is a big perf win for calling RCVMORE which happens quite often.
     # Cannot save the buffer for the IDENTITY.
-    def sockopt_buffers name
-      if long_long_option?(name)
+    def sockopt_buffers option_type
+      if 1 == option_type
         # int64_t or uint64_t
-        unless @sockopt_cache[:int64]
+        unless @longlong_cache
           length = FFI::MemoryPointer.new :size_t
           length.write_int 8
-          @sockopt_cache[:int64] = [FFI::MemoryPointer.new(:int64), length]
+          @longlong_cache = [FFI::MemoryPointer.new(:int64), length]
         end
 
-        @sockopt_cache[:int64]
+        @longlong_cache
 
-      elsif int_option?(name)
+      elsif 0 == option_type
         # int, 0mq assumes int is 4-bytes
-        unless @sockopt_cache[:int32]
+        unless @int_cache
           length = FFI::MemoryPointer.new :size_t
           length.write_int 4
-          @sockopt_cache[:int32] = [FFI::MemoryPointer.new(:int32), length]
+          @int_cache = [FFI::MemoryPointer.new(:int32), length]
         end
 
-        @sockopt_cache[:int32]
+        @int_cache
 
-      elsif string_option?(name)
+      elsif 2 == option_type
         length = FFI::MemoryPointer.new :size_t
         # could be a string of up to 255 bytes
         length.write_int 255
@@ -264,50 +267,30 @@ module ZMQ
 
       else
         # uh oh, someone passed in an unknown option; use a slop buffer
-        unless @sockopt_cache[:unknown]
+        unless @int_cache
           length = FFI::MemoryPointer.new :size_t
           length.write_int 4
-          @sockopt_cache[:unknown] = [FFI::MemoryPointer.new(:int32), length]
+          @int_cache = [FFI::MemoryPointer.new(:int32), length]
         end
 
-        @sockopt_cache[:unknown]
+        @int_cache
       end
     end
+    
+    def populate_option_lookup
+      # integer options
+      [EVENTS, LINGER, RECONNECT_IVL, FD, TYPE, BACKLOG].each { |option| @option_lookup[option] = 0 }
 
-    def supported_option? name
-      int_option?(name) || long_long_option?(name) || string_option?(name)
-    end
-
-    def int_option? name
-      EVENTS        == name ||
-      LINGER        == name ||
-      RECONNECT_IVL == name ||
-      FD            == name ||
-      TYPE          == name ||
-      BACKLOG       == name
-    end
-
-    def string_option? name
-      SUBSCRIBE   == name ||
-      UNSUBSCRIBE == name
-    end
-
-    def long_long_option? name
-      RCVMORE  == name ||
-      AFFINITY == name
-    end
-
-    def unsupported_setsock_option? name
-      RCVMORE == name
-    end
-
-    def unsupported_getsock_option? name
-      UNSUBSCRIBE == name ||
-      SUBSCRIBE   == name
+      # long long options
+      [RCVMORE, AFFINITY].each { |option| @option_lookup[option] = 1 }
+      
+      # string options
+      [SUBSCRIBE, UNSUBSCRIBE].each { |option| @option_lookup[option] = 2 }
     end
 
     def release_cache
-      @sockopt_cache.clear
+      @longlong_cache = nil
+      @int_cache = nil
     end
   end # module CommonSocketBehavior
 
@@ -330,11 +313,14 @@ module ZMQ
 
 
     private
-
-    def string_option? name
-      super ||
-      IDENTITY == name
+    
+    def populate_option_lookup
+      super()
+      
+      # string options
+      [IDENTITY].each { |option| @option_lookup[option] = 2 }
     end
+    
   end # module IdentitySupport
 
 
@@ -658,23 +644,16 @@ module ZMQ
       def noblock? flags
         (NOBLOCK & flags) == NOBLOCK
       end
+    
+    def populate_option_lookup
+      super()
+      
+      # integer options
+      [RECONNECT_IVL_MAX].each { |option| @option_lookup[option] = 0 }
 
-      def int_option? name
-        super ||
-        RECONNECT_IVL_MAX == name
-      end
-
-      def long_long_option? name
-        super ||
-        HWM               == name ||
-        SWAP              == name ||
-        RATE              == name ||
-        RECOVERY_IVL      == name ||
-        RECOVERY_IVL_MSEC == name ||
-        MCAST_LOOP        == name ||
-        SNDBUF            == name ||
-        RCVBUF            == name
-      end
+      # long long options
+      [HWM, SWAP, RATE, RECOVERY_IVL, RECOVERY_IVL_MSEC, MCAST_LOOP, SNDBUF, RCVBUF].each { |option| @option_lookup[option] = 1 }
+    end
 
       # these finalizer-related methods cannot live in the CommonSocketBehavior
       # module; they *must* be in the class definition directly
@@ -986,7 +965,7 @@ module ZMQ
       alias :noblock? :dontwait?
 
       def int_option? name
-        super ||
+        super(name) ||
         RECONNECT_IVL_MAX == name ||
         RCVHWM            == name ||
         SNDHWM            == name ||
@@ -995,6 +974,13 @@ module ZMQ
         SNDBUF            == name ||
         RCVBUF            == name
       end
+    
+    def populate_option_lookup
+      super()
+      
+      # integer options
+      [RECONNECT_IVL_MAX, RCVHWM, SNDHWM, RATE, RECOVERY_IVL, SNDBUF, RCVBUF].each { |option| @option_lookup[option] = 0 }
+    end
 
       # these finalizer-related methods cannot live in the CommonSocketBehavior
       # module; they *must* be in the class definition directly

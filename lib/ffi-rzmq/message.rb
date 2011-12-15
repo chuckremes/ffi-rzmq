@@ -94,12 +94,10 @@ module ZMQ
     end
 
     def initialize message = nil
-      @state = :uninitialized
-
       # allocate our own pointer so that we can tell it to *not* zero out
       # the memory; it's pointless work since the library is going to
       # overwrite it anyway.
-      @pointer = FFI::MemoryPointer.new LibZMQ::Msg.size, 1, false
+      @pointer = FFI::MemoryPointer.new Message.msg_size, 1, false
 
       if message
         copy_in_string message
@@ -147,11 +145,11 @@ module ZMQ
     alias :pointer :address
 
     def copy source
-      LibZMQ.zmq_msg_copy @pointer, source.address
+      LibZMQ.zmq_msg_copy @pointer, source
     end
 
     def move source
-      LibZMQ.zmq_msg_move @pointer, source.address
+      LibZMQ.zmq_msg_move @pointer, source
     end
 
     # Provides the size of the data buffer for this +zmq_msg_t+ C struct.
@@ -193,6 +191,12 @@ module ZMQ
       
       rc
     end
+    
+    # cache the msg size so we don't have to recalculate it when creating
+    # each new instance
+    @msg_size = LibZMQ::Msg.size
+    
+    def self.msg_size() @msg_size; end
 
   end # class Message
 
@@ -228,7 +232,7 @@ module ZMQ
     # handles deallocation of the native memory buffer.
     #
     def copy_in_bytes bytes, len
-      rc = super
+      rc = super(bytes, len)
       
       # make sure we have a way to deallocate this memory if the object goes
       # out of scope
@@ -240,7 +244,7 @@ module ZMQ
     # buffer.
     #
     def close
-      rc = super
+      rc = super()
       remove_finalizer
       rc
     end
@@ -267,6 +271,11 @@ module ZMQ
         LibZMQ.zmq_msg_close ptr
       end
     end
+
+    # cache the msg size so we don't have to recalculate it when creating
+    # each new instance
+    # need to do this again because ivars are not inheritable
+    @msg_size = LibZMQ::Msg.size
 
   end # class ManagedMessage
 
