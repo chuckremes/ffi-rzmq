@@ -366,12 +366,22 @@ module ZMQ
             array[0].should == value
           end
 
-          it "should default to a value of -1" do
-            value = -1
-            array = []
-            rc = socket.getsockopt(ZMQ::LINGER, array)
-            rc.should == 0
-            array[0].should == value
+          if ZMQ::SUB == socket_type || ZMQ::XSUB == socket_type
+            it "should default to a value of 0" do
+              value = 0
+              array = []
+              rc = socket.getsockopt(ZMQ::LINGER, array)
+              rc.should == 0
+              array[0].should == value
+            end
+          else
+            it "should default to a value of -1" do
+              value = -1
+              array = []
+              rc = socket.getsockopt(ZMQ::LINGER, array)
+              rc.should == 0
+              array[0].should == value
+            end
           end
         end # context using option ZMQ::LINGER
 
