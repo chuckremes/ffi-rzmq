@@ -82,6 +82,7 @@ module ZMQ
         raise ContextError.new 'zmq_socket', 0, ETERM, "Context pointer was null"
       end
 
+      @longlong_cache = @int_cache = nil
       @more_parts_array = []
       @option_lookup = []
       populate_option_lookup
@@ -183,7 +184,7 @@ module ZMQ
 
     # Connects the socket to an +address+.
     #
-    #  socket.connect("tcp://127.0.0.1:5555")
+    #  rc = socket.connect("tcp://127.0.0.1:5555")
     #
     def connect address
       rc = LibZMQ.zmq_connect @socket, address

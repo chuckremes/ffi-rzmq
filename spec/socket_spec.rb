@@ -366,7 +366,7 @@ module ZMQ
             array[0].should == value
           end
 
-          if ZMQ::SUB == socket_type || ZMQ::XSUB == socket_type
+          if (defined?(ZMQ::XSUB) && ZMQ::XSUB == socket_type)
             it "should default to a value of 0" do
               value = 0
               array = []
