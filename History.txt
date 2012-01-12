@@ -1,3 +1,11 @@
+== 0.9.4 / 20120102
+  * Fixed bug in Poller#delete. Added specs to catch a regression.
+    In short, a socket that was deleted from the Poller set wasn't
+    always actually *removed* from the array. This led to a closed
+    socket being part of the pollset which would return errno 38.
+    This took about 4 days to find. <sigh>
+    
+
 == 0.9.3 / 20111214
   * Performance optimizations for #getsockopt.
   
@@ -15,6 +23,8 @@
     can avoid that work and dispatch directly. This effects all
     Ruby runtimes, but it was through the work of Evan Phoenix that
     I figured this out. Results in a 2-5% speedup on method dispatch.
+    
+  
 
 == 0.9.2 / 20111115
   * Removed all references to the version4 API.
