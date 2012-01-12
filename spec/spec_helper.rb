@@ -44,7 +44,7 @@ module APIHelper
     while !ZMQ::Util.resultcode_ok?(rc) && tries < max_tries
       tries += 1
       random = random_port
-      rc = socket.bind "tcp://127.0.0.1:#{random}"
+      rc = socket.bind(local_transport_string(random))
     end
 
     random
@@ -57,10 +57,14 @@ module APIHelper
     while !ZMQ::Util.resultcode_ok?(rc) && tries < max_tries
       tries += 1
       random = random_port
-      rc = socket.connect "tcp://127.0.0.1:#{random}"
+      rc = socket.connect(local_transport_string(random))
     end
 
     random
+  end
+  
+  def local_transport_string(port)
+    "tcp://127.0.0.1:#{port}"
   end
 
   def assert_ok(rc)
