@@ -51,31 +51,116 @@ module ZMQ
     
     
     context "#delete" do
-      let(:poller) { Poller.new }
-      let(:socket) { mock('socket') }
-      let(:context) { Context.new }
+      before(:all) do
+        @context = Context.new
+      end
+      
+      before(:each) do
+        @socket = @context.socket(XREQ)
+        @socket.setsockopt(LINGER, 0)
+        @poller = Poller.new
+      end
+      
+      after(:each) do
+        @socket.close
+      end
+      
+      after(:all) do
+        @context.terminate
+      end
       
       it "should return false for an unregistered socket (i.e. not found)" do
-        poller.delete(socket).should be_false
+        @poller.delete(@socket).should be_false
       end
       
       it "returns true for a sucessfully deleted socket when only 1 is registered" do
-        socket1 = context.socket ZMQ::REP
+        socket1 = @context.socket(REP)
+        socket1.setsockopt(LINGER, 0)
 
-        poller.register socket1
-        poller.delete(socket1).should be_true
+        @poller.register socket1
+        @poller.delete(socket1).should be_true
+        socket1.close
       end
       
       it "returns true for a sucessfully deleted socket when more than 1 is registered" do
-        socket1 = context.socket ZMQ::REP
-        socket2 = context.socket ZMQ::REP
+        socket1 = @context.socket(REP)
+        socket2 = @context.socket(REP)
+        socket1.setsockopt(LINGER, 0)
+        socket2.setsockopt(LINGER, 0)
 
-        poller.register socket1
-        poller.register socket2
-        poller.delete(socket2).should be_true
+        @poller.register socket1
+        @poller.register socket2
+        @poller.delete(socket2).should be_true
+        socket1.close
+        socket2.close
       end
       
     end
+    
+    
+    context "poll" do
+      include APIHelper
+      
+      before(:all) do
+        @context = Context.new
+      end
+      
+      before(:each) do
+        @socket = @context.socket(REQ)
+        @socket2 = @context.socket(REP)
+        @socket.setsockopt(LINGER, 0)
+        @socket2.setsockopt(LINGER, 0)
+        port = bind_to_random_tcp_port(@socket2)
+        @socket.connect(local_transport_string(port))
+        sleep 0.2
+        @poller = Poller.new
+      end
+      
+      after(:each) do
+        @socket.close
+        @socket2.close
+      end
+      
+      after(:all) do
+        #@context.terminate
+      end
+      
+      it "returns 0 when there are no sockets to poll" do
+        rc = @poller.poll(0)
+        rc.should be_zero
+      end
+      
+      it "returns 0 when there is a single socket to poll and no events" do
+        @poller.register(@socket, 0)
+        rc = @poller.poll(0)
+        rc.should be_zero
+      end
+      
+      it "returns 1 when there is a read event on a socket" do
+        @poller.register_writable(@socket)
+        @poller.register_readable(@socket2)
+        sleep 0.2
+        
+        @socket.send_string('test')
+        sleep 0.1
+        rc = @poller.poll(0)
+        rc.should == 1
+      end
+      
+      it "returns 1 when there is a read event on one socket and the second socket has been removed from polling" do
+        @poller.register_readable(@socket2)
+        @poller.register_writable(@socket)
+        sleep 0.2
+        
+        @socket.send_string('test')
+        @poller.deregister_writable(@socket)
+        @socket.close
+        sleep 0.1
+        rc = @poller.poll(0, true)
+        puts "\nrc [#{rc}], errno [#{Util.errno}], desc [#{Util.error_string}]\n"
+        rc.should == 1
+      end
+    end # poll
 
 
   end # describe Poll

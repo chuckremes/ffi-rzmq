@@ -100,7 +100,7 @@ module ZMQ
 
       item = @items.get(@sockets.index(sock))
 
-      if item
+      if item && (item[:events] & events) > 0
         # change the value in place
         item[:events] ^= events
 
@@ -139,11 +139,11 @@ module ZMQ
     # when a socket has been deregistered and has no more events
     # registered anywhere.
     #
+    # Can also be called directly to remove the socket from the polling
+    # array.
+    #
     def delete sock
-      removed_readable = deregister_readable sock
-      removed_writable = deregister_writable sock
-
-      unless (removed_readable || removed_writable) || (size = @sockets.size).zero?
+      unless (size = @sockets.size).zero?
         @sockets.delete_if { |socket| socket.socket.address == sock.socket.address }
         socket_deleted = size != @sockets.size
 
@@ -154,8 +154,7 @@ module ZMQ
         socket_deleted && item_deleted && raw_deleted
         
       else
-        # return result of deregistration
-        removed_readable || removed_writable
+        false
       end
     end
 
