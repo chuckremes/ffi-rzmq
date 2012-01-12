@@ -51,7 +51,7 @@ module ZMQ
     attach_function :zmq_version, [:pointer, :pointer, :pointer], :void
 
     def self.version
-      unless @version
+      if @version.nil?
         major = FFI::MemoryPointer.new :int
         minor = FFI::MemoryPointer.new :int
         patch = FFI::MemoryPointer.new :int
