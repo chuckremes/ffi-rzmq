@@ -93,13 +93,14 @@ All features are implemented.
   
   ctx = ZMQ::Context.new
   s = ctx.socket ZMQ::REP
-  s.setsockopt(ZMQ::HWM, 100)
-  s.bind(bind_to)
+  rc = s.setsockopt(ZMQ::HWM, 100)
+  rc = s.bind(bind_to)
   
+  msg = ""
   roundtrip_count.times do
-    msg = s.recv_string 0
+    rc = s.recv_string msg
     raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
-    s.send_string msg, 0
+    rc = s.send_string msg, 0
   end
   
 
@@ -119,15 +120,16 @@ All features are implemented.
   
   ctx = ZMQ::Context.new
   s = ctx.socket ZMQ::REQ
-  s.connect(connect_to)
+  rc = s.connect(connect_to)
   
   msg = "#{ '3' * message_size }"
   
   start_time = Time.now
   
+  msg = ""
   roundtrip_count.times do
-    s.send_string msg, 0
-    msg = s.recv_string 0
+    rc = s.send_string msg, 0
+    rc = s.recv_string msg
     raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
   end
   
