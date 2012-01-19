@@ -1,3 +1,21 @@
+== 0.9.5 / 20120119
+  * BROKE THE API.
+    In 0mq 2.x, there were two functions zmq_send() and zmq_recv().
+    As of 3.x, those functions were renamed zmq_sendmsg() and
+    zmq_recvmsg(). As everyone starts moving to 0mq 3.x, it doesn't
+    make sense to make the code break with 2.x. So, I'm breaking this
+    binding so that it always uses sendmsg/recvmsg and eliminates the
+    original send/recv methods.
+    Sorry!
+    This is likely to be the last non-backward-compatible API breakage.
+    Release 1.0 is around the corner and the API will be stable (I follow
+    semantic versioning).
+    
+  * Introduced ZMQ::NonBlocking. This flag returns the correct value to set
+    a socket in non-blocking mode when sending/receiving. This hides the
+    differences between 0mq 2.x and 3.x since the constant names have
+    changed.
+
 == 0.9.4 / 20120102
   * Fixed bug in Poller#delete. Added specs to catch a regression.
     In short, a socket that was deleted from the Poller set wasn't

@@ -54,6 +54,14 @@ shouting but I wanted to make sure this stood out.
 
 All example code has been updated to use the new Ruby API.
 
+== Breaking API Change from 0.9.3 to 0.9.5
+
+The 0mq library functions zmq_send() and zmq_recv() were changed to 
+zmq_sendmsg() and zmq_recvmsg() with the 0mq 3.x API change. I have changed
+the binding to always use #sendmsg and #recvmsg. This breaks existing code.
+This should be the last breaking change heading into the 1.0 release of these
+bindings.
+
 == PERFORMANCE
 
 Check out the latest performance results:
