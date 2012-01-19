@@ -58,11 +58,11 @@ class Receiver
 
   def run
     msg = ZMQ::Message.new
-    assert(@socket.recv(msg))
+    assert(@socket.recvmsg(msg))
 
     elapsed = elapsed_microseconds do
       (@count -1).times do
-        assert(@socket.recv(msg))
+        assert(@socket.recvmsg(msg))
       end
     end
 
@@ -110,7 +110,7 @@ class Transmitter
     i = 0
     while i < @count
       msg = ZMQ::Message.new(contents)
-      assert(@socket.send(msg))
+      assert(@socket.sendmsg(msg))
       i += 1
     end
 

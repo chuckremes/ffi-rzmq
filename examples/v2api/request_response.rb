@@ -27,8 +27,8 @@ payload = "#{ '3' * 2048 }"
 sent_msg = ZMQ::Message.new(payload)
 received_msg = ZMQ::Message.new
 
-assert(s1.send(sent_msg))
-assert(s2.recv(received_msg))
+assert(s1.sendmsg(sent_msg))
+assert(s2.recvmsg(received_msg))
 
 result = payload == received_msg.copy_out_string ? "Request received" : "Received wrong payload"
 

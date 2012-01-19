@@ -158,12 +158,12 @@ module ZMQ
     #
     #  message_parts = []
     #  message = Message.new
-    #  rc = socket.recv(message)
+    #  rc = socket.recvmsg(message)
     #  if ZMQ::Util.resultcode_ok?(rc)
     #    message_parts << message
     #    while more_parts?
     #      message = Message.new
-    #      rc = socket.recv(message)
+    #      rc = socket.recvmsg(message)
     #      message_parts.push(message) if resulcode_ok?(rc)
     #    end
     #  end

@@ -30,7 +30,7 @@ module ZMQ
   #
   #  received_message = Message.create
   #  if received_message
-  #    rc = socket.recv(received_message)
+  #    rc = socket.recvmsg(received_message)
   #    if ZMQ::Util.resultcode_ok?(rc)
   #      puts "Message contained: #{received_message.copy_out_string}"
   #    else

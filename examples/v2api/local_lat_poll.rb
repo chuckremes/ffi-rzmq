@@ -38,7 +38,7 @@ start_time = Time.now
 
 # kick it off
 message = ZMQ::Message.new("a" * message_size)
-assert(s1.send(message, ZMQ::NOBLOCK))
+assert(s1.sendmsg(message, ZMQ::NonBlocking))
 
 i = roundtrip_count
 
@@ -49,8 +49,8 @@ until i.zero?
 
   poller.readables.each do |socket|
     received_message = ''
-    assert(socket.recv_string(received_message, ZMQ::NOBLOCK))
-    assert(socket.send(ZMQ::Message.new(received_message), ZMQ::NOBLOCK))
+    assert(socket.recv_string(received_message, ZMQ::NonBlocking))
+    assert(socket.sendmsg(ZMQ::Message.new(received_message), ZMQ::NonBlocking))
   end
 end
 
