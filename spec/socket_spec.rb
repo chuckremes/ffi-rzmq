@@ -78,7 +78,6 @@ module ZMQ
     end # context calling close
 
 
-    if version2? || version3?
 
       context "identity=" do
         before(:all) { @ctx = Context.new }
@@ -125,7 +124,6 @@ module ZMQ
         end
       end # context identity=
 
-    end # version2? || version3?
 
 
     socket_types.each do |socket_type|
@@ -142,8 +140,6 @@ module ZMQ
           socket.close
         end
 
-
-        if version2? || version3?
 
           context "using option ZMQ::IDENTITY" do
             it "should set the identity given any string under 255 characters" do
@@ -166,8 +162,6 @@ module ZMQ
               rc.should == -1
             end
           end # context using option ZMQ::IDENTITY
-
-        end # version2? || version3?
 
 
         if version2?

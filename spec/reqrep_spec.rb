@@ -32,60 +32,30 @@ module ZMQ
         received_message.should == string
       end
 
-      if version2?
-        it "should receive an exact copy of the sent message using Message objects directly" do
-          sent_message = Message.new string
-          received_message = Message.new
+      it "should receive an exact copy of the sent message using Message objects directly" do
+        sent_message = Message.new string
+        received_message = Message.new
 
-          rc = @ping.send sent_message
-          rc.should == 0
-          rc = @pong.recv received_message
-          rc.should == 0
+        rc = @ping.sendmsg sent_message
+        LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
+        rc = @pong.recvmsg received_message
+        LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
 
-          received_message.copy_out_string.should == string
-        end
+        received_message.copy_out_string.should == string
+      end
 
-        it "should receive an exact copy of the sent message using Message objects directly in non-blocking mode" do
-          sent_message = Message.new string
-          received_message = Message.new
+      it "should receive an exact copy of the sent message using Message objects directly in non-blocking mode" do
+        sent_message = Message.new string
+        received_message = Message.new
 
-          rc = @ping.send sent_message, ZMQ::NOBLOCK
-          rc.should == 0
-          sleep 0.1 # give it time for delivery
-          rc = @pong.recv received_message, ZMQ::NOBLOCK
-          rc.should == 0
+        rc = @ping.sendmsg sent_message, ZMQ::NonBlocking
+        LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
+        sleep 0.001 # give it time for delivery
+        rc = @pong.recvmsg received_message, ZMQ::NonBlocking
+        LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
 
-          received_message.copy_out_string.should == string
-        end
-
-      else # version3 or 4
-
-        it "should receive an exact copy of the sent message using Message objects directly" do
-          sent_message = Message.new string
-          received_message = Message.new
-
-          rc = @ping.sendmsg sent_message
-          rc.should == string.size
-          rc = @pong.recvmsg received_message
-          rc.should == string.size
-
-          received_message.copy_out_string.should == string
-        end
-
-        it "should receive an exact copy of the sent message using Message objects directly in non-blocking mode" do
-          sent_message = Message.new string
-          received_message = Message.new
-
-          rc = @ping.sendmsg sent_message, ZMQ::DONTWAIT
-          rc.should == string.size
-          sleep 0.001 # give it time for delivery
-          rc = @pong.recvmsg received_message, ZMQ::DONTWAIT
-          rc.should == string.size
-
-          received_message.copy_out_string.should == string
-        end
-
-      end # if version...
+        received_message.copy_out_string.should == string
+      end
 
     end # context ping-pong
 

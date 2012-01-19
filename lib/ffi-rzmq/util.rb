@@ -58,23 +58,6 @@ module ZMQ
       resultcode_ok?(rc) ? random : nil
     end
 
-    # Returns the proper flag value for non-blocking regardless of 0mq
-    # version.
-    #
-    if LibZMQ.version2?
-
-      def self.nonblocking_flag
-        NOBLOCK
-      end
-
-    elsif LibZMQ.version3?
-      
-      def self.nonblocking_flag
-        DONTWAIT
-      end
-
-    end
-
 
     private
 

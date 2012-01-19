@@ -107,6 +107,7 @@ if ZMQ::LibZMQ.version2?
 
     # Send/recv options
     NOBLOCK = 1
+    NonBlocking = NOBLOCK
   end
 end # version2?
 
@@ -136,10 +137,9 @@ if ZMQ::LibZMQ.version3?
     # Send/recv options
     DONTWAIT = 1
     SNDLABEL = 4
-
+    NonBlocking = DONTWAIT
 
     # Socket & other errors
     EMFILE = Errno::EMFILE::Errno
-
   end
 end # version3?

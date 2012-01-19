@@ -55,7 +55,6 @@ module ZMQ
         end
       end
 
-      if version2?
         context "with identity" do
           include APIHelper
 
@@ -103,59 +102,6 @@ module ZMQ
             msgs[0].copy_out_string.should == rep_data.last
           end
         end
-
-      elsif LibZMQ.version3? # version3
-
-        context "with identity" do
-          include APIHelper
-
-          before(:each) do # was :all
-            @rep = Socket.new(@ctx.pointer, ZMQ::ROUTER)
-            port = bind_to_random_tcp_port(@rep)
-
-            @req = Socket.new(@ctx.pointer, ZMQ::DEALER)
-            @req.identity = 'foo'
-            @req.connect("tcp://127.0.0.1:#{port}")
-          end
-
-          after(:each) do # was :all
-            @req.close
-            @rep.close
-          end
-
-          it "should be delivered between ROUTER and DEALER returning an array of strings" do
-            req_data, rep_data = "hello", [ @req.identity, "ok" ]
-
-            @req.send_string(req_data)
-            strings = []
-            rc = @rep.recv_strings(strings)
-            strings.should == [ @req.identity, "hello" ]
-
-            @rep.send_strings(rep_data)
-            string = ''
-            rc = @req.recv_string(string)
-            string.should == rep_data.last
-          end
-
-          it "should be delivered between ROUTER and DEALER returning an array of messages" do
-            req_data, rep_data = "hello", [ @req.identity, "ok" ]
-
-            @req.send_string(req_data)
-            msgs = []
-            rc = @rep.recvmsgs(msgs)
-            msgs[0].copy_out_string.should == @req.identity
-            msgs[1].copy_out_string.should == "hello"
-
-            @rep.send_strings(rep_data)
-            msgs = []
-            rc = @req.recvmsgs(msgs)
-            msgs[0].copy_out_string.should == rep_data.last
-          end
-
-        end
-
-      end # if version...
-
 
     end
   end

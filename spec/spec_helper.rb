@@ -18,9 +18,6 @@ def version3?
 end
 
 
-NonBlockingFlag = (ZMQ::LibZMQ.version2? ? ZMQ::NOBLOCK : ZMQ::DONTWAIT) unless defined?(NonBlockingFlag)
-
-
 module APIHelper
   def stub_libzmq
     @err_str_mock = mock("error string")

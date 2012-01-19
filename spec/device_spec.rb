@@ -44,7 +44,7 @@ if version2?
         pusher.send_string("hello")
         sleep 0.5
         res = ''
-        rc = puller.recv_string(res, ZMQ::NOBLOCK)
+        rc = puller.recv_string(res, ZMQ::NonBlocking)
         res.should == "hello"
         
         pusher.close

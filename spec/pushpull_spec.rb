@@ -35,126 +35,78 @@ module ZMQ
         received.should == string
       end
 
-      if version2?
-        it "should receive an exact string copy of the message sent when receiving in non-blocking mode and using Message objects directly" do
-          sent_message = Message.new string
-          received_message = Message.new
+      it "should receive an exact string copy of the message sent when receiving in non-blocking mode and using Message objects directly" do
+        sent_message = Message.new string
+        received_message = Message.new
 
-          rc = @push.send sent_message
-          rc.should == 0
-          sleep 0.1 # give it time for delivery
-          rc = @pull.recv received_message, ZMQ::NOBLOCK
-          received_message.copy_out_string.should == string
-        end
-
-      else
-
-        it "should receive an exact string copy of the message sent when receiving in non-blocking mode and using Message objects directly" do
-          sent_message = Message.new string
-          received_message = Message.new
-
-          rc = @push.sendmsg sent_message
-          rc.should == string.size
-          sleep 0.1 # give it time for delivery
-          rc = @pull.recvmsg received_message, ZMQ::DONTWAIT
-          rc.should == string.size
-          received_message.copy_out_string.should == string
-        end
+        rc = @push.sendmsg sent_message
+        LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
+        sleep 0.1 # give it time for delivery
+        rc = @pull.recvmsg received_message, ZMQ::NonBlocking
+        LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
+        received_message.copy_out_string.should == string
       end
 
 
-      if version2?
 
-        it "should receive a single message for each message sent on each socket listening, when an equal number pulls to messages and a unique socket per thread" do
-          received = []
-          threads  = []
-          count    = 4
-          @pull.close # close this one since we aren't going to use it below and we don't want it to receive a message
-          mutex = Mutex.new
+      it "should receive a single message for each message sent on each socket listening, when an equal number pulls to messages and a unique socket per thread" do
+        received = []
+        threads  = []
+        count    = 4
+        @pull.close # close this one since we aren't going to use it below and we don't want it to receive a message
+        mutex = Mutex.new
 
-          count.times do |i|
-            threads << Thread.new do
-              pull = @context.socket ZMQ::PULL
-              rc = pull.setsockopt ZMQ::LINGER, 0
-              rc = pull.connect @link
-              rc.should == 0
-              buffer = ''
-              rc = pull.recv_string buffer
-              rc.should == 0
-              mutex.synchronize { received << buffer }
-              pull.close
-            end
-            sleep 0.01 # give each thread time to spin up
+        count.times do |i|
+          threads << Thread.new do
+            pull = @context.socket ZMQ::PULL
+            rc = pull.setsockopt ZMQ::LINGER, 0
+            rc = pull.connect @link
+            rc.should == 0
+            buffer = ''
+            rc = pull.recv_string buffer
+            rc.should == 0
+            mutex.synchronize { received << buffer }
+            pull.close
           end
-
-          count.times { @push.send_string(string) }
-
-          threads.each {|t| t.join}
-
-          received.find_all {|r| r == string}.length.should == count
+          sleep 0.01 # give each thread time to spin up
         end
 
-        it "should receive a single message for each message sent on each socket listening, when an equal number pulls to messages and a single shared socket protected by a mutex" do
-          received = []
-          threads  = []
-          count    = 4
-          @pull.close # close this one since we aren't going to use it below and we don't want it to receive a message
-          pull = @context.socket ZMQ::PULL
-          rc = pull.setsockopt ZMQ::LINGER, 0
-          rc = pull.connect @link
-          rc.should == 0
-          mutex = Mutex.new
+        count.times { @push.send_string(string) }
 
-          count.times do |i|
-            threads << Thread.new do
-              buffer = ''
-              rc = 0
-              mutex.synchronize { rc = pull.recv_string buffer }
-              rc.should == 0
-              mutex.synchronize { received << buffer }
-            end
-            sleep 0.01 # give each thread time to spin up
+        threads.each {|t| t.join}
+
+        received.find_all {|r| r == string}.length.should == count
+      end
+
+      it "should receive a single message for each message sent on each socket listening, when an equal number pulls to messages and a single shared socket protected by a mutex" do
+        received = []
+        threads  = []
+        count    = 4
+        @pull.close # close this one since we aren't going to use it below and we don't want it to receive a message
+        pull = @context.socket ZMQ::PULL
+        rc = pull.setsockopt ZMQ::LINGER, 0
+        rc = pull.connect @link
+        rc.should == 0
+        mutex = Mutex.new
+
+        count.times do |i|
+          threads << Thread.new do
+            buffer = ''
+            rc = 0
+            mutex.synchronize { rc = pull.recv_string buffer }
+            rc.should == 0
+            mutex.synchronize { received << buffer }
           end
-
-          count.times { @push.send_string(string) }
-
-          threads.each {|t| t.join}
-          pull.close
-
-          received.find_all {|r| r == string}.length.should == count
+          sleep 0.01 # give each thread time to spin up
         end
 
-      else # version3 or 4
+        count.times { @push.send_string(string) }
 
-        it "should receive a single message for each message sent on each socket listening, when an equal number pulls to messages" do
-          received = []
-          threads  = []
-          count    = 4
-          @pull.close # close this one since we aren't going to use it below and we don't want it to receive a message
+        threads.each {|t| t.join}
+        pull.close
 
-          count.times do |i|
-            threads << Thread.new do
-              pull = @context.socket ZMQ::PULL
-              rc = pull.setsockopt ZMQ::LINGER, 0
-              rc = pull.connect @link
-              rc.should == 0
-              buffer = ''
-              rc = pull.recv_string buffer
-              rc.should == string.size
-              received << buffer
-              pull.close
-            end
-            sleep 0.01 # give each thread time to spin up
-          end
-
-          count.times { @push.send_string(string) }
-
-          threads.each {|t| t.join}
-
-          received.find_all {|r| r == string}.length.should == count
-        end
-
-      end # if version...
+        received.find_all {|r| r == string}.length.should == count
+      end
 
     end # @context ping-pong
   end # describe

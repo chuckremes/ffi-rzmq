@@ -18,19 +18,19 @@ module ZMQ
 
       it "returns -1 when there are no messages to read" do
         array = []
-        rc = @receiver.recvmsgs(array, NonBlockingFlag)
+        rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
         Util.resultcode_ok?(rc).should be_false
       end
 
       it "gets EAGAIN when there are no messages to read" do
         array = []
-        rc = @receiver.recvmsgs(array, NonBlockingFlag)
+        rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
         ZMQ::Util.errno.should == ZMQ::EAGAIN
       end
 
       it "returns the given array unmodified when there are no messages to read" do
         array = []
-        rc = @receiver.recvmsgs(array, NonBlockingFlag)
+        rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
         array.size.should be_zero
       end
 
@@ -44,7 +44,7 @@ module ZMQ
         sleep 0.1 # give it time to deliver to the receiver
 
         array = []
-        rc = @receiver.recvmsgs(array, NonBlockingFlag)
+        rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
         Util.resultcode_ok?(rc).should be_true
         array.size.should == 1
       end
@@ -56,7 +56,7 @@ module ZMQ
         sleep 0.1 # give it time to deliver to the sub socket
 
         array = []
-        rc = @receiver.recvmsgs(array, NonBlockingFlag)
+        rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
         Util.resultcode_ok?(rc).should be_true
         array.size.should == 10
       end
@@ -71,7 +71,7 @@ module ZMQ
         sleep 0.1 # give it time to deliver to the receiver
 
         array = []
-        rc = @receiver.recvmsgs(array, NonBlockingFlag)
+        rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
         Util.resultcode_ok?(rc).should be_true
         array.size.should == 1 + 1 # extra 1 for envelope
       end
@@ -83,7 +83,7 @@ module ZMQ
         sleep 0.1 # give it time to deliver to the sub socket
 
         array = []
-        rc = @receiver.recvmsgs(array, NonBlockingFlag)
+        rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
         Util.resultcode_ok?(rc).should be_true
         array.size.should == 10 + 1 # add 1 for the envelope
       end
