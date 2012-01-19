@@ -156,8 +156,7 @@ module ZMQ
         @poller.deregister_writable(@socket)
         @socket.close
         sleep 0.1
-        rc = @poller.poll(0, true)
-        puts "\nrc [#{rc}], errno [#{Util.errno}], desc [#{Util.error_string}]\n"
+        rc = @poller.poll(0)
         rc.should == 1
       end
     end # poll
