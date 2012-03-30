@@ -133,6 +133,7 @@ if ZMQ::LibZMQ.version3?
     MULTICAST_HOPS = 25
     RCVTIMEO = 27
     SNDTIMEO = 28
+    IPV4ONLY = 31
 
     # Send/recv options
     DONTWAIT = 1

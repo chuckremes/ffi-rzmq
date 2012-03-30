@@ -686,6 +686,7 @@ module ZMQ
       #  ZMQ::RECONNECT_IVL - integer measured in milliseconds
       #  ZMQ::BACKLOG - integer
       #  ZMQ::RECOVER_IVL_MSEC - integer measured in milliseconds
+      #  ZMQ::IPV4ONLY - integer
       #
       # Returns 0 when the operation completed successfully.
       # Returns -1 when this operation failed.
@@ -735,7 +736,7 @@ module ZMQ
         super()
 
         # integer options
-        [RECONNECT_IVL_MAX, RCVHWM, SNDHWM, RATE, RECOVERY_IVL, SNDBUF, RCVBUF].each { |option| @option_lookup[option] = 0 }
+        [RECONNECT_IVL_MAX, RCVHWM, SNDHWM, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, IPV4ONLY].each { |option| @option_lookup[option] = 0 }
       end
 
       # these finalizer-related methods cannot live in the CommonSocketBehavior
