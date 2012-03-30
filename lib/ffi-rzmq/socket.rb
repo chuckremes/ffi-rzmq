@@ -721,17 +721,6 @@ module ZMQ
         LibZMQ.zmq_recvmsg(socket, address, flags)
       end
 
-      def int_option? name
-        super(name) ||
-        RECONNECT_IVL_MAX == name ||
-        RCVHWM            == name ||
-        SNDHWM            == name ||
-        RATE              == name ||
-        RECOVERY_IVL      == name ||
-        SNDBUF            == name ||
-        RCVBUF            == name
-      end
-
       def populate_option_lookup
         super()
 
