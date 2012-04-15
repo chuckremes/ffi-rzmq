@@ -2,7 +2,6 @@
 module ZMQ
 
   module CommonSocketBehavior
-    include ZMQ::Util
 
     attr_reader :socket, :name
 
