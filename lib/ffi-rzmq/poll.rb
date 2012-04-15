@@ -2,7 +2,6 @@
 module ZMQ
 
   class Poller
-    include ZMQ::Util
 
     attr_reader :readables, :writables
 

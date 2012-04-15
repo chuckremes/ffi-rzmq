@@ -41,7 +41,6 @@ module ZMQ
   #
   #
   class Context
-    include ZMQ::Util
 
     attr_reader :context, :pointer
 
@@ -55,7 +54,7 @@ module ZMQ
       @sockets = []
       @context = LibZMQ.zmq_init io_threads
       @pointer = @context
-      error_check 'zmq_init', (@context.nil? || @context.null?) ? -1 : 0
+      ZMQ::Util.error_check 'zmq_init', (@context.nil? || @context.null?) ? -1 : 0
 
       define_finalizer
     end
