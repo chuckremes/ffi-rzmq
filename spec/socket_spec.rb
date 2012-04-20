@@ -418,6 +418,37 @@ module ZMQ
             array[0].should == value
           end
         end # context using option ZMQ::BACKLOG
+        
+        context "using option ZMQ::IPV4ONLY" do
+          it "should enable use of IPV6 sockets when set to 0" do
+            value = 0
+            socket.setsockopt ZMQ::IPV4ONLY, value
+            array = []
+            rc = socket.getsockopt(ZMQ::IPV4ONLY, array)
+            rc.should == 0
+            array[0].should == value
+          end
+
+          it "should default to a value of 1" do
+            value = 1
+            array = []
+            rc = socket.getsockopt(ZMQ::IPV4ONLY, array)
+            rc.should == 0
+            array[0].should == value
+          end
+          
+          it "returns -1 given a negative value" do
+            value = -1
+            rc = socket.setsockopt ZMQ::IPV4ONLY, value
+            rc.should == -1
+          end
+          
+          it "returns -1 given a value > 1" do
+            value = 2
+            rc = socket.setsockopt ZMQ::IPV4ONLY, value
+            rc.should == -1
+          end
+        end # context using option ZMQ::IPV4ONLY
       end # context #setsockopt
 
 

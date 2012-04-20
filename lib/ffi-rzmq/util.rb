@@ -1,10 +1,9 @@
 
 module ZMQ
 
-  # These methods don't belong to any specific class. They get included
-  # in the #Context, #Socket and #Poller classes.
+  # General utility methods.
   #
-  module Util
+  class Util
 
     # Returns true when +rc+ is greater than or equal to 0, false otherwise.
     #
@@ -57,6 +56,22 @@ module ZMQ
 
       resultcode_ok?(rc) ? random : nil
     end
+    
+    # :doc:
+    # Called to verify whether there were any errors during
+    # operation. If any are found, raise the appropriate #ZeroMQError.
+    #
+    # When no error is found, this method returns +true+ which is behavior
+    # used internally by #send and #recv.
+    #
+    def self.error_check source, result_code
+      if -1 == result_code
+        raise_error source, result_code
+      end
+
+      # used by Socket::send/recv, ignored by others
+      true
+    end
 
 
     private
@@ -66,23 +81,7 @@ module ZMQ
       rand(55534) + 10_000
     end
 
-    # :doc:
-    # Called by most library methods to verify there were no errors during
-    # operation. If any are found, raise the appropriate #ZeroMQError.
-    #
-    # When no error is found, this method returns +true+ which is behavior
-    # used internally by #send and #recv.
-    #
-    def error_check source, result_code
-      if -1 == result_code
-        raise_error source, result_code
-      end
-
-      # used by Socket::send/recv, ignored by others
-      true
-    end
-
-    def raise_error source, result_code
+    def self.raise_error source, result_code
       if 'zmq_init' == source || 'zmq_socket' == source
         raise ContextError.new source, result_code, ZMQ::Util.errno, ZMQ::Util.error_string
 
@@ -96,7 +95,7 @@ module ZMQ
       end
     end
 
-    def eagain?
+    def self.eagain?
       EAGAIN == ZMQ::Util.errno
     end
 

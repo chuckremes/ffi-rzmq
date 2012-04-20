@@ -84,7 +84,6 @@ module ZMQ
   #  puts "value1 is #{message.value1}"
   #
   class Message
-    include ZMQ::Util
     
     # Recommended way to create a standard message. A Message object is 
     # returned upon success, nil when allocation fails.
