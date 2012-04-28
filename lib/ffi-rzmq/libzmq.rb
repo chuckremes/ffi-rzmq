@@ -10,9 +10,11 @@ module ZMQ
       # bias the library discovery to a path inside the gem first, then
       # to the usual system paths
       inside_gem = File.join(File.dirname(__FILE__), '..', '..', 'ext')
-      ZMQ_LIB_PATHS = [
-      inside_gem, '/usr/local/lib', '/opt/local/lib', '/usr/local/homebrew/lib', '/usr/lib64'
-      ].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
+      lib_paths  = ['/usr/local/lib', '/opt/local/lib', '/usr/local/homebrew/lib',
+                    '/usr/lib']
+      lib_paths.map!{|path| path + "64"} if FFI::Platform::ARCH == 'x86_64'
+
+      ZMQ_LIB_PATHS = [inside_gem, *lib_paths].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
       ffi_lib(ZMQ_LIB_PATHS + %w{libzmq})
     rescue LoadError
       STDERR.puts "Unable to load this gem. The libzmq library (or DLL) could not be found."
