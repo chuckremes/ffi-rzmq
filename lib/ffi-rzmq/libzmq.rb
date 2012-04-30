@@ -12,7 +12,7 @@ module ZMQ
       inside_gem = File.join(File.dirname(__FILE__), '..', '..', 'ext')
       lib_paths  = ['/usr/local/lib', '/opt/local/lib', '/usr/local/homebrew/lib',
                     '/usr/lib']
-      lib_paths.map!{|path| path + "64"} if FFI::Platform::ARCH == 'x86_64'
+      lib_paths << '/usr/lib64' if FFI::Platform::ARCH == 'x86_64'
 
       ZMQ_LIB_PATHS = [inside_gem, *lib_paths].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
       ffi_lib(ZMQ_LIB_PATHS + %w{libzmq})
