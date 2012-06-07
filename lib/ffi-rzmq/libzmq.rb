@@ -19,7 +19,7 @@ module ZMQ
       STDERR.puts "If this is a Windows platform, make sure libzmq.dll is on the PATH."
       STDERR.puts "For non-Windows platforms, make sure libzmq is located in this search path:"
       STDERR.puts ZMQ_LIB_PATHS.inspect
-      exit 255
+      raise LoadError, "The libzmq library (or DLL) could not be found"
     end
 
     # Size_t not working properly on Windows
@@ -194,8 +194,7 @@ module ZMQ
   unless LibZMQ.version2? || LibZMQ.version3?
     hash = LibZMQ.version
     version = "#{hash[:major]}.#{hash[:minor]}.#{hash[:patch]}"
-    STDERR.puts "Unable to load this gem. The libzmq version #{version} is incompatible with ffi-rzmq."
-    exit 255
+    raise LoadError, "The libzmq version #{version} is incompatible with ffi-rzmq."
   end
 
 end # module ZMQ
