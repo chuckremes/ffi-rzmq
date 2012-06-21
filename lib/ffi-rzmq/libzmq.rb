@@ -125,9 +125,15 @@ module ZMQ
 
     module PollItemLayout
       def self.included(base)
+        if FFI::Platform::IS_WINDOWS && FFI::Platform::ADDRESS_SIZE==64
+          # On Windows, zmq.h defines fd as a SOCKET, which is 64 bits on x64.
+          fd_type=:uint64
+        else
+          fd_type=:int
+        end
         base.class_eval do
           layout :socket,  :pointer,
-          :fd,    :int,
+          :fd,    fd_type,
           :events, :short,
           :revents, :short
         end
