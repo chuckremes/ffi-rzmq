@@ -10,6 +10,7 @@ module ZMQ
       
       before(:all) do
         @context = Context.new
+        poller_setup
       end
       
       after(:all) do
@@ -41,15 +42,14 @@ module ZMQ
       end
 
       it "should receive an exact string copy of the message sent when receiving in non-blocking mode and using Message objects directly" do
-        poller_setup
-        poller_register_socket(@pull)
         sent_message = Message.new string
         received_message = Message.new
 
-        rc = @push.sendmsg sent_message
-        LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
-        poll_delivery
-        poller_deregister_socket(@pull)
+        poll_it_for_read(@pull) do
+          rc = @push.sendmsg sent_message
+          LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
+        end
+        
         rc = @pull.recvmsg received_message, ZMQ::NonBlocking
         LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
         received_message.copy_out_string.should == string

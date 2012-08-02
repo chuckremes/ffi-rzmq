@@ -11,7 +11,6 @@ module ZMQ
       include APIHelper
 
       it "should return nil for negative io threads" do
-        #LibZMQ.stub(:zmq_init => nil)
         Context.create(-1).should be_nil
       end
       

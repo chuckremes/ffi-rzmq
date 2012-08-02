@@ -7,6 +7,10 @@ module ZMQ
 
     before(:all) do
       @ctx = Context.new
+      poller_setup
+      @front_endpoint = "inproc://device_front_test"
+      @back_endpoint = "inproc://device_back_test"
+      @mutex = Mutex.new
     end
 
     after(:all) do
@@ -14,33 +18,48 @@ module ZMQ
     end
 
     def create_streamer
-      @backport = @frontport = nil
+      @device_thread = false
+
       Thread.new do
         back  = @ctx.socket(ZMQ::PULL)
-        @backport = bind_to_random_tcp_port(back)
+        back.bind(@back_endpoint)
         front = @ctx.socket(ZMQ::PUSH)
-        @frontport = bind_to_random_tcp_port(front)
+        front.bind(@front_endpoint)
+        @mutex.synchronize { @device_thread = true }
         Device.new(ZMQ::STREAMER, back, front)
         back.close
         front.close
       end
-      thread_startup_sleep
+    end
+    
+    def wait_for_device
+      loop do
+        can_break = false
+        @mutex.synchronize do
+          can_break = true if @device_thread
+        end
+        break if can_break
+      end
     end
 
     it "should create a device without error given valid opts" do
       create_streamer
+      wait_for_device
     end
 
     it "should be able to send messages through the device" do
       create_streamer
+      wait_for_device
 
       pusher = @ctx.socket(ZMQ::PUSH)
-      pusher.connect("tcp://127.0.0.1:#{@backport}")
+      connect_to_inproc(pusher, @back_endpoint)
       puller = @ctx.socket(ZMQ::PULL)
-      puller.connect("tcp://127.0.0.1:#{@frontport}")
+      connect_to_inproc(puller, @front_endpoint)
 
-      pusher.send_string("hello")
-      delivery_sleep
+      poll_it_for_read(puller) do
+        pusher.send_string("hello")
+      end
+
       res = ''
       rc = puller.recv_string(res, ZMQ::NonBlocking)
       res.should == "hello"

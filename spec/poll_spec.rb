@@ -106,13 +106,14 @@ module ZMQ
       end
       
       before(:each) do
+        endpoint = "inproc://poll_test"
         @socket = @context.socket(REQ)
         @socket2 = @context.socket(REP)
         @socket.setsockopt(LINGER, 0)
         @socket2.setsockopt(LINGER, 0)
-        port = bind_to_random_tcp_port(@socket2)
-        @socket.connect(local_transport_string(port))
-        connect_sleep
+        @socket2.bind(endpoint)
+        connect_to_inproc(@socket, endpoint)
+
         @poller = Poller.new
       end
       
@@ -122,7 +123,7 @@ module ZMQ
       end
       
       after(:all) do
-        #@context.terminate
+        @context.terminate
       end
       
       it "returns 0 when there are no sockets to poll" do
@@ -141,8 +142,7 @@ module ZMQ
         @poller.register_readable(@socket2)
         
         @socket.send_string('test')
-        delivery_sleep
-        rc = @poller.poll(0)
+        rc = @poller.poll(:blocking)
         rc.should == 1
       end
       
@@ -153,8 +153,8 @@ module ZMQ
         @socket.send_string('test')
         @poller.deregister_writable(@socket)
         @socket.close
-        delivery_sleep
-        rc = @poller.poll(0)
+
+        rc = @poller.poll(:blocking)
         rc.should == 1
       end
     end # poll

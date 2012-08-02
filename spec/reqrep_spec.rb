@@ -12,7 +12,8 @@ module ZMQ
       let(:string) { "booga-booga" }
 
       before(:all) do
-        @context = ZMQ::Context.new 1
+        @context = ZMQ::Context.new
+        poller_setup
       end
       
       after(:all) do
@@ -23,11 +24,11 @@ module ZMQ
       # the REQ socket in a bad state. It cannot send again unless we were to
       # send a reply with the REP and read it.
       before(:each) do
+        endpoint = "inproc://reqrep_test"
         @ping = @context.socket ZMQ::REQ
         @pong = @context.socket ZMQ::REP
-        port = bind_to_random_tcp_port(@pong)
-        @ping.connect "tcp://127.0.0.1:#{port}"
-        connect_sleep
+        @pong.bind(endpoint)
+        connect_to_inproc(@ping, endpoint)
       end
 
       after(:each) do
@@ -69,9 +70,11 @@ module ZMQ
         sent_message = Message.new string
         received_message = Message.new
 
-        rc = @ping.sendmsg(Message.new(string), ZMQ::NonBlocking)
-        LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
-        delivery_sleep
+        poll_it_for_read(@pong) do
+          rc = @ping.sendmsg(Message.new(string), ZMQ::NonBlocking)
+          LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
+        end
+        
         rc = @pong.recvmsg received_message, ZMQ::NonBlocking
         LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
 
