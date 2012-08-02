@@ -5,6 +5,7 @@
 require File.expand_path(
 File.join(File.dirname(__FILE__), %w[.. lib ffi-rzmq]))
 
+require 'thread' # necessary when testing in MRI 1.8 mode
 Thread.abort_on_exception = true
 
 # define some version guards so we can turn on/off specs based upon
@@ -17,6 +18,14 @@ def version3?
   ZMQ::LibZMQ.version3?
 end
 
+
+SLEEP_SHORT = 0.1
+SLEEP_LONG = 0.3
+
+def delivery_sleep() sleep(SLEEP_SHORT); end
+def connect_sleep() sleep(SLEEP_SHORT); end
+def bind_sleep() sleep(SLEEP_LONG); end
+def thread_startup_sleep() sleep(1.0); end
 
 module APIHelper
   def stub_libzmq
@@ -34,7 +43,7 @@ module APIHelper
     rand(55534) + 10_000
   end
 
-  def bind_to_random_tcp_port socket, max_tries = 500
+  def bind_to_random_tcp_port(socket, max_tries = 500)
     tries = 0
     rc = -1
 
@@ -42,6 +51,10 @@ module APIHelper
       tries += 1
       random = random_port
       rc = socket.bind(local_transport_string(random))
+    end
+    
+    unless ZMQ::Util.resultcode_ok?(rc)
+      raise "Could not bind to random port successfully; retries all failed!"
     end
 
     random
@@ -55,6 +68,10 @@ module APIHelper
       tries += 1
       random = random_port
       rc = socket.connect(local_transport_string(random))
+    end
+    
+    unless ZMQ::Util.resultcode_ok?(rc)
+      raise "Could not connect to random port successfully; retries all failed!"
     end
 
     random

@@ -112,7 +112,7 @@ module ZMQ
         @socket2.setsockopt(LINGER, 0)
         port = bind_to_random_tcp_port(@socket2)
         @socket.connect(local_transport_string(port))
-        sleep 0.2
+        connect_sleep
         @poller = Poller.new
       end
       
@@ -139,10 +139,9 @@ module ZMQ
       it "returns 1 when there is a read event on a socket" do
         @poller.register_writable(@socket)
         @poller.register_readable(@socket2)
-        sleep 0.2
         
         @socket.send_string('test')
-        sleep 0.1
+        delivery_sleep
         rc = @poller.poll(0)
         rc.should == 1
       end
@@ -150,12 +149,11 @@ module ZMQ
       it "returns 1 when there is a read event on one socket and the second socket has been removed from polling" do
         @poller.register_readable(@socket2)
         @poller.register_writable(@socket)
-        sleep 0.2
         
         @socket.send_string('test')
         @poller.deregister_writable(@socket)
         @socket.close
-        sleep 0.1
+        delivery_sleep
         rc = @poller.poll(0)
         rc.should == 1
       end

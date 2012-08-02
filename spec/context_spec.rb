@@ -11,16 +11,13 @@ module ZMQ
       include APIHelper
 
       it "should return nil for negative io threads" do
-        LibZMQ.stub(:zmq_init => nil)
+        #LibZMQ.stub(:zmq_init => nil)
         Context.create(-1).should be_nil
       end
       
       it "should default to requesting 1 i/o thread when no argument is passed" do
-        ctx = mock('ctx')
-        ctx.stub!(:null? => false)
-        LibZMQ.should_receive(:zmq_init).with(1).and_return(ctx)
-        
-        Context.create
+        ctx = Context.create
+        ctx.io_threads.should == 1
       end
 
       it "should set the :pointer accessor to non-nil" do
@@ -48,17 +45,13 @@ module ZMQ
     context "when initializing with #new" do
       include APIHelper
 
-      it "should raise an error for negative io threads" do
-        LibZMQ.stub(:zmq_init => nil)
+      it "should raise a ContextError exception for negative io threads" do
         lambda { Context.new(-1) }.should raise_exception(ZMQ::ContextError)
       end
       
       it "should default to requesting 1 i/o thread when no argument is passed" do
-        ctx = mock('ctx')
-        ctx.stub!(:null? => false)
-        LibZMQ.should_receive(:zmq_init).with(1).and_return(ctx)
-        
-        Context.new
+        ctx = Context.new
+        ctx.io_threads.should == 1
       end
 
       it "should set the :pointer accessor to non-nil" do
@@ -78,16 +71,28 @@ module ZMQ
       
       it "should define a finalizer on this object" do
         ObjectSpace.should_receive(:define_finalizer)
-        ctx = Context.new 1
+        Context.new 1
       end
     end # context initializing
 
 
     context "when terminating" do
-      it "should call zmq_term to terminate the library's context" do
+      it "should set the context to nil when terminating the library's context" do
         ctx = Context.new # can't use a shared context here because we are terminating it!
-        LibZMQ.should_receive(:zmq_term).with(ctx.pointer).and_return(0)
         ctx.terminate
+        ctx.pointer.should be_nil
+      end
+      
+      it "should call the correct library function to terminate the context" do
+        ctx = Context.new
+        
+        if LibZMQ.version2?
+          LibZMQ.should_receive(:zmq_term).and_return(0)
+          ctx.terminate
+        else
+          LibZMQ.should_receive(:zmq_ctx_destroy).with(ctx.pointer).and_return(0)
+          ctx.terminate
+        end
       end
     end # context terminate
 

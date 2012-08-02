@@ -2,7 +2,7 @@
 require File.join(File.dirname(__FILE__), %w[spec_helper])
 
 module ZMQ
-  describe Context do
+  describe Socket do
     context "when running basic push pull" do
       include APIHelper
 
@@ -22,6 +22,8 @@ module ZMQ
       end
 
       after(:each) do
+        @push.setsockopt(ZMQ::LINGER, 0)
+        @pull.setsockopt(ZMQ::LINGER, 0)
         @push.close
         @pull.close
         @context.terminate
@@ -41,7 +43,7 @@ module ZMQ
 
         rc = @push.sendmsg sent_message
         LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
-        sleep 0.1 # give it time for delivery
+        delivery_sleep
         rc = @pull.recvmsg received_message, ZMQ::NonBlocking
         LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
         received_message.copy_out_string.should == string
@@ -49,7 +51,7 @@ module ZMQ
 
 
 
-      it "should receive a single message for each message sent on each socket listening, when an equal number pulls to messages and a unique socket per thread" do
+      it "should receive a single message for each message sent on each socket listening, when an equal number of sockets pulls messages and where each socket is unique per thread" do
         received = []
         threads  = []
         count    = 4
@@ -64,12 +66,12 @@ module ZMQ
             rc.should == 0
             buffer = ''
             rc = pull.recv_string buffer
-            rc.should == 0
+            version2? ? (rc.should == 0) : (rc.should == buffer.size)
             mutex.synchronize { received << buffer }
             pull.close
           end
-          sleep 0.01 # give each thread time to spin up
         end
+        thread_startup_sleep
 
         count.times { @push.send_string(string) }
 
@@ -94,11 +96,11 @@ module ZMQ
             buffer = ''
             rc = 0
             mutex.synchronize { rc = pull.recv_string buffer }
-            rc.should == 0
+            version2? ? (rc.should == 0) : (rc.should == buffer.size)
             mutex.synchronize { received << buffer }
           end
-          sleep 0.01 # give each thread time to spin up
         end
+        thread_startup_sleep
 
         count.times { @push.send_string(string) }
 

@@ -394,7 +394,7 @@ module ZMQ
             array[0].should == value
           end
 
-          if (defined?(ZMQ::XSUB) && ZMQ::XSUB == socket_type)
+          if (ZMQ::SUB == socket_type) && version3? || (defined?(ZMQ::XSUB) && ZMQ::XSUB == socket_type)
             it "should default to a value of 0" do
               value = 0
               array = []
@@ -583,13 +583,13 @@ module ZMQ
           @pub = @ctx.socket ZMQ::PUB
           port = bind_to_random_tcp_port(@sub)
           rc = @pub.connect "tcp://127.0.0.1:#{port}"
-          sleep 0.5
+          bind_sleep
 
           rc = @pub.send_string('test')
-          sleep 0.2
+          delivery_sleep
         end
 
-        it_behaves_like "pubsub sockets where"
+        #it_behaves_like "pubsub sockets where" # see Jira LIBZMQ-270
       end # context SUB binds PUB connects
 
       context "when SUB connects and PUB binds" do
@@ -603,10 +603,10 @@ module ZMQ
           @pub = @ctx.socket ZMQ::PUB
           port = bind_to_random_tcp_port(@pub)
           rc = @sub.connect "tcp://127.0.0.1:#{port}"
-          sleep 0.5
+          bind_sleep
 
           rc = @pub.send_string('test')
-          sleep 0.2
+          delivery_sleep
         end
 
         it_behaves_like "pubsub sockets where"
