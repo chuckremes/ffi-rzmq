@@ -5,6 +5,7 @@ module ZMQ
 
 
   describe Socket do
+    include APIHelper
 
     socket_types = if LibZMQ.version2?
       [ZMQ::REQ, ZMQ::REP, ZMQ::DEALER, ZMQ::ROUTER, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR]
@@ -573,40 +574,55 @@ module ZMQ
       end # shared example for pubsub
 
       context "when SUB binds and PUB connects" do
+        
+        before(:all) do
+          @ctx = Context.new
+          poller_setup
+        end
+        
+        after(:all) do
+          @ctx.terminate
+        end
 
         before(:each) do
-          @ctx = Context.new
-
+          endpoint = "inproc://socket_test"
           @sub = @ctx.socket ZMQ::SUB
           rc = @sub.setsockopt ZMQ::SUBSCRIBE, ''
 
           @pub = @ctx.socket ZMQ::PUB
-          port = bind_to_random_tcp_port(@sub)
-          rc = @pub.connect "tcp://127.0.0.1:#{port}"
-          bind_sleep
+          @sub.bind(endpoint)
+          connect_to_inproc(@pub, endpoint)
 
-          rc = @pub.send_string('test')
-          delivery_sleep
+          poll_it_for_read(@sub) do
+            rc = @pub.send_string('test')
+          end
         end
 
         #it_behaves_like "pubsub sockets where" # see Jira LIBZMQ-270
       end # context SUB binds PUB connects
 
       context "when SUB connects and PUB binds" do
+        before(:all) do
+          @ctx = Context.new
+          poller_setup
+        end
+        
+        after(:all) do
+          @ctx.terminate
+        end
 
         before(:each) do
-          @ctx = Context.new
-
+          endpoint = "inproc://socket_test"
           @sub = @ctx.socket ZMQ::SUB
           rc = @sub.setsockopt ZMQ::SUBSCRIBE, ''
 
           @pub = @ctx.socket ZMQ::PUB
-          port = bind_to_random_tcp_port(@pub)
-          rc = @sub.connect "tcp://127.0.0.1:#{port}"
-          bind_sleep
+          @pub.bind(endpoint)
+          connect_to_inproc(@sub, endpoint)
 
-          rc = @pub.send_string('test')
-          delivery_sleep
+          poll_it_for_read(@sub) do
+            rc = @pub.send_string('test')
+          end
         end
 
         it_behaves_like "pubsub sockets where"
@@ -617,7 +633,7 @@ module ZMQ
         @sub.close
         @pub.close
         # must call close on *every* socket before calling terminate otherwise it blocks indefinitely
-        @ctx.terminate
+        #@ctx.terminate
       end
 
     end # describe 'events mapping to pollin and pollout'

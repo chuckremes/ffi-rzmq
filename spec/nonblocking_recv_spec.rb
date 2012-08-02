@@ -5,8 +5,11 @@ module ZMQ
 
 
   describe Socket do
+    include APIHelper
+
     before(:all) do
       @ctx = Context.new
+      poller_setup
     end
 
     after(:all) do
@@ -39,9 +42,12 @@ module ZMQ
     shared_examples_for "sockets without exposed envelopes" do
 
       it "read the single message and returns a successful result code" do
+        poller_register_socket(@receiver)
+
         rc = @sender.send_string('test')
         Util.resultcode_ok?(rc).should be_true
-        delivery_sleep
+        poll_delivery
+        poller_deregister_socket(@receiver)
 
         array = []
         rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
@@ -50,10 +56,11 @@ module ZMQ
       end
 
       it "read all message parts transmitted and returns a successful result code" do
-        strings = Array.new(10, 'test')
-        rc = @sender.send_strings(strings)
-        Util.resultcode_ok?(rc).should be_true
-        delivery_sleep
+        poll_it_for_read(@receiver) do
+          strings = Array.new(10, 'test')
+          rc = @sender.send_strings(strings)
+          Util.resultcode_ok?(rc).should be_true
+        end
 
         array = []
         rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
@@ -66,9 +73,10 @@ module ZMQ
     shared_examples_for "sockets with exposed envelopes" do
 
       it "read the single message and returns a successful result code" do
-        rc = @sender.send_string('test')
-        Util.resultcode_ok?(rc).should be_true
-        delivery_sleep
+        poll_it_for_read(@receiver) do
+          rc = @sender.send_string('test')
+          Util.resultcode_ok?(rc).should be_true
+        end
 
         array = []
         rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
@@ -77,10 +85,11 @@ module ZMQ
       end
 
       it "read all message parts transmitted and returns a successful result code" do
-        strings = Array.new(10, 'test')
-        rc = @sender.send_strings(strings)
-        Util.resultcode_ok?(rc).should be_true
-        delivery_sleep
+        poll_it_for_read(@receiver) do
+          strings = Array.new(10, 'test')
+          rc = @sender.send_strings(strings)
+          Util.resultcode_ok?(rc).should be_true
+        end
 
         array = []
         rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
@@ -96,12 +105,12 @@ module ZMQ
         include APIHelper
 
         before(:all) do
+          endpoint = "inproc://nonblocking_test"
           @receiver = @ctx.socket ZMQ::SUB
-          port = bind_to_random_tcp_port(@receiver)
           assert_ok(@receiver.setsockopt(ZMQ::SUBSCRIBE, ''))
           @sender = @ctx.socket ZMQ::PUB
-          assert_ok(@sender.connect("tcp://127.0.0.1:#{port}"))
-          connect_sleep
+          @receiver.bind(endpoint)
+          connect_to_inproc(@sender, endpoint)
         end
 
         after(:all) do
@@ -110,7 +119,7 @@ module ZMQ
         end
 
         it_behaves_like "any socket"
-        #it_behaves_like "sockets without exposed envelopes" # see Jira LIBZMQ-270
+        it_behaves_like "sockets without exposed envelopes" # see Jira LIBZMQ-270; fails with tcp transport
 
       end # describe 'non-blocking recvmsgs'
 
@@ -118,12 +127,13 @@ module ZMQ
         include APIHelper
 
         before(:all) do
+          endpoint = "inproc://nonblocking_test"
           @receiver = @ctx.socket ZMQ::SUB
           port = connect_to_random_tcp_port(@receiver)
           assert_ok(@receiver.setsockopt(ZMQ::SUBSCRIBE, ''))
           @sender = @ctx.socket ZMQ::PUB
-          assert_ok(@sender.bind("tcp://127.0.0.1:#{port}"))
-          connect_sleep
+          @sender.bind(endpoint)
+          connect_to_inproc(@receiver, endpoint)
         end
 
         after(:all) do
@@ -132,7 +142,7 @@ module ZMQ
         end
 
         it_behaves_like "any socket"
-        #it_behaves_like "sockets without exposed envelopes" # see Jira LIBZMQ-270
+        it_behaves_like "sockets without exposed envelopes" # see Jira LIBZMQ-270; fails with tcp transport
 
       end # describe 'non-blocking recvmsgs'
 
@@ -144,11 +154,11 @@ module ZMQ
         include APIHelper
 
         before(:each) do
+          endpoint = "inproc://nonblocking_test"
           @receiver = @ctx.socket ZMQ::REP
-          port = bind_to_random_tcp_port(@receiver)
           @sender = @ctx.socket ZMQ::REQ
-          assert_ok(@sender.connect("tcp://127.0.0.1:#{port}"))
-          connect_sleep
+          @receiver.bind(endpoint)
+          connect_to_inproc(@sender, endpoint)
         end
 
         after(:each) do
@@ -165,11 +175,11 @@ module ZMQ
         include APIHelper
 
         before(:each) do
+          endpoint = "inproc://nonblocking_test"
           @receiver = @ctx.socket ZMQ::REP
-          port = connect_to_random_tcp_port(@receiver)
           @sender = @ctx.socket ZMQ::REQ
-          assert_ok(@sender.bind("tcp://127.0.0.1:#{port}"))
-          connect_sleep
+          @sender.bind(endpoint)
+          connect_to_inproc(@receiver, endpoint)
         end
 
         after(:each) do
@@ -191,11 +201,11 @@ module ZMQ
         include APIHelper
 
         before(:all) do
+          endpoint = "inproc://nonblocking_test"
           @receiver = @ctx.socket ZMQ::PULL
-          port = bind_to_random_tcp_port(@receiver)
           @sender = @ctx.socket ZMQ::PUSH
-          assert_ok(@sender.connect("tcp://127.0.0.1:#{port}"))
-          connect_sleep
+          @receiver.bind(endpoint)
+          connect_to_inproc(@sender, endpoint)
         end
 
         after(:all) do
@@ -212,11 +222,11 @@ module ZMQ
         include APIHelper
 
         before(:all) do
+          endpoint = "inproc://nonblocking_test"
           @receiver = @ctx.socket ZMQ::PULL
-          port = connect_to_random_tcp_port(@receiver)
           @sender = @ctx.socket ZMQ::PUSH
-          assert_ok(@sender.bind("tcp://127.0.0.1:#{port}"))
-          connect_sleep
+          @sender.bind(endpoint)
+          connect_to_inproc(@receiver, endpoint)
         end
 
         after(:all) do
@@ -238,11 +248,11 @@ module ZMQ
         include APIHelper
 
         before(:all) do
+          endpoint = "inproc://nonblocking_test"
           @receiver = @ctx.socket ZMQ::ROUTER
-          port = bind_to_random_tcp_port(@receiver)
           @sender = @ctx.socket ZMQ::DEALER
-          assert_ok(@sender.connect("tcp://127.0.0.1:#{port}"))
-          connect_sleep
+          @receiver.bind(endpoint)
+          connect_to_inproc(@sender, endpoint)
         end
 
         after(:all) do
@@ -259,11 +269,11 @@ module ZMQ
         include APIHelper
 
         before(:all) do
+          endpoint = "inproc://nonblocking_test"
           @receiver = @ctx.socket ZMQ::ROUTER
-          port = connect_to_random_tcp_port(@receiver)
           @sender = @ctx.socket ZMQ::DEALER
-          assert_ok(@sender.bind("tcp://127.0.0.1:#{port}"))
-          connect_sleep
+          @sender.bind(endpoint)
+          connect_to_inproc(@receiver, endpoint)
         end
 
         after(:all) do
@@ -285,11 +295,11 @@ module ZMQ
         include APIHelper
 
         before(:all) do
+          endpoint = "inproc://nonblocking_test"
           @receiver = @ctx.socket ZMQ::XREP
-          port = bind_to_random_tcp_port(@receiver)
           @sender = @ctx.socket ZMQ::XREQ
-          assert_ok(@sender.connect("tcp://127.0.0.1:#{port}"))
-          connect_sleep
+          @receiver.bind(endpoint)
+          connect_to_inproc(@sender, endpoint)
         end
 
         after(:all) do
@@ -306,11 +316,11 @@ module ZMQ
         include APIHelper
 
         before(:all) do
+          endpoint = "inproc://nonblocking_test"
           @receiver = @ctx.socket ZMQ::XREP
-          port = connect_to_random_tcp_port(@receiver)
           @sender = @ctx.socket ZMQ::XREQ
-          assert_ok(@sender.bind("tcp://127.0.0.1:#{port}"))
-          connect_sleep
+          @sender.bind(endpoint)
+          connect_to_inproc(@receiver, endpoint)
         end
 
         after(:all) do

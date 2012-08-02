@@ -7,26 +7,29 @@ module ZMQ
       include APIHelper
 
       let(:string) { "booga-booga" }
+      
+      before(:all) do
+        @context = Context.new
+      end
+      
+      after(:all) do
+        @context.terminate
+      end
 
       before(:each) do
-        $stdout.flush
-        @context = ZMQ::Context.new
         @push = @context.socket ZMQ::PUSH
         @pull = @context.socket ZMQ::PULL
         @push.setsockopt ZMQ::LINGER, 0
         @pull.setsockopt ZMQ::LINGER, 0
-        port = connect_to_random_tcp_port(@pull)
-        @link = "tcp://127.0.0.1:#{port}"
-        #@link = "inproc://push_pull_test" # can't connect to inproc *before* bind
-        @push.bind    @link
+        
+        @link = "inproc://push_pull_test"
+        @push.bind @link
+        connect_to_inproc(@pull, @link)
       end
 
       after(:each) do
-        @push.setsockopt(ZMQ::LINGER, 0)
-        @pull.setsockopt(ZMQ::LINGER, 0)
         @push.close
         @pull.close
-        @context.terminate
       end
 
       it "should receive an exact copy of the sent message using Message objects directly on one pull socket" do
@@ -38,12 +41,15 @@ module ZMQ
       end
 
       it "should receive an exact string copy of the message sent when receiving in non-blocking mode and using Message objects directly" do
+        poller_setup
+        poller_register_socket(@pull)
         sent_message = Message.new string
         received_message = Message.new
 
         rc = @push.sendmsg sent_message
         LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
-        delivery_sleep
+        poll_delivery
+        poller_deregister_socket(@pull)
         rc = @pull.recvmsg received_message, ZMQ::NonBlocking
         LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
         received_message.copy_out_string.should == string
@@ -54,24 +60,28 @@ module ZMQ
       it "should receive a single message for each message sent on each socket listening, when an equal number of sockets pulls messages and where each socket is unique per thread" do
         received = []
         threads  = []
+        sockets = []
         count    = 4
-        @pull.close # close this one since we aren't going to use it below and we don't want it to receive a message
         mutex = Mutex.new
+        
+        # make sure all sockets are connected before we do our load-balancing test
+        (count - 1).times do
+          socket = @context.socket ZMQ::PULL
+          socket.setsockopt ZMQ::LINGER, 0
+          connect_to_inproc(socket, @link)
+          sockets << socket
+        end
+        sockets << @pull
 
-        count.times do |i|
+        sockets.each do |socket|
           threads << Thread.new do
-            pull = @context.socket ZMQ::PULL
-            rc = pull.setsockopt ZMQ::LINGER, 0
-            rc = pull.connect @link
-            rc.should == 0
             buffer = ''
-            rc = pull.recv_string buffer
+            rc = socket.recv_string buffer
             version2? ? (rc.should == 0) : (rc.should == buffer.size)
             mutex.synchronize { received << buffer }
-            pull.close
+            socket.close
           end
         end
-        thread_startup_sleep
 
         count.times { @push.send_string(string) }
 
@@ -80,32 +90,25 @@ module ZMQ
         received.find_all {|r| r == string}.length.should == count
       end
 
-      it "should receive a single message for each message sent on each socket listening, when an equal number pulls to messages and a single shared socket protected by a mutex" do
+      it "should receive a single message for each message sent when using a single shared socket protected by a mutex" do
         received = []
         threads  = []
         count    = 4
-        @pull.close # close this one since we aren't going to use it below and we don't want it to receive a message
-        pull = @context.socket ZMQ::PULL
-        rc = pull.setsockopt ZMQ::LINGER, 0
-        rc = pull.connect @link
-        rc.should == 0
         mutex = Mutex.new
 
         count.times do |i|
           threads << Thread.new do
             buffer = ''
             rc = 0
-            mutex.synchronize { rc = pull.recv_string buffer }
+            mutex.synchronize { rc = @pull.recv_string buffer }
             version2? ? (rc.should == 0) : (rc.should == buffer.size)
             mutex.synchronize { received << buffer }
           end
         end
-        thread_startup_sleep
 
         count.times { @push.send_string(string) }
 
         threads.each {|t| t.join}
-        pull.close
 
         received.find_all {|r| r == string}.length.should == count
       end

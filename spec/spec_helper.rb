@@ -27,6 +27,12 @@ def connect_sleep() sleep(SLEEP_SHORT); end
 def bind_sleep() sleep(SLEEP_LONG); end
 def thread_startup_sleep() sleep(1.0); end
 
+def connect_to_inproc(socket, endpoint)
+  begin
+    rc = socket.connect(endpoint)
+  end until ZMQ::Util.resultcode_ok?(rc)
+end
+
 module APIHelper
   def stub_libzmq
     @err_str_mock = mock("error string")
@@ -36,6 +42,29 @@ module APIHelper
     :zmq_errno => 0,
     :zmq_sterror => @err_str_mock
     )
+  end
+  
+  def poller_setup
+    @helper_poller ||= ZMQ::Poller.new
+  end
+  
+  def poller_register_socket(socket)
+    @helper_poller.register(socket, ZMQ::POLLIN)
+  end
+  
+  def poller_deregister_socket(socket)
+    @helper_poller.deregister(socket, ZMQ::POLLIN)
+  end
+  
+  def poll_delivery
+    @helper_poller.poll(:blocking)
+  end
+  
+  def poll_it_for_read(socket, &blk)
+    poller_register_socket(socket)
+    blk.call
+    poll_delivery
+    poller_deregister_socket(socket)
   end
 
   # generate a random port between 10_000 and 65534
@@ -52,7 +81,7 @@ module APIHelper
       random = random_port
       rc = socket.bind(local_transport_string(random))
     end
-    
+
     unless ZMQ::Util.resultcode_ok?(rc)
       raise "Could not bind to random port successfully; retries all failed!"
     end
@@ -69,14 +98,14 @@ module APIHelper
       random = random_port
       rc = socket.connect(local_transport_string(random))
     end
-    
+
     unless ZMQ::Util.resultcode_ok?(rc)
       raise "Could not connect to random port successfully; retries all failed!"
     end
 
     random
   end
-  
+
   def local_transport_string(port)
     "tcp://127.0.0.1:#{port}"
   end
