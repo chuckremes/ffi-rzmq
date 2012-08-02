@@ -511,7 +511,7 @@ module ZMQ
 
     def populate_option_lookup
       # integer options
-      [EVENTS, LINGER, RECONNECT_IVL, FD, TYPE, BACKLOG].each { |option| @option_lookup[option] = 0 }
+      [EVENTS, LINGER, RCVTIMEO, SNDTIMEO, RECONNECT_IVL, FD, TYPE, BACKLOG].each { |option| @option_lookup[option] = 0 }
 
       # long long options
       [RCVMORE, AFFINITY].each { |option| @option_lookup[option] = 1 }
@@ -708,6 +708,22 @@ module ZMQ
 
         rc
       end
+      
+      # Version3 only
+      #
+      # Disconnect the socket from the given +endpoint+.
+      #
+      def disconnect(endpoint)
+        LibZMQ.zmq_disconnect(endpoint)
+      end
+      
+      # Version3 only
+      #
+      # Unbind the socket from the given +endpoint+.
+      #
+      def unbind(endpoint)
+        LibZMQ.zmq_unbind(endpoint)
+      end
 
 
       private
@@ -724,7 +740,12 @@ module ZMQ
         super()
 
         # integer options
-        [RECONNECT_IVL_MAX, RCVHWM, SNDHWM, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, IPV4ONLY].each { |option| @option_lookup[option] = 0 }
+        [RECONNECT_IVL_MAX, RCVHWM, SNDHWM, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, IPV4ONLY,
+          ROUTER_BEHAVIOR, TCP_KEEPALIVE, TCP_KEEPALIVE_CNT,
+          TCP_KEEPALIVE_IDLE, TCP_KEEPALIVE_INTVL, TCP_ACCEPT_FILTER].each { |option| @option_lookup[option] = 0 }
+          
+        # long long options
+        [MAXMSGSIZE].each { |option| @option_lookup[option] = 1 }
       end
 
       # these finalizer-related methods cannot live in the CommonSocketBehavior

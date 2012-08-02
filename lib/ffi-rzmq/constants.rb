@@ -1,7 +1,7 @@
 module ZMQ
   # Set up all of the constants that are *common* to all API
   # versions
-  
+
   #  Socket types
   PAIR = 0
   PUB = 1
@@ -41,6 +41,8 @@ module ZMQ
   RECONNECT_IVL = 18
   BACKLOG = 19
   RECONNECT_IVL_MAX = 21
+  RCVTIMEO = 27
+  SNDTIMEO = 28
 
   #  Send/recv options
   SNDMORE = 2
@@ -58,13 +60,14 @@ module ZMQ
   ENOMEM = Errno::ENOMEM::Errno
   ENODEV = Errno::ENODEV::Errno
   EFAULT = Errno::EFAULT::Errno
+  EINTR  = Errno::EINTR::Errno
 
   # ZMQ errors
   HAUSNUMERO     = 156384712
-  EMTHREAD       = (HAUSNUMERO + 50)
   EFSM           = (HAUSNUMERO + 51)
   ENOCOMPATPROTO = (HAUSNUMERO + 52)
   ETERM          = (HAUSNUMERO + 53)
+  EMTHREAD       = (HAUSNUMERO + 54)
 
   # Rescue unknown constants and use the ZeroMQ defined values
   # Usually only happens on Windows though some don't resolve on
@@ -78,7 +81,20 @@ module ZMQ
   ECONNREFUSED    = Errno::ECONNREFUSED::Errno rescue (HAUSNUMERO + 7)
   EINPROGRESS     = Errno::EINPROGRESS::Errno rescue (HAUSNUMERO + 8)
   ENOTSOCK        = Errno::ENOTSOCK::Errno rescue (HAUSNUMERO + 9)
-  EINTR           = Errno::EINTR::Errno rescue (HAUSNUMERO + 10)
+  EMSGSIZE        = Errno::EMSGSIZE::Errno rescue (HAUSNUMERO + 10)
+  EAFNOSUPPORT    = Errno::EAFNOSUPPORT::Errno rescue (HAUSNUMERO + 11)
+  ENETUNREACH     = Errno::ENETUNREACH::Errno rescue (HAUSNUMERO + 12)
+  ECONNABORTED    = Errno::ECONNABORTED::Errno rescue (HAUSNUMERO + 13)
+  ECONNRESET      = Errno::ECONNRESET::Errno rescue (HAUSNUMERO + 14)
+  ENOTCONN        = Errno::ENOTCONN::Errno rescue (HAUSNUMERO + 15)
+  ETIMEDOUT       = Errno::ETIMEDOUT::Errno rescue (HAUSNUMERO + 16)
+  EHOSTUNREACH    = Errno::EHOSTUNREACH::Errno rescue (HAUSNUMERO + 17)
+  ENETRESET       = Errno::ENETRESET::Errno rescue (HAUSNUMERO + 18)
+
+  #  Device Types
+  STREAMER = 1
+  FORWARDER = 2
+  QUEUE = 3
 end # module ZMQ
 
 
@@ -92,11 +108,6 @@ if ZMQ::LibZMQ.version2?
 
     SocketTypeNameMap[ROUTER] = 'ROUTER'
     SocketTypeNameMap[DEALER] = 'DEALER'
-
-    #  Device Types
-    STREAMER = 1
-    FORWARDER = 2
-    QUEUE = 3
 
     # Socket options
     HWM = 1
@@ -125,20 +136,46 @@ if ZMQ::LibZMQ.version3?
     SocketTypeNameMap[XPUB] = 'XPUB'
     SocketTypeNameMap[XSUB] = 'XSUB'
 
+    # Context options
+    IO_THREADS     = 1
+    MAX_SOCKETS    = 2
+    IO_THREADS_DFLT = 1
+    MAX_SOCKETS_DFLT = 1024
+
     # Socket options
-    IDENTITY = 5
-    MAXMSGSIZE = 22
-    SNDHWM = 23
-    RCVHWM = 24
+    IDENTITY       = 5
+    MAXMSGSIZE     = 22
+    SNDHWM         = 23
+    RCVHWM         = 24
     MULTICAST_HOPS = 25
-    RCVTIMEO = 27
-    SNDTIMEO = 28
-    IPV4ONLY = 31
+    IPV4ONLY       = 31
+    LAST_ENDPOINT  = 32
+    ROUTER_BEHAVIOR = 33
+    TCP_KEEPALIVE   = 34
+    TCP_KEEPALIVE_CNT = 35
+    TCP_KEEPALIVE_IDLE = 36
+    TCP_KEEPALIVE_INTVL = 37
+    TCP_ACCEPT_FILTER = 38
+    
+    # Message options
+    MORE = 1
 
     # Send/recv options
-    DONTWAIT = 1
-    SNDLABEL = 4
-    NonBlocking = DONTWAIT
+    DONTWAIT       = 1
+    SNDLABEL       = 4
+    NonBlocking    = DONTWAIT
+
+    # Socket events and monitoring
+    EVENT_CONNECTED     = 1
+    EVENT_CONNECT_DELAYED = 2
+    EVENT_CONNECT_RETRIED = 4
+    EVENT_LISTENING = 8
+    EVENT_BIND_FAILED = 16
+    EVENT_ACCEPTED = 32
+    EVENT_ACCEPT_FAILED = 64
+    EVENT_CLOSED = 128
+    EVENT_CLOSE_FAILED = 256
+    EVENT_DISCONNECTED = 512
 
     # Socket & other errors
     EMFILE = Errno::EMFILE::Errno

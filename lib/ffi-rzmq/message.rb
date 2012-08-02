@@ -198,6 +198,28 @@ module ZMQ
     def self.msg_size() @msg_size; end
 
   end # class Message
+  
+  if LibZMQ.version3?
+    class Message
+      # Version3 only
+      #
+      def get(property)
+        LibZMQ.zmq_msg_get(@pointer, property)
+      end
+      
+      # Version3 only
+      #
+      # Returns true if this message has additional parts coming.
+      #
+      def more?
+        Util.resultcode_ok?(get(MORE))
+      end
+      
+      def set(property, value)
+        LibZMQ.zmq_msg_set(@pointer, property, value)
+      end
+    end
+  end
 
 
 

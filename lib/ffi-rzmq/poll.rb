@@ -14,7 +14,7 @@ module ZMQ
     end
 
     # Checks each registered socket for selectability based on the poll items'
-    # registered +events+. Will block for up to +timeout+ milliseconds
+    # registered +events+. Will block for up to +timeout+ milliseconds.
     # A millisecond is 1/1000 of a second, so to block for 1 second
     # pass the value "1000" to #poll.
     #

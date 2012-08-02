@@ -3,9 +3,9 @@ module ZMQ
 
 
   # Recommended to use the default for +io_threads+
-  # since most programs will not saturate I/O. 
+  # since most programs will not saturate I/O.
   #
-  # The rule of thumb is to make +io_threads+ equal to the number 
+  # The rule of thumb is to make +io_threads+ equal to the number
   # gigabits per second that the application will produce.
   #
   # The +io_threads+ number specifies the size of the thread pool
@@ -42,21 +42,49 @@ module ZMQ
   #
   class Context
 
-    attr_reader :context, :pointer
+    attr_reader :context, :io_threads, :max_sockets
+    alias :pointer :context
 
-    def self.create io_threads = 1
-      new(io_threads) rescue nil
-    end
-    
     # Use the factory method Context#create to make contexts.
     #
-    def initialize io_threads = 1
-      @sockets = []
-      @context = LibZMQ.zmq_init io_threads
-      @pointer = @context
-      ZMQ::Util.error_check 'zmq_init', (@context.nil? || @context.null?) ? -1 : 0
+    if LibZMQ.version2?
+      def self.create io_threads = 1
+        new(io_threads) rescue nil
+      end
 
-      define_finalizer
+      def initialize io_threads = 1
+        @io_threads = io_threads
+        @context = LibZMQ.zmq_init io_threads
+        ZMQ::Util.error_check 'zmq_init', (@context.nil? || @context.null?) ? -1 : 0
+
+        define_finalizer
+      end
+    elsif LibZMQ.version3?
+
+      def self.create(opts = {})
+        new(opts) rescue nil
+      end
+
+      def initialize(opts = {})
+        if opts.respond_to?(:empty?)
+          @io_threads = opts[:io_threads] || IO_THREADS_DFLT
+          @max_sockets = opts[:max_sockets] || MAX_SOCKETS_DFLT
+        else
+          @io_threads = opts || 1
+          @max_sockets = MAX_SOCKETS_DFLT
+        end
+
+        @context = LibZMQ.zmq_ctx_new
+        ZMQ::Util.error_check 'zmq_ctx_new', (@context.nil? || @context.null?) ? -1 : 0
+
+        rc = LibZMQ.zmq_ctx_set(@context, ZMQ::IO_THREADS, @io_threads)
+        ZMQ::Util.error_check 'zmq_ctx_set', rc
+
+        rc = LibZMQ.zmq_ctx_set(@context, ZMQ::MAX_SOCKETS, @max_sockets)
+        ZMQ::Util.error_check 'zmq_ctx_set', rc
+
+        define_finalizer
+      end
     end
 
     # Call to release the context and any remaining data associated
@@ -66,15 +94,27 @@ module ZMQ
     #
     # Returns 0 for success, -1 for failure.
     #
-    def terminate
-      unless @context.nil? || @context.null?
-        remove_finalizer
-        rc = LibZMQ.zmq_term @context
-        @context = nil
-        @sockets = nil
-        rc
-      else
-        0
+    if LibZMQ.version2?
+      def terminate
+        unless @context.nil? || @context.null?
+          remove_finalizer
+          rc = LibZMQ.zmq_term @context
+          @context = nil
+          rc
+        else
+          0
+        end
+      end
+    elsif LibZMQ.version3?
+      def terminate
+        unless @context.nil? || @context.null?
+          remove_finalizer
+          rc = LibZMQ.zmq_ctx_destroy(@context)
+          @context = nil
+          rc
+        else
+          0
+        end
       end
     end
 
@@ -101,7 +141,7 @@ module ZMQ
       rescue ContextError => e
         sock = nil
       end
-      
+
       sock
     end
 

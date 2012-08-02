@@ -82,14 +82,13 @@ module ZMQ
     end
 
     def self.raise_error source, result_code
-      if 'zmq_init' == source || 'zmq_socket' == source
+      if context_error?(source)
         raise ContextError.new source, result_code, ZMQ::Util.errno, ZMQ::Util.error_string
 
-      elsif ['zmq_msg_init', 'zmq_msg_init_data', 'zmq_msg_copy', 'zmq_msg_move'].include?(source)
+      elsif message_error?(source)
         raise MessageError.new source, result_code, ZMQ::Util.errno, ZMQ::Util.error_string
 
       else
-        puts "else"
         raise ZeroMQError.new source, result_code, -1,
         "Source [#{source}] does not match any zmq_* strings, rc [#{result_code}], errno [#{ZMQ::Util.errno}], error_string [#{ZMQ::Util.error_string}]"
       end
@@ -98,6 +97,31 @@ module ZMQ
     def self.eagain?
       EAGAIN == ZMQ::Util.errno
     end
+    
+    if LibZMQ.version2?
+      def self.context_error?(source)
+        'zmq_init' == source ||
+        'zmq_socket' == source
+      end
+      
+      def self.message_error?(source)
+        ['zmq_msg_init', 'zmq_msg_init_data', 'zmq_msg_copy', 'zmq_msg_move'].include?(source)
+      end
+      
+    elsif LibZMQ.version3?
+      def self.context_error?(source)
+        'zmq_ctx_new' == source ||
+        'zmq_ctx_set' == source ||
+        'zmq_ctx_get' == source ||
+        'zmq_ctx_destory' == source ||
+        'zmq_ctx_set_monitor' == source
+      end
+      
+      def self.message_error?(source)
+        ['zmq_msg_init', 'zmq_msg_init_data', 'zmq_msg_copy', 'zmq_msg_move', 'zmq_msg_close', 'zmq_msg_get',
+          'zmq_msg_more', 'zmq_msg_recv', 'zmq_msg_send', 'zmq_msg_set'].include?(source)
+      end
+    end # if LibZMQ.version...?
 
   end # module Util
 

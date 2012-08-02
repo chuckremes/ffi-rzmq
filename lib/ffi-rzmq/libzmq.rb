@@ -1,7 +1,7 @@
 module ZMQ
 
   # Wraps the libzmq library and attaches to the functions that are
-  # common across the 2.x, 3.x and 4.x APIs.
+  # common across the 2.x and 3.x APIs.
   #
   module LibZMQ
     extend FFI::Library
@@ -11,7 +11,7 @@ module ZMQ
       # to the usual system paths
       inside_gem = File.join(File.dirname(__FILE__), '..', '..', 'ext')
       lib_paths  = ['/usr/local/lib', '/opt/local/lib', '/usr/local/homebrew/lib',
-                    '/usr/lib']
+      '/usr/lib']
       lib_paths << '/usr/lib64' if FFI::Platform::ARCH == 'x86_64'
 
       ZMQ_LIB_PATHS = [inside_gem, *lib_paths].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
@@ -19,6 +19,8 @@ module ZMQ
     rescue LoadError
       STDERR.puts "Unable to load this gem. The libzmq library (or DLL) could not be found."
       STDERR.puts "If this is a Windows platform, make sure libzmq.dll is on the PATH."
+      STDERR.puts "If the DLL was built with mingw, make sure the other two dependent DLLs,"
+      STDERR.puts "libgcc_s_sjlj-1.dll and libstdc++6.dll, are also on the PATH."
       STDERR.puts "For non-Windows platforms, make sure libzmq is located in this search path:"
       STDERR.puts ZMQ_LIB_PATHS.inspect
       raise LoadError, "The libzmq library (or DLL) could not be found"
@@ -40,17 +42,11 @@ module ZMQ
     # otherwise the runtime hangs (and requires a kill -9 to terminate)
     #
     @blocking = true
-    attach_function :zmq_init, [:int], :pointer
-    @blocking = true
-    attach_function :zmq_socket, [:pointer, :int], :pointer
-    @blocking = true
-    attach_function :zmq_term, [:pointer], :int
+    attach_function :zmq_version, [:pointer, :pointer, :pointer], :void
     @blocking = true
     attach_function :zmq_errno, [], :int
     @blocking = true
     attach_function :zmq_strerror, [:int], :pointer
-    @blocking = true
-    attach_function :zmq_version, [:pointer, :pointer, :pointer], :void
 
     def self.version
       if @version.nil?
@@ -66,12 +62,15 @@ module ZMQ
 
     def self.version2?() version[:major] == 2 && version[:minor] >= 1  end
 
-    def self.version3?() version[:major] == 3 && version[:minor] >= 1 end
+    def self.version3?() version[:major] == 3 && version[:minor] >= 2 end
 
-    def self.version4?() version[:major] == 4 end
+    # Context initialization and destruction
+    @blocking = true
+    attach_function :zmq_init, [:int], :pointer
+    @blocking = true
+    attach_function :zmq_term, [:pointer], :int
 
-
-    # Message api
+    # Message API
     @blocking = true
     attach_function :zmq_msg_init, [:pointer], :int
     @blocking = true
@@ -98,9 +97,13 @@ module ZMQ
       :vsm_data, [:uint8, 30]
     end # class Msg
 
-    # Socket api
+    # Socket API
+    @blocking = true
+    attach_function :zmq_socket, [:pointer, :int], :pointer
     @blocking = true
     attach_function :zmq_setsockopt, [:pointer, :int, :pointer, :int], :int
+    @blocking = true
+    attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :pointer], :int
     @blocking = true
     attach_function :zmq_bind, [:pointer, :string], :int
     @blocking = true
@@ -108,7 +111,11 @@ module ZMQ
     @blocking = true
     attach_function :zmq_close, [:pointer], :int
 
-    # Poll api
+    # Device API
+    @blocking = true
+    attach_function :zmq_device, [:int, :pointer, :pointer], :int
+
+    # Poll API
     @blocking = true
     attach_function :zmq_poll, [:pointer, :int, :long], :int
 
@@ -127,7 +134,7 @@ module ZMQ
       include PollItemLayout
 
       def socket() self[:socket]; end
-      
+
       def fd() self[:fd]; end
 
       def readable?
@@ -159,13 +166,9 @@ module ZMQ
     module LibZMQ
       # Socket api
       @blocking = true
-      attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :pointer], :int
-      @blocking = true
       attach_function :zmq_recv, [:pointer, :pointer, :int], :int
       @blocking = true
       attach_function :zmq_send, [:pointer, :pointer, :int], :int
-      @blocking = true
-      attach_function :zmq_device, [:int, :pointer, :pointer], :int
     end
   end
 
@@ -175,9 +178,37 @@ module ZMQ
   if LibZMQ.version3?
 
     module LibZMQ
-      # Socket api
+      # New Context API
       @blocking = true
-      attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :pointer], :int
+      attach_function :zmq_ctx_new, [], :pointer
+      @blocking = true
+      attach_function :zmq_ctx_destroy, [:pointer], :int
+      @blocking = true
+      attach_function :zmq_ctx_set, [:pointer, :int, :int], :int
+      @blocking = true
+      attach_function :zmq_ctx_get, [:pointer, :int], :int
+
+      # Message API
+      @blocking = true
+      attach_function :zmq_msg_send, [:pointer, :pointer, :int], :int
+      @blocking = true
+      attach_function :zmq_msg_recv, [:pointer, :pointer, :int], :int
+      @blocking = true
+      attach_function :zmq_msg_more, [:pointer], :int
+      @blocking = true
+      attach_function :zmq_msg_get, [:pointer, :int], :int
+      @blocking = true
+      attach_function :zmq_msg_set, [:pointer, :int, :int], :int
+      
+      # Monitoring API
+      @blocking = true
+      attach_function :zmq_ctx_set_monitor, [:pointer, :pointer], :int
+
+      # Socket API
+      @blocking = true
+      attach_function :zmq_unbind, [:pointer, :string], :int
+      @blocking = true
+      attach_function :zmq_disconnect, [:pointer, :string], :int
       @blocking = true
       attach_function :zmq_recvmsg, [:pointer, :pointer, :int], :int
       @blocking = true
@@ -186,6 +217,33 @@ module ZMQ
       attach_function :zmq_sendmsg, [:pointer, :pointer, :int], :int
       @blocking = true
       attach_function :zmq_send, [:pointer, :pointer, :size_t, :int], :int
+      
+      module EventDataLayout
+        def self.included(base)
+          base.class_eval do
+            layout :addr,  :string,
+            :field2,    :int
+          end
+        end
+      end # module EventDataLayout
+
+      class EventData < FFI::Struct
+        include EventDataLayout
+
+        def addr() self[:addr]; end
+        alias :address :addr
+
+        def fd() self[:field2]; end
+        alias :err :fd
+        alias :interval :fd
+
+        def inspect
+          "addr [#{addr}], fd [#{fd}], field2 [#{fd}]"
+        end
+
+        def to_s; inspect; end
+      end # class EventData
+      
     end
   end
 
