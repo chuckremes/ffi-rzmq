@@ -102,17 +102,21 @@ module ZMQ
       include APIHelper
       
       before(:all) do
-        @context = Context.new
       end
       
       before(:each) do
+        # Must recreate context for each test otherwise some poll tests fail.
+        # This is likely due to a race condition in event handling when reusing
+        # the same inproc inside the same context over and over. Making a new
+        # context solves it.
+        @context = Context.new
         endpoint = "inproc://poll_test"
-        @socket = @context.socket(REQ)
-        @socket2 = @context.socket(REP)
+        @socket = @context.socket(DEALER)
+        @socket2 = @context.socket(ROUTER)
         @socket.setsockopt(LINGER, 0)
         @socket2.setsockopt(LINGER, 0)
-        @socket2.bind(endpoint)
-        connect_to_inproc(@socket, endpoint)
+        @socket.bind(endpoint)
+        connect_to_inproc(@socket2, endpoint)
 
         @poller = Poller.new
       end
@@ -120,29 +124,25 @@ module ZMQ
       after(:each) do
         @socket.close
         @socket2.close
-      end
-      
-      after(:all) do
         @context.terminate
       end
       
       it "returns 0 when there are no sockets to poll" do
-        rc = @poller.poll(0)
+        rc = @poller.poll(100)
         rc.should be_zero
       end
       
       it "returns 0 when there is a single socket to poll and no events" do
         @poller.register(@socket, 0)
-        rc = @poller.poll(0)
+        rc = @poller.poll(100)
         rc.should be_zero
       end
       
       it "returns 1 when there is a read event on a socket" do
-        @poller.register_writable(@socket)
         @poller.register_readable(@socket2)
         
         @socket.send_string('test')
-        rc = @poller.poll(:blocking)
+        rc = @poller.poll(1000)
         rc.should == 1
       end
       
@@ -152,9 +152,8 @@ module ZMQ
         
         @socket.send_string('test')
         @poller.deregister_writable(@socket)
-        @socket.close
 
-        rc = @poller.poll(:blocking)
+        rc = @poller.poll(1000)
         rc.should == 1
       end
     end # poll

@@ -11,19 +11,13 @@ module ZMQ
 
       let(:string) { "booga-booga" }
 
-      before(:all) do
-        @context = ZMQ::Context.new
-        poller_setup
-      end
-      
-      after(:all) do
-        @context.terminate
-      end
-
       # reset sockets each time because we only send 1 message which leaves
       # the REQ socket in a bad state. It cannot send again unless we were to
       # send a reply with the REP and read it.
       before(:each) do
+        @context = ZMQ::Context.new
+        poller_setup
+
         endpoint = "inproc://reqrep_test"
         @ping = @context.socket ZMQ::REQ
         @pong = @context.socket ZMQ::REP
@@ -34,6 +28,7 @@ module ZMQ
       after(:each) do
         @ping.close
         @pong.close
+        @context.terminate
       end
       
       def send_ping(string)

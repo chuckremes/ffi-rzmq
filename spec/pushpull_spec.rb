@@ -8,16 +8,12 @@ module ZMQ
 
       let(:string) { "booga-booga" }
       
-      before(:all) do
+      before(:each) do
+        # Use new context for each iteration to avoid inproc race. See
+        # poll_spec.rb for more details.
         @context = Context.new
         poller_setup
-      end
-      
-      after(:all) do
-        @context.terminate
-      end
 
-      before(:each) do
         @push = @context.socket ZMQ::PUSH
         @pull = @context.socket ZMQ::PULL
         @push.setsockopt ZMQ::LINGER, 0
@@ -31,6 +27,7 @@ module ZMQ
       after(:each) do
         @push.close
         @pull.close
+        @context.terminate
       end
 
       it "should receive an exact copy of the sent message using Message objects directly on one pull socket" do
