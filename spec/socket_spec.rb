@@ -80,50 +80,50 @@ module ZMQ
 
 
 
-      context "identity=" do
-        before(:all) { @ctx = Context.new }
-        after(:all) { @ctx.terminate }
+    context "identity=" do
+      before(:all) { @ctx = Context.new }
+      after(:all) { @ctx.terminate }
 
-        it "fails to set identity for identities in excess of 255 bytes" do
-          sock = Socket.new @ctx.pointer, ZMQ::REQ
+      it "fails to set identity for identities in excess of 255 bytes" do
+        sock = Socket.new @ctx.pointer, ZMQ::REQ
 
-          sock.identity = ('a' * 256)
-          sock.identity.should == ''
-          sock.close
-        end
+        sock.identity = ('a' * 256)
+        sock.identity.should == ''
+        sock.close
+      end
 
-        it "fails to set identity for identities of length 0" do
-          sock = Socket.new @ctx.pointer, ZMQ::REQ
+      it "fails to set identity for identities of length 0" do
+        sock = Socket.new @ctx.pointer, ZMQ::REQ
 
-          sock.identity = ''
-          sock.identity.should == ''
-          sock.close
-        end
+        sock.identity = ''
+        sock.identity.should == ''
+        sock.close
+      end
 
-        it "sets the identity for identities of 1 byte" do
-          sock = Socket.new @ctx.pointer, ZMQ::REQ
+      it "sets the identity for identities of 1 byte" do
+        sock = Socket.new @ctx.pointer, ZMQ::REQ
 
-          sock.identity = 'a'
-          sock.identity.should == 'a'
-          sock.close
-        end
+        sock.identity = 'a'
+        sock.identity.should == 'a'
+        sock.close
+      end
 
-        it "set the identity identities of 255 bytes" do
-          sock = Socket.new @ctx.pointer, ZMQ::REQ
+      it "set the identity identities of 255 bytes" do
+        sock = Socket.new @ctx.pointer, ZMQ::REQ
 
-          sock.identity = ('a' * 255)
-          sock.identity.should == ('a' * 255)
-          sock.close
-        end
+        sock.identity = ('a' * 255)
+        sock.identity.should == ('a' * 255)
+        sock.close
+      end
 
-        it "should convert numeric identities to strings" do
-          sock = Socket.new @ctx.pointer, ZMQ::REQ
+      it "should convert numeric identities to strings" do
+        sock = Socket.new @ctx.pointer, ZMQ::REQ
 
-          sock.identity = 7
-          sock.identity.should == '7'
-          sock.close
-        end
-      end # context identity=
+        sock.identity = 7
+        sock.identity.should == '7'
+        sock.close
+      end
+    end # context identity=
 
 
 
@@ -142,27 +142,27 @@ module ZMQ
         end
 
 
-          context "using option ZMQ::IDENTITY" do
-            it "should set the identity given any string under 255 characters" do
-              length = 4
-              (1..255).each do |length|
-                identity = 'a' * length
-                socket.setsockopt ZMQ::IDENTITY, identity
+        context "using option ZMQ::IDENTITY" do
+          it "should set the identity given any string under 255 characters" do
+            length = 4
+            (1..255).each do |length|
+              identity = 'a' * length
+              socket.setsockopt ZMQ::IDENTITY, identity
 
-                array = []
-                rc = socket.getsockopt(ZMQ::IDENTITY, array)
-                rc.should == 0
-                array[0].should == identity
-              end
-            end
-
-            it "returns -1 given a string 256 characters or longer" do
-              identity = 'a' * 256
               array = []
-              rc = socket.setsockopt(ZMQ::IDENTITY, identity)
-              rc.should == -1
+              rc = socket.getsockopt(ZMQ::IDENTITY, array)
+              rc.should == 0
+              array[0].should == identity
             end
-          end # context using option ZMQ::IDENTITY
+          end
+
+          it "returns -1 given a string 256 characters or longer" do
+            identity = 'a' * 256
+            array = []
+            rc = socket.setsockopt(ZMQ::IDENTITY, identity)
+            rc.should == -1
+          end
+        end # context using option ZMQ::IDENTITY
 
 
         if version2?
@@ -234,9 +234,9 @@ module ZMQ
               array[0].should == value
             end
           end # context using option ZMQ::RECOVERY_IVL_MSEC
-          
+
         else # version3 or higher
-          
+
           context "using option ZMQ::IPV4ONLY" do
             it "should enable use of IPV6 sockets when set to 0" do
               value = 0
@@ -267,7 +267,7 @@ module ZMQ
               rc.should == -1
             end
           end # context using option ZMQ::IPV4ONLY
-          
+
 
         end # version2? if/else block
 
@@ -453,7 +453,7 @@ module ZMQ
             array[0].should == value
           end
         end # context using option ZMQ::BACKLOG
-        
+
       end # context #setsockopt
 
 
@@ -542,7 +542,7 @@ module ZMQ
 
     describe "Mapping socket EVENTS to POLLIN and POLLOUT" do
       include APIHelper
-      
+
       shared_examples_for "pubsub sockets where" do
         it "SUB socket that received a message always has POLLIN set" do
           events = []
@@ -574,44 +574,32 @@ module ZMQ
       end # shared example for pubsub
 
       context "when SUB binds and PUB connects" do
-        
-        before(:all) do
-          @ctx = Context.new
-          poller_setup
-        end
-        
-        after(:all) do
-          @ctx.terminate
-        end
 
         before(:each) do
+          @ctx = Context.new
+          poller_setup
+
           endpoint = "inproc://socket_test"
           @sub = @ctx.socket ZMQ::SUB
           rc = @sub.setsockopt ZMQ::SUBSCRIBE, ''
+          rc.should == 0
 
           @pub = @ctx.socket ZMQ::PUB
           @sub.bind(endpoint)
           connect_to_inproc(@pub, endpoint)
 
-          poll_it_for_read(@sub) do
-            rc = @pub.send_string('test')
-          end
+          @pub.send_string('test')
         end
 
         #it_behaves_like "pubsub sockets where" # see Jira LIBZMQ-270
       end # context SUB binds PUB connects
 
       context "when SUB connects and PUB binds" do
-        before(:all) do
-          @ctx = Context.new
-          poller_setup
-        end
-        
-        after(:all) do
-          @ctx.terminate
-        end
 
         before(:each) do
+          @ctx = Context.new
+          poller_setup
+
           endpoint = "inproc://socket_test"
           @sub = @ctx.socket ZMQ::SUB
           rc = @sub.setsockopt ZMQ::SUBSCRIBE, ''
@@ -633,7 +621,7 @@ module ZMQ
         @sub.close
         @pub.close
         # must call close on *every* socket before calling terminate otherwise it blocks indefinitely
-        #@ctx.terminate
+        @ctx.terminate
       end
 
     end # describe 'events mapping to pollin and pollout'
