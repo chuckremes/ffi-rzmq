@@ -57,7 +57,8 @@ module APIHelper
   end
   
   def poll_delivery
-    @helper_poller.poll(:blocking)
+    # timeout after 1 second
+    @helper_poller.poll(1000)
   end
   
   def poll_it_for_read(socket, &blk)

@@ -7,15 +7,6 @@ module ZMQ
   describe Socket do
     include APIHelper
 
-    before(:all) do
-      @ctx = Context.new
-      poller_setup
-    end
-
-    after(:all) do
-      @ctx.terminate
-    end
-
 
     shared_examples_for "any socket" do
 
@@ -42,13 +33,11 @@ module ZMQ
     shared_examples_for "sockets without exposed envelopes" do
 
       it "read the single message and returns a successful result code" do
-        poller_register_socket(@receiver)
-
-        rc = @sender.send_string('test')
-        Util.resultcode_ok?(rc).should be_true
-        poll_delivery
-        poller_deregister_socket(@receiver)
-
+        poll_it_for_read(@receiver) do
+          rc = @sender.send_string('test')
+          Util.resultcode_ok?(rc).should be_true
+        end
+        
         array = []
         rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
         Util.resultcode_ok?(rc).should be_true
@@ -104,41 +93,49 @@ module ZMQ
       describe "non-blocking #recvmsgs where sender connects & receiver binds" do
         include APIHelper
 
-        before(:all) do
+        before(:each) do
+          @context = Context.new
+          poller_setup
+
           endpoint = "inproc://nonblocking_test"
-          @receiver = @ctx.socket ZMQ::SUB
+          @receiver = @context.socket ZMQ::SUB
           assert_ok(@receiver.setsockopt(ZMQ::SUBSCRIBE, ''))
-          @sender = @ctx.socket ZMQ::PUB
+          @sender = @context.socket ZMQ::PUB
           @receiver.bind(endpoint)
           connect_to_inproc(@sender, endpoint)
         end
 
-        after(:all) do
+        after(:each) do
           @receiver.close
           @sender.close
+          @context.terminate
         end
 
         it_behaves_like "any socket"
-        it_behaves_like "sockets without exposed envelopes" # see Jira LIBZMQ-270; fails with tcp transport
+        #it_behaves_like "sockets without exposed envelopes" # see Jira LIBZMQ-270; fails with tcp transport
 
       end # describe 'non-blocking recvmsgs'
 
       describe "non-blocking #recvmsgs where sender binds & receiver connects" do
         include APIHelper
 
-        before(:all) do
+        before(:each) do
+          @context = Context.new
+          poller_setup
+
           endpoint = "inproc://nonblocking_test"
-          @receiver = @ctx.socket ZMQ::SUB
+          @receiver = @context.socket ZMQ::SUB
           port = connect_to_random_tcp_port(@receiver)
           assert_ok(@receiver.setsockopt(ZMQ::SUBSCRIBE, ''))
-          @sender = @ctx.socket ZMQ::PUB
+          @sender = @context.socket ZMQ::PUB
           @sender.bind(endpoint)
           connect_to_inproc(@receiver, endpoint)
         end
 
-        after(:all) do
+        after(:each) do
           @receiver.close
           @sender.close
+          @context.terminate
         end
 
         it_behaves_like "any socket"
@@ -154,9 +151,12 @@ module ZMQ
         include APIHelper
 
         before(:each) do
+          @context = Context.new
+          poller_setup
+
           endpoint = "inproc://nonblocking_test"
-          @receiver = @ctx.socket ZMQ::REP
-          @sender = @ctx.socket ZMQ::REQ
+          @receiver = @context.socket ZMQ::REP
+          @sender = @context.socket ZMQ::REQ
           @receiver.bind(endpoint)
           connect_to_inproc(@sender, endpoint)
         end
@@ -164,6 +164,7 @@ module ZMQ
         after(:each) do
           @receiver.close
           @sender.close
+          @context.terminate
         end
 
         it_behaves_like "any socket"
@@ -175,9 +176,12 @@ module ZMQ
         include APIHelper
 
         before(:each) do
+          @context = Context.new
+          poller_setup
+
           endpoint = "inproc://nonblocking_test"
-          @receiver = @ctx.socket ZMQ::REP
-          @sender = @ctx.socket ZMQ::REQ
+          @receiver = @context.socket ZMQ::REP
+          @sender = @context.socket ZMQ::REQ
           @sender.bind(endpoint)
           connect_to_inproc(@receiver, endpoint)
         end
@@ -185,6 +189,7 @@ module ZMQ
         after(:each) do
           @receiver.close
           @sender.close
+          @context.terminate
         end
 
         it_behaves_like "any socket"
@@ -200,17 +205,21 @@ module ZMQ
       describe "non-blocking #recvmsgs where sender connects & receiver binds" do
         include APIHelper
 
-        before(:all) do
+        before(:each) do
+          @context = Context.new
+          poller_setup
+
           endpoint = "inproc://nonblocking_test"
-          @receiver = @ctx.socket ZMQ::PULL
-          @sender = @ctx.socket ZMQ::PUSH
+          @receiver = @context.socket ZMQ::PULL
+          @sender = @context.socket ZMQ::PUSH
           @receiver.bind(endpoint)
           connect_to_inproc(@sender, endpoint)
         end
 
-        after(:all) do
+        after(:each) do
           @receiver.close
           @sender.close
+          @context.terminate
         end
 
         it_behaves_like "any socket"
@@ -221,17 +230,21 @@ module ZMQ
       describe "non-blocking #recvmsgs where sender binds & receiver connects" do
         include APIHelper
 
-        before(:all) do
+        before(:each) do
+          @context = Context.new
+          poller_setup
+
           endpoint = "inproc://nonblocking_test"
-          @receiver = @ctx.socket ZMQ::PULL
-          @sender = @ctx.socket ZMQ::PUSH
+          @receiver = @context.socket ZMQ::PULL
+          @sender = @context.socket ZMQ::PUSH
           @sender.bind(endpoint)
           connect_to_inproc(@receiver, endpoint)
         end
 
-        after(:all) do
+        after(:each) do
           @receiver.close
           @sender.close
+          @context.terminate
         end
 
         it_behaves_like "any socket"
@@ -247,17 +260,21 @@ module ZMQ
       describe "non-blocking #recvmsgs where sender connects & receiver binds" do
         include APIHelper
 
-        before(:all) do
+        before(:each) do
+          @context = Context.new
+          poller_setup
+
           endpoint = "inproc://nonblocking_test"
-          @receiver = @ctx.socket ZMQ::ROUTER
-          @sender = @ctx.socket ZMQ::DEALER
+          @receiver = @context.socket ZMQ::ROUTER
+          @sender = @context.socket ZMQ::DEALER
           @receiver.bind(endpoint)
           connect_to_inproc(@sender, endpoint)
         end
 
-        after(:all) do
+        after(:each) do
           @receiver.close
           @sender.close
+          @context.terminate
         end
 
         it_behaves_like "any socket"
@@ -268,17 +285,21 @@ module ZMQ
       describe "non-blocking #recvmsgs where sender binds & receiver connects" do
         include APIHelper
 
-        before(:all) do
+        before(:each) do
+          @context = Context.new
+          poller_setup
+
           endpoint = "inproc://nonblocking_test"
-          @receiver = @ctx.socket ZMQ::ROUTER
-          @sender = @ctx.socket ZMQ::DEALER
+          @receiver = @context.socket ZMQ::ROUTER
+          @sender = @context.socket ZMQ::DEALER
           @sender.bind(endpoint)
           connect_to_inproc(@receiver, endpoint)
         end
 
-        after(:all) do
+        after(:each) do
           @receiver.close
           @sender.close
+          @context.terminate
         end
 
         it_behaves_like "any socket"
@@ -294,17 +315,21 @@ module ZMQ
       describe "non-blocking #recvmsgs where sender connects & receiver binds" do
         include APIHelper
 
-        before(:all) do
+        before(:each) do
+          @context = Context.new
+          poller_setup
+
           endpoint = "inproc://nonblocking_test"
-          @receiver = @ctx.socket ZMQ::XREP
-          @sender = @ctx.socket ZMQ::XREQ
+          @receiver = @context.socket ZMQ::XREP
+          @sender = @context.socket ZMQ::XREQ
           @receiver.bind(endpoint)
           connect_to_inproc(@sender, endpoint)
         end
 
-        after(:all) do
+        after(:each) do
           @receiver.close
           @sender.close
+          @context.terminate
         end
 
         it_behaves_like "any socket"
@@ -315,17 +340,21 @@ module ZMQ
       describe "non-blocking #recvmsgs where sender binds & receiver connects" do
         include APIHelper
 
-        before(:all) do
+        before(:each) do
+          @context = Context.new
+          poller_setup
+
           endpoint = "inproc://nonblocking_test"
-          @receiver = @ctx.socket ZMQ::XREP
-          @sender = @ctx.socket ZMQ::XREQ
+          @receiver = @context.socket ZMQ::XREP
+          @sender = @context.socket ZMQ::XREQ
           @sender.bind(endpoint)
           connect_to_inproc(@receiver, endpoint)
         end
 
-        after(:all) do
+        after(:each) do
           @receiver.close
           @sender.close
+          @context.terminate
         end
 
         it_behaves_like "any socket"
