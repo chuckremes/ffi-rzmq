@@ -10,22 +10,32 @@ module ZMQ
       # bias the library discovery to a path inside the gem first, then
       # to the usual system paths
       inside_gem = File.join(File.dirname(__FILE__), '..', '..', 'ext')
-      lib_paths  = ['/usr/local/lib', '/opt/local/lib', '/usr/local/homebrew/lib',
-      '/usr/lib']
-      lib_paths << '/usr/lib64' if FFI::Platform::ARCH == 'x86_64'
-
-      ZMQ_LIB_PATHS = [inside_gem, *lib_paths].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
+      if FFI::Platform::IS_WINDOWS
+        local_path=ENV['PATH'].split(';')
+      else
+        local_path=ENV['PATH'].split(':')
+      end
+      ZMQ_LIB_PATHS = [
+        inside_gem, '/usr/local/lib', '/opt/local/lib', '/usr/local/homebrew/lib', '/usr/lib64'
+      ].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
       ffi_lib(ZMQ_LIB_PATHS + %w{libzmq})
     rescue LoadError
-      STDERR.puts "Unable to load this gem. The libzmq library (or DLL) could not be found."
-      STDERR.puts "If this is a Windows platform, make sure libzmq.dll is on the PATH."
-      STDERR.puts "If the DLL was built with mingw, make sure the other two dependent DLLs,"
-      STDERR.puts "libgcc_s_sjlj-1.dll and libstdc++6.dll, are also on the PATH."
-      STDERR.puts "For non-Windows platforms, make sure libzmq is located in this search path:"
-      STDERR.puts ZMQ_LIB_PATHS.inspect
-      raise LoadError, "The libzmq library (or DLL) could not be found"
+      if ZMQ_LIB_PATHS.push(*local_path).any? {|path|
+        File.file? File.join(path, "libzmq.#{FFI::Platform::LIBSUFFIX}")}
+        warn "Unable to load this gem. The libzmq library exists, but cannot be loaded."
+        warn "If this is Windows:"
+        warn "-  Check that you have MSVC runtime installed or statically linked"
+        warn "-  Check that your DLL is compiled for #{FFI::Platform::ADDRESS_SIZE} bit"
+      else
+        warn "Unable to load this gem. The libzmq library (or DLL) could not be found."
+        warn "If this is a Windows platform, make sure libzmq.dll is on the PATH."
+        warn "If the DLL was built with mingw, make sure the other two dependent DLLs,"
+        warn "libgcc_s_sjlj-1.dll and libstdc++6.dll, are also on the PATH."
+        warn "For non-Windows platforms, make sure libzmq is located in this search path:"
+        warn ZMQ_LIB_PATHS.inspect
+      end
+      raise LoadError, "The libzmq library (or DLL) could not be loaded"
     end
-
     # Size_t not working properly on Windows
     find_type(:size_t) rescue typedef(:ulong, :size_t)
 
