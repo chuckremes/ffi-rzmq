@@ -1,3 +1,26 @@
+== 0.9.6 / 20120808
+  * Never released 0.9.5 as a gem. It was available via github only.
+  
+  * Improved error message when DLL loading fails on Windows.
+  
+  * Added support for 0mq 2.2. Support for 2.1 might be getting shakey...
+    patches to make it fully support 2.1 (assuming it's even broken at
+    all) are welcome.
+  
+  * Added support for 0mq 3.2 (no support for 3.0 or 3.1). Not all methods
+    are exposed yet. For example, setting values on the context after it
+    has been created is not supported; instead, pass the correct keys
+    (:io_threads and :max_sockets) to the call to Context.create or
+    Context#new.
+    
+  * Reduced spec running time from 30+ seconds to under 1 by eliminating
+    most uses of "sleep." It now polls sockets to wait for message
+    delivery. It also uses a technique of binding an inproc transport and
+    busy-looping on the connect side until it succeeds. These techniques
+    both allowed me to eliminate most uses of sleep.
+    
+  * Some changes to support usage on Win7x64 with a 64-bit libzmq DLL.
+
 == 0.9.5 / 20120119
   * BROKE THE API.
     In 0mq 2.x, there were two functions zmq_send() and zmq_recv().
