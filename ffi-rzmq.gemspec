@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.name        = "ffi-rzmq"
   s.version     = ZMQ::VERSION
   s.authors     = ["Chuck Remes"]
-  s.email       = ["cremes@mac.com"]
+  s.email       = ["git@chuckremes.com"]
   s.homepage    = "http://github.com/chuckremes/ffi-rzmq"
   s.summary     = %q{This gem wraps the ZeroMQ (0mq) networking library using Ruby FFI (foreign function interface).}
   s.description = %q{This gem wraps the ZeroMQ networking library using the ruby FFI (foreign
