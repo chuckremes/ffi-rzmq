@@ -28,8 +28,8 @@ module ZMQ
     # frequency.
     #
     # Returns 0 when there are no registered sockets that are readable
-    # or writable. 
-    # 
+    # or writable.
+    #
     # Return 1 (or greater) to indicate the number of readable or writable
     # sockets. These sockets should be processed using the #readables and
     # #writables accessors.
@@ -41,11 +41,11 @@ module ZMQ
       unless @items.empty?
         timeout = adjust timeout
         items_triggered = LibZMQ.zmq_poll @items.address, @items.size, timeout
-        
+
         if Util.resultcode_ok?(items_triggered)
           update_selectables
         end
-        
+
         items_triggered
       else
         0
@@ -103,7 +103,7 @@ module ZMQ
         # change the value in place
         item[:events] ^= events
 
-        delete sock if item[:events].zero?
+        delete sock if item[:events].zero? || sock.socket.nil?
         true
       else
         false
@@ -141,17 +141,27 @@ module ZMQ
     # Can also be called directly to remove the socket from the polling
     # array.
     #
+    # Sockets must be deleted before they are closed otherwise there is
+    # no way to remove it from the polled items array. Attempting to
+    # delete a closed socket triggers a very slow code path to figure
+    # out which socket should be deleted.
+    #
     def delete sock
       unless (size = @sockets.size).zero?
-        @sockets.delete_if { |socket| socket.socket.address == sock.socket.address }
-        socket_deleted = size != @sockets.size
+        if sock.socket.nil?
+          # slow code path! need to iterate through all sockets in the
+          # poll items array to figure out which one has been closed
+          slow_path_delete(sock)
+        else
+          @sockets.delete_if { |socket| socket.socket.address == sock.socket.address }
+          socket_deleted = size != @sockets.size
 
-        item_deleted = @items.delete sock
+          item_deleted = @items.delete sock
 
-        raw_deleted = @raw_to_socket.delete(sock.socket.address)
+          raw_deleted = @raw_to_socket.delete(sock.socket.address)
 
-        socket_deleted && item_deleted && raw_deleted
-        
+          socket_deleted && item_deleted && raw_deleted
+        end
       else
         false
       end
@@ -183,9 +193,25 @@ module ZMQ
         if poll_item.readable?
           @readables << (poll_item.socket.address.zero? ? poll_item.fd : @raw_to_socket[poll_item.socket.address])
         end
-        
+
         if poll_item.writable?
           @writables << (poll_item.socket.address.zero? ? poll_item.fd : @raw_to_socket[poll_item.socket.address])
+        end
+      end
+    end
+    
+    # Retrieves each socket from the PollItems array. If the item
+    # cannot be matched to an element of the sockets array, we
+    # delete that item from PollItems and do some clean up.
+    def slow_path_delete sock
+      @sockets.delete sock
+      @items.each_with_index do |poll_item, index|
+        found = @sockets.find { |socket| socket.socket.address == poll_item.socket.address }
+        
+        unless found
+          @raw_to_socket.delete(poll_item.socket.address)
+          @items.delete_at(index)
+          break true
         end
       end
     end
