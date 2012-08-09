@@ -95,6 +95,15 @@ module ZMQ
         socket2.close
       end
       
+      it "returns true for a successfully deleted socket when the socket has been previously closed" do
+        socket1 = @context.socket(REP)
+        socket1.setsockopt(LINGER, 0)
+
+        @poller.register socket1
+        socket1.close
+        @poller.delete(socket1).should be_true
+      end
+      
     end
     
     
