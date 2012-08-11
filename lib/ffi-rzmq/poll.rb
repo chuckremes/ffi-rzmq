@@ -80,7 +80,7 @@ module ZMQ
           item[:socket] = sock.socket
           item[:fd] = 0
         else
-          item[:socket] = FFI::MemoryPointer.new(0)
+          item[:socket] = nil
           item[:fd] = fd
         end
 
@@ -199,7 +199,7 @@ module ZMQ
         end
       end
     end
-    
+
     # Retrieves each socket from the PollItems array. If the item
     # cannot be matched to an element of the sockets array, we
     # delete that item from PollItems and do some clean up.
@@ -207,7 +207,7 @@ module ZMQ
       @sockets.delete sock
       @items.each_with_index do |poll_item, index|
         found = @sockets.find { |socket| socket.socket.address == poll_item.socket.address }
-        
+
         unless found
           @raw_to_socket.delete(poll_item.socket.address)
           @items.delete_at(index)
