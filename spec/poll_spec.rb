@@ -173,8 +173,8 @@ module ZMQ
         client = TCPSocket.new("127.0.0.1", port)
         s = server.accept
 
-        @poller.register(s, ZMQ::POLLIN, s.fileno)
-        @poller.register(client, ZMQ::POLLOUT, client.fileno)
+        @poller.register_readable(s)
+        @poller.register_writable(client)
 
         client.send("message", 0)
 
@@ -190,8 +190,8 @@ module ZMQ
 
       it "works with io objects" do
         r, w = IO.pipe
-        @poller.register(r, ZMQ::POLLIN, r.fileno)
-        @poller.register(w, ZMQ::POLLOUT, w.fileno)
+        @poller.register_readable(r)
+        @poller.register_writable(w)
 
         w.write("message")
 

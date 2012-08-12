@@ -113,13 +113,23 @@ module ZMQ
     # A helper method to register a +sock+ as readable events only.
     #
     def register_readable sock
-      register sock, ZMQ::POLLIN, 0
+      case sock
+      when BasicSocket, IO
+        register sock, ZMQ::POLLIN, sock.fileno
+      when ZMQ::Socket
+        register sock, ZMQ::POLLIN, 0
+      end
     end
 
     # A helper method to register a +sock+ for writable events only.
     #
     def register_writable sock
-      register sock, ZMQ::POLLOUT, 0
+      case sock
+      when BasicSocket, IO
+        register sock, ZMQ::POLLOUT, sock.fileno
+      when ZMQ::Socket
+        register sock, ZMQ::POLLOUT, 0
+      end
     end
 
     # A helper method to deregister a +sock+ for readable events.
