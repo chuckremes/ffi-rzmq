@@ -80,7 +80,7 @@ module ZMQ
           item[:socket] = sock.socket
           item[:fd] = 0
         else
-          item[:socket] = FFI::MemoryPointer.new(0)
+          item[:socket] = nil
           item[:fd] = fd
         end
 
@@ -113,13 +113,22 @@ module ZMQ
     # A helper method to register a +sock+ as readable events only.
     #
     def register_readable sock
-      register sock, ZMQ::POLLIN, 0
+      case sock
+      when BasicSocket, IO
+        register sock, ZMQ::POLLIN, sock.fileno
+      when ZMQ::Socket
+        register sock, ZMQ::POLLIN, 0
+      end
     end
 
     # A helper method to register a +sock+ for writable events only.
     #
     def register_writable sock
-      register sock, ZMQ::POLLOUT, 0
+      if sock.respond_to?(:fileno)
+        register sock, ZMQ::POLLOUT, sock.fileno
+      else
+        register sock, ZMQ::POLLOUT, 0
+      end
     end
 
     # A helper method to deregister a +sock+ for readable events.
@@ -199,7 +208,7 @@ module ZMQ
         end
       end
     end
-    
+
     # Retrieves each socket from the PollItems array. If the item
     # cannot be matched to an element of the sockets array, we
     # delete that item from PollItems and do some clean up.
@@ -207,7 +216,7 @@ module ZMQ
       @sockets.delete sock
       @items.each_with_index do |poll_item, index|
         found = @sockets.find { |socket| socket.socket.address == poll_item.socket.address }
-        
+
         unless found
           @raw_to_socket.delete(poll_item.socket.address)
           @items.delete_at(index)
