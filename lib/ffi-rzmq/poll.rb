@@ -124,10 +124,9 @@ module ZMQ
     # A helper method to register a +sock+ for writable events only.
     #
     def register_writable sock
-      case sock
-      when BasicSocket, IO
+      if sock.respond_to?(:fileno)
         register sock, ZMQ::POLLOUT, sock.fileno
-      when ZMQ::Socket
+      else
         register sock, ZMQ::POLLOUT, 0
       end
     end
