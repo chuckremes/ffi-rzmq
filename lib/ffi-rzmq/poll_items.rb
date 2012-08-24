@@ -36,26 +36,36 @@ module ZMQ
       @items << obj
     end
     alias :push :<<
-    
-    def delete sock
-      address = sock.socket.address
+
+    def delete pollable
       found = false
-      
-      each_with_index do |item, index|
-        if address == item[:socket].address
-          @items.delete_at index
-          found = true
-          @dirty = true
-          clean
-          break
+
+      case
+      when pollable.respond_to?(:socket)
+        each_with_index do |item, index|
+          if item[:socket].address == pollable.socket.address
+            @items.delete_at index
+            found = @dirty = true
+            clean
+            break
+          end
+        end
+      when pollable.respond_to?(:fileno)
+        each_with_index do |item, index|
+          if item[:fd] == pollable.fileno
+            @items.delete_at index
+            found = @dirty = true
+            clean
+            break
+          end
         end
       end
-      
+
       # these semantics are different from the usual Array#delete; returns a
       # boolean instead of the actual item or nil
       found
     end
-    
+
     def delete_at index
       value = nil
       unless @items.empty?
@@ -63,7 +73,7 @@ module ZMQ
         @dirty = true
         clean
       end
-      
+
       value
     end
 
@@ -86,14 +96,14 @@ module ZMQ
         index += 1
       end
     end
-    
+
     def inspect
       clean
       str = ""
       each { |item| str << "ptr [#{item[:socket]}], events [#{item[:events]}], revents [#{item[:revents]}], " }
       str.chop.chop
     end
-    
+
     def to_s(); inspect; end
 
     private

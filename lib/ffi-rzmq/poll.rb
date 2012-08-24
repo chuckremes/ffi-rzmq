@@ -1,14 +1,17 @@
+require 'forwardable'
 
 module ZMQ
 
   class Poller
+    extend Forwardable
 
+    def_delegators :@poll_items, :size, :inspect
     attr_reader :readables, :writables
 
     def initialize
-      @items = ZMQ::PollItems.new
-      @raw_to_socket = {}
-      @sockets = []
+      @poll_items = ZMQ::PollItems.new
+      @key_to_pollable = {}
+      @pollables = []
       @readables = []
       @writables = []
     end
@@ -38,9 +41,9 @@ module ZMQ
     # error number.
     #
     def poll timeout = :blocking
-      unless @items.empty?
+      unless @poll_items.empty?
         timeout = adjust timeout
-        items_triggered = LibZMQ.zmq_poll @items.address, @items.size, timeout
+        items_triggered = LibZMQ.zmq_poll @poll_items.address, @poll_items.size, timeout
 
         if Util.resultcode_ok?(items_triggered)
           update_selectables
@@ -62,30 +65,27 @@ module ZMQ
       poll 0
     end
 
-    # Register the +sock+ for +events+. This method is idempotent meaning
+    # Register the +pollable+ for +events+. This method is idempotent meaning
     # it can be called multiple times with the same data and the socket
     # will only get registered at most once. Calling multiple times with
     # different values for +events+ will OR the event information together.
     #
-    def register sock, events = ZMQ::POLLIN | ZMQ::POLLOUT, fd = 0
-      return false if (sock.nil? && fd.zero?) || events.zero?
+    def register pollable, events = ZMQ::POLLIN | ZMQ::POLLOUT
+      return false if pollable.nil? || events.zero?
 
-      item = @items.get(@sockets.index(sock))
+      unless item = @poll_items.get(@pollables.index(pollable))
+        @pollables << pollable
 
-      unless item
-        @sockets << sock
         item = LibZMQ::PollItem.new
-
-        if sock.kind_of?(ZMQ::Socket) || sock.kind_of?(Socket)
-          item[:socket] = sock.socket
-          item[:fd] = 0
-        else
-          item[:socket] = FFI::MemoryPointer.new(0)
-          item[:fd] = fd
+        case
+        when pollable.respond_to?(:socket)
+          item[:socket], key = pollable.socket, pollable.socket.address
+        when pollable.respond_to?(:fileno)
+          item[:fd], key = pollable.fileno, pollable.fileno
         end
 
-        @raw_to_socket[item.socket.address] = sock
-        @items << item
+        @key_to_pollable[key] = pollable
+        @poll_items << item
       end
 
       item[:events] |= events
@@ -94,44 +94,44 @@ module ZMQ
     # Deregister the +sock+ for +events+. When there are no events left,
     # this also deletes the socket from the poll items.
     #
-    def deregister sock, events, fd = 0
-      return unless sock || !fd.zero?
+    def deregister pollable, events
+      return unless pollable
 
-      item = @items.get(@sockets.index(sock))
+      item = @poll_items.get(@pollables.index(pollable))
 
       if item && (item[:events] & events) > 0
         # change the value in place
         item[:events] ^= events
 
-        delete sock if item[:events].zero? || sock.socket.nil?
+        delete pollable if item[:events].zero? || (pollable.respond_to?(:socket) && pollable.socket.nil?)
         true
       else
         false
       end
     end
 
-    # A helper method to register a +sock+ as readable events only.
+    # A helper method to register a +pollable+ as readable events only.
     #
-    def register_readable sock
-      register sock, ZMQ::POLLIN, 0
+    def register_readable pollable
+      register pollable, ZMQ::POLLIN
     end
 
-    # A helper method to register a +sock+ for writable events only.
+    # A helper method to register a +pollable+ for writable events only.
     #
-    def register_writable sock
-      register sock, ZMQ::POLLOUT, 0
+    def register_writable pollable
+      register pollable, ZMQ::POLLOUT
     end
 
-    # A helper method to deregister a +sock+ for readable events.
+    # A helper method to deregister a +pollable+ for readable events.
     #
-    def deregister_readable sock
-      deregister sock, ZMQ::POLLIN, 0
+    def deregister_readable pollable
+      deregister pollable, ZMQ::POLLIN
     end
 
-    # A helper method to deregister a +sock+ for writable events.
+    # A helper method to deregister a +pollable+ for writable events.
     #
-    def deregister_writable sock
-      deregister sock, ZMQ::POLLOUT, 0
+    def deregister_writable pollable
+      deregister pollable, ZMQ::POLLOUT
     end
 
     # Deletes the +sock+ for all subscribed events. Called internally
@@ -146,71 +146,62 @@ module ZMQ
     # delete a closed socket triggers a very slow code path to figure
     # out which socket should be deleted.
     #
-    def delete sock
-      unless (size = @sockets.size).zero?
-        if sock.socket.nil?
+    def delete pollable
+      size = @pollables.size
+      return false if size.zero?
+
+      case
+      when pollable.respond_to?(:socket)
+        if pollable.socket.nil?
           # slow code path! need to iterate through all sockets in the
           # poll items array to figure out which one has been closed
-          slow_path_delete(sock)
+          slow_path_delete(pollable)
         else
-          @sockets.delete_if { |socket| socket.socket.address == sock.socket.address }
-          socket_deleted = size != @sockets.size
-
-          item_deleted = @items.delete sock
-
-          raw_deleted = @raw_to_socket.delete(sock.socket.address)
-
+          @pollables.delete_if { |p| p.socket.address == pollable.socket.address }
+          socket_deleted = size != @pollables.size
+          item_deleted = @poll_items.delete(pollable)
+          raw_deleted  = @key_to_pollable.delete(pollable.socket.address)
           socket_deleted && item_deleted && raw_deleted
         end
-      else
-        false
+      when pollable.respond_to?(:fileno)
+        @pollables.delete_if { |p| p.fileno == pollable.fileno }
+        socket_deleted = size != @pollables.size
+        item_deleted = @poll_items.delete(pollable)
+        raw_deleted = @key_to_pollable.delete(pollable.fileno)
+        socket_deleted && item_deleted && raw_deleted
       end
     end
 
-    def size(); @items.size; end
-
-    def inspect
-      @items.inspect
-    end
-
-    def to_s(); inspect; end
-
+    def to_s inspect; end
 
     private
-
-    def items_hash hash
-      @items.each do |poll_item|
-        hash[@raw_to_socket[poll_item.socket.address]] = poll_item
-      end
-    end
 
     def update_selectables
       @readables.clear
       @writables.clear
 
-      @items.each do |poll_item|
-        #FIXME: spec for sockets *and* file descriptors
-        if poll_item.readable?
-          @readables << (poll_item.socket.address.zero? ? poll_item.fd : @raw_to_socket[poll_item.socket.address])
-        end
+      @poll_items.each do |poll_item|
+        address = poll_item.socket.address
+        key = address.zero? ? poll_item.fd : address
 
-        if poll_item.writable?
-          @writables << (poll_item.socket.address.zero? ? poll_item.fd : @raw_to_socket[poll_item.socket.address])
-        end
+        @readables << @key_to_pollable[key] if poll_item.readable?
+        @writables << @key_to_pollable[key] if poll_item.writable?
       end
     end
-    
+
     # Retrieves each socket from the PollItems array. If the item
     # cannot be matched to an element of the sockets array, we
     # delete that item from PollItems and do some clean up.
-    def slow_path_delete sock
-      @sockets.delete sock
-      @items.each_with_index do |poll_item, index|
-        found = @sockets.find { |socket| socket.socket.address == poll_item.socket.address }
-        
+    def slow_path_delete pollable
+      @pollables.delete pollable
+      @poll_items.each_with_index do |poll_item, index|
+        found = @pollables.find { |p| p.socket.address == poll_item.socket.address }
+
+        # puts poll_item, index, found
+
         unless found
-          @raw_to_socket.delete(poll_item.socket.address)
-          @items.delete_at(index)
+          @key_to_pollable.delete(poll_item.socket.address)
+          @poll_items.delete_at(index)
           break true
         end
       end
