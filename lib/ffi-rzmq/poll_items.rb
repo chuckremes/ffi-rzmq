@@ -1,99 +1,89 @@
+require 'forwardable'
+require 'ostruct'
 
 module ZMQ
-  class PollItems
-    include Enumerable
+  class PollItem
+    extend Forwardable
 
-    def initialize
-      @element_size = LibZMQ::PollItem.size
-      @store = nil
-      @items = []
+    def_delegators :@poll_item, :pointer, :readable?, :writable?
+    attr_accessor :pollable, :poll_item
+
+    def initialize(pointer = nil)
+      @poll_item = pointer ? LibZMQ::PollItem.new(pointer) : LibZMQ::PollItem.new
     end
 
-    def size; @items.size; end
+    def self.from_pollable(pollable)
+      item = self.new
+      item.pollable = pollable
+      item.socket   = pollable.socket if pollable.respond_to?(:socket)
+      item.fd       = pollable.fileno if pollable.respond_to?(:fileno)
+      item
+    end
 
-    def empty?; @items.empty?; end
+    def socket=(arg)
+      @poll_item[:socket] = arg
+    end
+
+    def fd=(arg)
+      @poll_item[:fd] = arg
+    end
+
+    def events=(arg)
+      @poll_item[:events] = arg
+    end
+
+    def events
+      @poll_item[:events]
+    end
+  end
+
+  class PollItems
+    include Enumerable
+    extend  Forwardable
+
+    def_delegators :@pollables, :size, :empty?
+
+    def initialize
+      @pollables  = {}
+      @item_size  = LibZMQ::PollItem.size
+      @item_store = nil
+    end
 
     def address
       clean
-      @store
+      @item_store
     end
 
-    def get index
-      unless @items.empty? || index.nil?
-        clean
-
-        # pointer arithmetic in ruby! whee!
-        pointer = @store + (@element_size * index)
-
-        # cast the memory to a PollItem
-        LibZMQ::PollItem.new pointer
-      end
+    def get pollable
+      return unless entry = @pollables[pollable]
+      clean
+      pointer = @item_store + (@item_size * entry.index)
+      item = ZMQ::PollItem.new(pointer)
+      item.pollable = pollable
+      item
     end
     alias :[] :get
 
-    def <<(obj)
+    def <<(poll_item)
       @dirty = true
-      @items << obj
+      @pollables[poll_item.pollable] = OpenStruct.new(index: size, data: poll_item)
     end
     alias :push :<<
 
     def delete pollable
-      found = false
-
-      case
-      when pollable.respond_to?(:socket)
-        each_with_index do |item, index|
-          if item[:socket].address == pollable.socket.address
-            @items.delete_at index
-            found = @dirty = true
-            clean
-            break
-          end
-        end
-      when pollable.respond_to?(:fileno)
-        each_with_index do |item, index|
-          if item[:fd] == pollable.fileno
-            @items.delete_at index
-            found = @dirty = true
-            clean
-            break
-          end
-        end
-      end
-
-      # these semantics are different from the usual Array#delete; returns a
-      # boolean instead of the actual item or nil
-      found
-    end
-
-    def delete_at index
-      value = nil
-      unless @items.empty?
-        value = @items.delete_at index
-        @dirty = true
+      if @pollables.delete(pollable)
+        found = @dirty = true
         clean
+      else
+        found = false
       end
-
-      value
+      found
     end
 
     def each &blk
       clean
-      index = 0
-      until index >= @items.size do
-        struct = get index
-        yield struct
-        index += 1
-      end
-    end
-
-    def each_with_index &blk
-      clean
-      index = 0
-      until index >= @items.size do
-        struct = get index
-        yield struct, index
-        index += 1
+      @pollables.each do |pollable, _|
+        yield get(pollable)
       end
     end
 
@@ -104,7 +94,7 @@ module ZMQ
       str.chop.chop
     end
 
-    def to_s(); inspect; end
+    def to_s; inspect; end
 
     private
 
@@ -113,13 +103,13 @@ module ZMQ
     # it is garbage collected that native memory should be automatically freed.
     def clean
       if @dirty
-        @store = FFI::MemoryPointer.new @element_size, @items.size, true
+        @item_store = FFI::MemoryPointer.new @item_size, size, true
 
-        # copy over
         offset = 0
-        @items.each do |item|
-          LibC.memcpy(@store + offset, item.pointer, @element_size)
-          offset += @element_size
+        @pollables.each_with_index do |(pollable, entry), index|
+          entry.index = index
+          LibC.memcpy(@item_store + offset, entry.data.pointer, @item_size)
+          offset += @item_size
         end
 
         @dirty = false

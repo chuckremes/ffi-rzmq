@@ -45,6 +45,7 @@ module ZMQ
       it "should access the raw 0mq socket" do
         raw_socket = FFI::MemoryPointer.new(4)
         socket.should_receive(:respond_to?).with(:socket).and_return(true)
+        socket.should_receive(:respond_to?).with(:fileno).and_return(false)
         socket.should_receive(:socket).any_number_of_times.and_return(raw_socket)
 
         poller.register(socket)

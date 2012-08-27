@@ -1,7 +1,6 @@
 require 'forwardable'
 
 module ZMQ
-
   class Poller
     extend Forwardable
 
@@ -10,8 +9,6 @@ module ZMQ
 
     def initialize
       @poll_items = ZMQ::PollItems.new
-      @key_to_pollable = {}
-      @pollables = []
       @readables = []
       @writables = []
     end
@@ -73,22 +70,12 @@ module ZMQ
     def register pollable, events = ZMQ::POLLIN | ZMQ::POLLOUT
       return false if pollable.nil? || events.zero?
 
-      unless item = @poll_items.get(@pollables.index(pollable))
-        @pollables << pollable
-
-        item = LibZMQ::PollItem.new
-        case
-        when pollable.respond_to?(:socket)
-          item[:socket], key = pollable.socket, pollable.socket.address
-        when pollable.respond_to?(:fileno)
-          item[:fd], key = pollable.fileno, pollable.fileno
-        end
-
-        @key_to_pollable[key] = pollable
+      unless item = @poll_items[pollable]
+        item = PollItem.from_pollable(pollable)
         @poll_items << item
       end
 
-      item[:events] |= events
+      item.events |= events
     end
 
     # Deregister the +sock+ for +events+. When there are no events left,
@@ -97,13 +84,11 @@ module ZMQ
     def deregister pollable, events
       return unless pollable
 
-      item = @poll_items.get(@pollables.index(pollable))
+      item = @poll_items[pollable]
 
-      if item && (item[:events] & events) > 0
-        # change the value in place
-        item[:events] ^= events
-
-        delete pollable if item[:events].zero? || (pollable.respond_to?(:socket) && pollable.socket.nil?)
+      if item && (item.events & events) > 0
+        item.events ^= events
+        delete pollable if item.events.zero? || (pollable.respond_to?(:socket) && pollable.socket.nil?)
         true
       else
         false
@@ -147,29 +132,8 @@ module ZMQ
     # out which socket should be deleted.
     #
     def delete pollable
-      size = @pollables.size
-      return false if size.zero?
-
-      case
-      when pollable.respond_to?(:socket)
-        if pollable.socket.nil?
-          # slow code path! need to iterate through all sockets in the
-          # poll items array to figure out which one has been closed
-          slow_path_delete(pollable)
-        else
-          @pollables.delete_if { |p| p.socket.address == pollable.socket.address }
-          socket_deleted = size != @pollables.size
-          item_deleted = @poll_items.delete(pollable)
-          raw_deleted  = @key_to_pollable.delete(pollable.socket.address)
-          socket_deleted && item_deleted && raw_deleted
-        end
-      when pollable.respond_to?(:fileno)
-        @pollables.delete_if { |p| p.fileno == pollable.fileno }
-        socket_deleted = size != @pollables.size
-        item_deleted = @poll_items.delete(pollable)
-        raw_deleted = @key_to_pollable.delete(pollable.fileno)
-        socket_deleted && item_deleted && raw_deleted
-      end
+      return false if @poll_items.empty?
+      @poll_items.delete(pollable)
     end
 
     def to_s inspect; end
@@ -181,29 +145,8 @@ module ZMQ
       @writables.clear
 
       @poll_items.each do |poll_item|
-        address = poll_item.socket.address
-        key = address.zero? ? poll_item.fd : address
-
-        @readables << @key_to_pollable[key] if poll_item.readable?
-        @writables << @key_to_pollable[key] if poll_item.writable?
-      end
-    end
-
-    # Retrieves each socket from the PollItems array. If the item
-    # cannot be matched to an element of the sockets array, we
-    # delete that item from PollItems and do some clean up.
-    def slow_path_delete pollable
-      @pollables.delete pollable
-      @poll_items.each_with_index do |poll_item, index|
-        found = @pollables.find { |p| p.socket.address == poll_item.socket.address }
-
-        # puts poll_item, index, found
-
-        unless found
-          @key_to_pollable.delete(poll_item.socket.address)
-          @poll_items.delete_at(index)
-          break true
-        end
+        @readables << poll_item.pollable if poll_item.readable?
+        @writables << poll_item.pollable if poll_item.writable?
       end
     end
 
