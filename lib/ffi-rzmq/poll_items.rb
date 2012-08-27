@@ -15,8 +15,14 @@ module ZMQ
     def self.from_pollable(pollable)
       item = self.new
       item.pollable = pollable
-      item.socket   = pollable.socket if pollable.respond_to?(:socket)
-      item.fd       = pollable.fileno if pollable.respond_to?(:fileno)
+      case
+      when pollable.respond_to?(:socket)
+        item.socket = pollable.socket
+      when pollable.respond_to?(:fileno)
+        item.fd = pollable.fileno
+      when pollable.respond_to?(:io)
+        item.fd = pollable.io.fileno
+      end
       item
     end
 

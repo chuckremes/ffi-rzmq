@@ -1,6 +1,7 @@
 $: << "." # added for ruby 1.9.2 compatibilty; it doesn't include the current directory on the load path anymore
 
 require File.join(File.dirname(__FILE__), %w[spec_helper])
+require 'openssl'
 require 'socket'
 
 module ZMQ
@@ -45,7 +46,6 @@ module ZMQ
       it "should access the raw 0mq socket" do
         raw_socket = FFI::MemoryPointer.new(4)
         socket.should_receive(:respond_to?).with(:socket).and_return(true)
-        socket.should_receive(:respond_to?).with(:fileno).and_return(false)
         socket.should_receive(:socket).any_number_of_times.and_return(raw_socket)
 
         poller.register(socket)
@@ -228,6 +228,38 @@ module ZMQ
         msg.should == "message"
       end
 
+      it "works with ssl sockets" do
+        certificate = File.read('/Users/sensei/messenger/config/test.crt') + File.read('/Users/sensei/messenger/config/test.key')
+
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.key  = OpenSSL::PKey::RSA.new(certificate)
+        ctx.cert = OpenSSL::X509::Certificate.new(certificate)
+
+        server = TCPServer.new("127.0.0.1", 0)
+        f, port, host, addr = server.addr
+        client = TCPSocket.new("127.0.0.1", port)
+        s = server.accept
+
+        client = OpenSSL::SSL::SSLSocket.new(client)
+        server = OpenSSL::SSL::SSLSocket.new(s, ctx)
+
+        Thread.new { client.connect }
+        s = server.accept
+
+        @poller.register_readable(s)
+        @poller.register_writable(client)
+
+        client.syswrite("message")
+
+        rc = @poller.poll
+        rc.should == 2
+
+        @poller.readables.should == [s]
+        @poller.writables.should == [client]
+
+        msg = s.sysread(7)
+        msg.should == "message"
+      end
     end # poll
 
 
