@@ -10,6 +10,7 @@ Thread.abort_on_exception = true
 
 require 'openssl'
 require 'socket'
+require 'securerandom'
 
 # define some version guards so we can turn on/off specs based upon
 # the version of the 0mq library that is loaded

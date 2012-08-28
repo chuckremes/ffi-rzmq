@@ -109,9 +109,8 @@ module ZMQ
 
     context "#delete" do
 
-      before(:all) do
-        @context = Context.new
-      end
+      before(:all) { @context = Context.new }
+      after(:all)  { @context.terminate }
 
       before(:each) do
         @socket = @context.socket(XREQ)
@@ -121,10 +120,6 @@ module ZMQ
 
       after(:each) do
         @socket.close
-      end
-
-      after(:all) do
-        @context.terminate
       end
 
       it "should return false for an unregistered socket (i.e. not found)" do
@@ -164,64 +159,48 @@ module ZMQ
 
     end
 
-
     context "poll" do
       include APIHelper
 
-      before(:all) do
-      end
+      before(:all) { @context = Context.new }
+      after(:all)  { @context.terminate }
 
       before(:each) do
-        # Must recreate context for each test otherwise some poll tests fail.
-        # This is likely due to a race condition in event handling when reusing
-        # the same inproc inside the same context over and over. Making a new
-        # context solves it.
-        @context = Context.new
-        endpoint = "inproc://poll_test"
-        @socket = @context.socket(DEALER)
-        @socket2 = @context.socket(ROUTER)
-        @socket.setsockopt(LINGER, 0)
-        @socket2.setsockopt(LINGER, 0)
-        @socket.bind(endpoint)
-        connect_to_inproc(@socket2, endpoint)
-
+        endpoint = "inproc://poll_test_#{SecureRandom.hex}"
+        @sockets = [@context.socket(DEALER), @context.socket(ROUTER)]
+        @sockets.each { |s| s.setsockopt(LINGER, 0) }
+        @sockets.first.bind(endpoint)
+        connect_to_inproc(@sockets.last, endpoint)
         @poller = Poller.new
       end
 
-      after(:each) do
-        @socket.close
-        @socket2.close
-        @context.terminate
-      end
+      after(:each) { @sockets.each(&:close) }
 
       it "returns 0 when there are no sockets to poll" do
-        rc = @poller.poll(100)
-        rc.should be_zero
+        @poller.poll(100).should be_zero
       end
 
       it "returns 0 when there is a single socket to poll and no events" do
-        @poller.register(@socket, 0)
-        rc = @poller.poll(100)
-        rc.should be_zero
+        @poller.register(@sockets.first, 0)
+        @poller.poll(100).should be_zero
       end
 
       it "returns 1 when there is a read event on a socket" do
-        @poller.register_readable(@socket2)
+        first, last = @sockets
+        @poller.register_readable(last)
 
-        @socket.send_string('test')
-        rc = @poller.poll(1000)
-        rc.should == 1
+        first.send_string('test')
+        @poller.poll(1000).should == 1
       end
 
       it "returns 1 when there is a read event on one socket and the second socket has been removed from polling" do
-        @poller.register_readable(@socket2)
-        @poller.register_writable(@socket)
+        first, last = @sockets
+        @poller.register_readable(last)
+        @poller.register_writable(first)
 
-        @socket.send_string('test')
-        @poller.deregister_writable(@socket)
-
-        rc = @poller.poll(1000)
-        rc.should == 1
+        first.send_string('test')
+        @poller.deregister_writable(first)
+        @poller.poll(1000).should == 1
       end
 
       it "works with ruby sockets" do
