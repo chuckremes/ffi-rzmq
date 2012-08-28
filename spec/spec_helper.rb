@@ -8,6 +8,9 @@ File.join(File.dirname(__FILE__), %w[.. lib ffi-rzmq]))
 require 'thread' # necessary when testing in MRI 1.8 mode
 Thread.abort_on_exception = true
 
+require 'openssl'
+require 'socket'
+
 # define some version guards so we can turn on/off specs based upon
 # the version of the 0mq library that is loaded
 def version2?
@@ -43,24 +46,24 @@ module APIHelper
     :zmq_sterror => @err_str_mock
     )
   end
-  
+
   def poller_setup
     @helper_poller ||= ZMQ::Poller.new
   end
-  
+
   def poller_register_socket(socket)
     @helper_poller.register(socket, ZMQ::POLLIN)
   end
-  
+
   def poller_deregister_socket(socket)
     @helper_poller.deregister(socket, ZMQ::POLLIN)
   end
-  
+
   def poll_delivery
     # timeout after 1 second
     @helper_poller.poll(1000)
   end
-  
+
   def poll_it_for_read(socket, &blk)
     poller_register_socket(socket)
     blk.call

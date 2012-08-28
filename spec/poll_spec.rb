@@ -1,11 +1,6 @@
-$: << "." # added for ruby 1.9.2 compatibilty; it doesn't include the current directory on the load path anymore
-
-require File.join(File.dirname(__FILE__), %w[spec_helper])
-require 'openssl'
-require 'socket'
+require 'spec_helper'
 
 module ZMQ
-
 
   describe Poller do
 
@@ -14,46 +9,60 @@ module ZMQ
 
       it "should allocate a PollItems instance" do
         PollItems.should_receive(:new)
-
         Poller.new
       end
 
-    end # context initializing
-
+    end
 
     context "#register" do
 
       let(:poller) { Poller.new }
-      let(:socket) { mock('socket') }
+      let(:pollable) { mock('pollable') }
+      let(:socket) { FFI::MemoryPointer.new(4) }
+      let(:fd) { 1 }
+      let(:io) { stub(:fileno => fd) }
 
-      it "should return false when given a nil socket and no file descriptor" do
+      it "returns false when given a nil pollable" do
         poller.register(nil, ZMQ::POLLIN).should be_false
       end
 
-      it "should return false when given 0 for +events+ (e.g. no registration)" do
-        poller.register(socket, 0).should be_false
+      it "returns false when given 0 for +events+ (e.g. no registration)" do
+        poller.register(pollable, 0).should be_false
       end
 
-      it "should return the registered event value when given a pollable responding to file descriptor" do
-        pollable = stub(:fileno => 1)
+      it "returns the default registered event value when given a valid pollable" do
+        poller.register(pollable).should == (ZMQ::POLLIN | ZMQ::POLLOUT)
+      end
+
+      it "returns the registered event value when given a pollable responding to socket (ZMQ::Socket)" do
+        pollable.should_receive(:respond_to?).with(:socket).and_return(true)
+
+        pollable.should_receive(:socket).and_return(socket)
         poller.register(pollable, ZMQ::POLLIN).should == ZMQ::POLLIN
       end
 
-      it "should return the default registered event value when given a valid socket" do
-        poller.register(socket).should == (ZMQ::POLLIN | ZMQ::POLLOUT)
+      it "returns the registered event value when given a pollable responding to file descriptor (IO, BasicSocket)" do
+        pollable.should_receive(:respond_to?).with(:socket).and_return(false)
+        pollable.should_receive(:respond_to?).with(:fileno).and_return(true)
+
+        pollable.should_receive(:fileno).and_return(fd)
+        poller.register(pollable, ZMQ::POLLIN).should == ZMQ::POLLIN
       end
 
-      it "should access the raw 0mq socket" do
-        raw_socket = FFI::MemoryPointer.new(4)
-        socket.should_receive(:respond_to?).with(:socket).and_return(true)
-        socket.should_receive(:socket).any_number_of_times.and_return(raw_socket)
+      it "returns the registered event value when given a pollable responding to io (SSLSocket)" do
+        pollable.should_receive(:respond_to?).with(:socket).and_return(false)
+        pollable.should_receive(:respond_to?).with(:fileno).and_return(false)
+        pollable.should_receive(:respond_to?).with(:io).and_return(true)
 
-        poller.register(socket)
+        pollable.should_receive(:io).and_return(io)
+        poller.register(pollable, ZMQ::POLLIN).should == ZMQ::POLLIN
       end
+
     end
 
 
     context "#delete" do
+
       before(:all) do
         @context = Context.new
       end
