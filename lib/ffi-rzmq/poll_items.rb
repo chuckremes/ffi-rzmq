@@ -2,58 +2,6 @@ require 'forwardable'
 require 'ostruct'
 
 module ZMQ
-  class PollItem
-    extend Forwardable
-
-    def_delegators :@poll_item, :pointer, :readable?, :writable?
-    attr_accessor :pollable, :poll_item
-
-    def initialize(pointer = nil)
-      @poll_item = pointer ? LibZMQ::PollItem.new(pointer) : LibZMQ::PollItem.new
-    end
-
-    def self.from_pollable(pollable)
-      item = self.new
-      item.pollable = pollable
-      case
-      when pollable.respond_to?(:socket)
-        item.socket = pollable.socket
-      when pollable.respond_to?(:fileno)
-        item.fd = pollable.fileno
-      when pollable.respond_to?(:io)
-        item.fd = pollable.io.fileno
-      end
-      item
-    end
-
-    def closed?
-      case
-      when pollable.respond_to?(:closed?)
-        pollable.closed?
-      when pollable.respond_to?(:socket)
-        pollable.socket.nil?
-      when pollable.respond_to?(:io)
-        pollable.io.closed?
-      end
-    end
-
-    def socket=(arg)
-      @poll_item[:socket] = arg
-    end
-
-    def fd=(arg)
-      @poll_item[:fd] = arg
-    end
-
-    def events=(arg)
-      @poll_item[:events] = arg
-    end
-
-    def events
-      @poll_item[:events]
-    end
-  end
-
   class PollItems
     include Enumerable
     extend  Forwardable
@@ -75,7 +23,7 @@ module ZMQ
       return unless entry = @pollables[pollable]
       clean
       pointer = @item_store + (@item_size * entry.index)
-      item = ZMQ::PollItem.new(pointer)
+      item = ZMQ::PollItem.from_pointer(pointer)
       item.pollable = pollable
       item
     end
@@ -89,17 +37,17 @@ module ZMQ
 
     def delete pollable
       if @pollables.delete(pollable)
-        found = @dirty = true
+        @dirty = true
         clean
+        true
       else
-        found = false
+        false
       end
-      found
     end
 
     def each &blk
       clean
-      @pollables.each do |pollable, _|
+      @pollables.each_key do |pollable|
         yield get(pollable)
       end
     end
@@ -133,5 +81,5 @@ module ZMQ
       end
     end
 
-  end # class PollItems
-end # module ZMQ
+  end
+end

@@ -42,10 +42,7 @@ module ZMQ
         timeout = adjust timeout
         items_triggered = LibZMQ.zmq_poll @poll_items.address, @poll_items.size, timeout
 
-        if Util.resultcode_ok?(items_triggered)
-          update_selectables
-        end
-
+        update_selectables if Util.resultcode_ok?(items_triggered)
         items_triggered
       else
         0
@@ -175,6 +172,6 @@ module ZMQ
         end
       end
     end
-  end
 
-end # module ZMQ
+  end
+end
