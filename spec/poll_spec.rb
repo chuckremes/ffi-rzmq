@@ -35,25 +35,16 @@ module ZMQ
       end
 
       it "returns the registered event value when given a pollable responding to socket (ZMQ::Socket)" do
-        pollable.should_receive(:respond_to?).with(:socket).and_return(true)
-
         pollable.should_receive(:socket).and_return(socket)
         poller.register(pollable, ZMQ::POLLIN).should == ZMQ::POLLIN
       end
 
       it "returns the registered event value when given a pollable responding to file descriptor (IO, BasicSocket)" do
-        pollable.should_receive(:respond_to?).with(:socket).and_return(false)
-        pollable.should_receive(:respond_to?).with(:fileno).and_return(true)
-
         pollable.should_receive(:fileno).and_return(fd)
         poller.register(pollable, ZMQ::POLLIN).should == ZMQ::POLLIN
       end
 
       it "returns the registered event value when given a pollable responding to io (SSLSocket)" do
-        pollable.should_receive(:respond_to?).with(:socket).and_return(false)
-        pollable.should_receive(:respond_to?).with(:fileno).and_return(false)
-        pollable.should_receive(:respond_to?).with(:io).and_return(true)
-
         pollable.should_receive(:io).and_return(io)
         poller.register(pollable, ZMQ::POLLIN).should == ZMQ::POLLIN
       end
