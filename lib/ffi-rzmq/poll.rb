@@ -75,8 +75,8 @@ module ZMQ
       item.events |= events
     end
 
-    # Deregister the +sock+ for +events+. When there are no events left,
-    # this also deletes the socket from the poll items.
+    # Deregister the +pollable+ for +events+. When there are no events left
+    # or socket has been closed this also deletes the socket from the poll items.
     #
     def deregister pollable, events
       return unless pollable
@@ -115,17 +115,12 @@ module ZMQ
       deregister pollable, ZMQ::POLLOUT
     end
 
-    # Deletes the +sock+ for all subscribed events. Called internally
+    # Deletes the +pollable+ for all subscribed events. Called internally
     # when a socket has been deregistered and has no more events
     # registered anywhere.
     #
     # Can also be called directly to remove the socket from the polling
     # array.
-    #
-    # Sockets must be deleted before they are closed otherwise there is
-    # no way to remove it from the polled items array. Attempting to
-    # delete a closed socket triggers a very slow code path to figure
-    # out which socket should be deleted.
     #
     def delete pollable
       return false if @poll_items.empty?
@@ -154,6 +149,7 @@ module ZMQ
     # Users will pass in values measured as
     # milliseconds, so we need to convert that value to
     # microseconds for the library.
+    #
     if LibZMQ.version2?
       def adjust timeout
         if :blocking == timeout || -1 == timeout
