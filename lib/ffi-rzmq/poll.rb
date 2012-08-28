@@ -68,7 +68,7 @@ module ZMQ
     # different values for +events+ will OR the event information together.
     #
     def register pollable, events = ZMQ::POLLIN | ZMQ::POLLOUT
-      return false if pollable.nil? || events.zero?
+      return if pollable.nil? || events.zero?
 
       unless item = @poll_items[pollable]
         item = PollItem.from_pollable(pollable)
