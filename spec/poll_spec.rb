@@ -203,7 +203,7 @@ module ZMQ
         @poller.poll(1000).should == 1
       end
 
-      it "works with ruby sockets" do
+      it "works with BasiSocket" do
         server = TCPServer.new("127.0.0.1", 0)
         f, port, host, addr = server.addr
         client = TCPSocket.new("127.0.0.1", port)
@@ -214,9 +214,7 @@ module ZMQ
 
         client.send("message", 0)
 
-        rc = @poller.poll
-        rc.should == 2
-
+        @poller.poll.should == 2
         @poller.readables.should == [s]
         @poller.writables.should == [client]
 
@@ -224,37 +222,14 @@ module ZMQ
         msg.should == "message"
       end
 
-      it "does not return readable socket after deregister" do
-        server = TCPServer.new("127.0.0.1", 0)
-        f, port, host, addr = server.addr
-        client = TCPSocket.new("127.0.0.1", port)
-        s = server.accept
-
-        @poller.register(s, ZMQ::POLLIN)
-        @poller.register(client, ZMQ::POLLOUT)
-
-        @poller.deregister(s, ZMQ::POLLIN)
-        @poller.deregister(client, ZMQ::POLLOUT)
-
-        client.send("message", 0)
-
-        rc = @poller.poll
-        rc.should == 0
-
-        @poller.readables.should == []
-        @poller.writables.should == []
-      end
-
-      it "works with io objects" do
+      it "works with IO objects" do
         r, w = IO.pipe
         @poller.register(r, ZMQ::POLLIN)
         @poller.register(w, ZMQ::POLLOUT)
 
         w.write("message")
 
-        rc = @poller.poll
-        rc.should == 2
-
+        @poller.poll.should == 2
         @poller.readables.should == [r]
         @poller.writables.should == [w]
 
@@ -262,12 +237,12 @@ module ZMQ
         msg.should == "message"
       end
 
-      it "works with ssl sockets" do
-        certificate = File.read('/Users/sensei/messenger/config/test.crt') + File.read('/Users/sensei/messenger/config/test.key')
+      it "works with SSLSocket" do
+        crt, key = %w[crt key].map { |ext| File.read(File.join(File.dirname(__FILE__), "support", "test." << ext)) }
 
         ctx = OpenSSL::SSL::SSLContext.new
-        ctx.key  = OpenSSL::PKey::RSA.new(certificate)
-        ctx.cert = OpenSSL::X509::Certificate.new(certificate)
+        ctx.key  = OpenSSL::PKey::RSA.new(key)
+        ctx.cert = OpenSSL::X509::Certificate.new(crt)
 
         server = TCPServer.new("127.0.0.1", 0)
         f, port, host, addr = server.addr
@@ -277,27 +252,24 @@ module ZMQ
         client = OpenSSL::SSL::SSLSocket.new(client)
         server = OpenSSL::SSL::SSLSocket.new(s, ctx)
 
-        Thread.new { client.connect }
+        t = Thread.new { client.connect }
         s = server.accept
+        t.join
 
         @poller.register_readable(s)
         @poller.register_writable(client)
 
-        client.syswrite("message")
+        client.write_nonblock("message")
 
-        rc = @poller.poll
-        rc.should == 2
-
+        @poller.poll.should == 2
         @poller.readables.should == [s]
         @poller.writables.should == [client]
 
-        msg = s.sysread(7)
+        msg = s.read_nonblock(7)
         msg.should == "message"
       end
-    end # poll
+    end
 
+  end
 
-  end # describe Poll
-
-
-end # module ZMQ
+end
