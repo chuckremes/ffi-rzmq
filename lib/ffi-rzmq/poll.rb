@@ -85,10 +85,9 @@ module ZMQ
       return unless pollable
 
       item = @poll_items[pollable]
-
       if item && (item.events & events) > 0
         item.events ^= events
-        delete pollable if item.events.zero? || (pollable.respond_to?(:socket) && pollable.socket.nil?)
+        delete(pollable) if item.events.zero? || item.closed?
         true
       else
         false

@@ -26,6 +26,17 @@ module ZMQ
       item
     end
 
+    def closed?
+      case
+      when pollable.respond_to?(:closed?)
+        pollable.closed?
+      when pollable.respond_to?(:socket)
+        pollable.socket.nil?
+      when pollable.respond_to?(:io)
+        pollable.io.closed?
+      end
+    end
+
     def socket=(arg)
       @poll_item[:socket] = arg
     end
