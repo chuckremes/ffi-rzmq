@@ -13,24 +13,24 @@ This single gem supports 0mq 2.x and 3.1.x 0mq APIs. The 0mq project started
 making backward-incompatible changes to the API with the 3.1.x release.
 The gem auto-configures itself to expose the API conforming to the loaded
 C library. 0mq API 3.0 is *not* supported; the 0mq community voted to
-abandon it. 
+abandon it.
 
 The impetus behind this library was to provide support for ZeroMQ in
 JRuby which has native threads. Unlike MRI, which has a GIL, JRuby and
-Rubinius allow for threaded access to Ruby code from outside extensions. 
-ZeroMQ is heavily threaded, so until the MRI runtime removes its GIL, 
+Rubinius allow for threaded access to Ruby code from outside extensions.
+ZeroMQ is heavily threaded, so until the MRI runtime removes its GIL,
 JRuby and Rubinius will likely be the best environments to run this library.
 
 == Breaking API Changes from 0.8.x to 0.9.0
 
-There has been a major change in API from the 0.8.x series to 0.9.0. 
+There has been a major change in API from the 0.8.x series to 0.9.0.
 Previously the Socket#send and Socket#recv methods could raise exceptions
 when there was an error. They also returned true or false depending on
 the success or failure of the operation. The exceptions were also used
 for managing flow control when doing non-blocking send/recv.
 
-Mixing and matching return codes and exceptions is a terrible idea in 
-practice. Using them for flow control is an even worse sin. So all of 
+Mixing and matching return codes and exceptions is a terrible idea in
+practice. Using them for flow control is an even worse sin. So all of
 the exception code from Socket has been removed.
 
 The Poller and Message class have also had their exceptions removed for
@@ -56,13 +56,13 @@ All example code has been updated to use the new Ruby API.
 
 == Breaking API Change from 0.9.3 to 0.9.5
 
-The 0mq library functions zmq_send() and zmq_recv() were changed to 
+The 0mq library functions zmq_send() and zmq_recv() were changed to
 zmq_sendmsg() and zmq_recvmsg() with the 0mq 3.x API change. I have changed
 the binding to always use #sendmsg and #recvmsg. This breaks existing code.
 This should be the last breaking change heading into the 1.0 release of these
 bindings.
 
-== PERFORMANCE
+== PERFORMANCE:
 
 Check out the latest performance results:
 
@@ -72,7 +72,7 @@ Check out the latest performance results:
 
 This gem needs more tests. This gem has been battle tested by myself
 and others for over a year, so I am fairly confident that it is solid.
-However, it is inevitable that there will be bugs, so please open 
+However, it is inevitable that there will be bugs, so please open
 issues for them here or fork this project, fix them, and send me a pull
 request.
 
@@ -83,76 +83,80 @@ stability.
 
 All features are implemented.
 
+== BUILD STATUS:
+
+{<img src="https://secure.travis-ci.org/chuckremes/ffi-rzmq.png?branch=master" alt="Build Status" />}[http://travis-ci.org/chuckremes/ffi-rzmq]
+
 == SYNOPSIS:
 
 0mq API v2 client code:
-  
+
   require 'rubygems'
   require 'ffi-rzmq'
-  
+
   if ARGV.length < 3
     puts "usage: local_lat <connect-to> <message-size> <roundtrip-count>"
     exit
   end
-  
+
   bind_to = ARGV[0]
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
-  
+
   ctx = ZMQ::Context.new
   s = ctx.socket ZMQ::REP
   rc = s.setsockopt(ZMQ::HWM, 100)
   rc = s.bind(bind_to)
-  
+
   msg = ""
   roundtrip_count.times do
     rc = s.recv_string msg
     raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
     rc = s.send_string msg, 0
   end
-  
+
 
 0mq API v2 server code:
 
   require 'rubygems'
   require 'ffi-rzmq'
-  
+
   if ARGV.length < 3
     puts "usage: remote_lat <connect-to> <message-size> <roundtrip-count>"
     exit
   end
-  
+
   connect_to = ARGV[0]
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
-  
+
   ctx = ZMQ::Context.new
   s = ctx.socket ZMQ::REQ
   rc = s.connect(connect_to)
-  
+
   msg = "#{ '3' * message_size }"
-  
+
   start_time = Time.now
-  
+
   msg = ""
   roundtrip_count.times do
     rc = s.send_string msg, 0
     rc = s.recv_string msg
     raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
   end
-  
+
 == Better Examples
 
 I highly recommend visiting the Learn Ruby 0mq project for a bunch of good code examples.
 
   http://github.com/andrewvc/learn-ruby-zeromq
-  
+
 
 
 == REQUIREMENTS:
 
   * 0mq 2.1.x, 3.1.x or later; 2.0.x and 3.0.x are no longer supported
-  
+
 The ZeroMQ library must be installed on your system in a well-known location
 like /usr/local/lib. This is the default for new ZeroMQ installs.
 
@@ -162,7 +166,7 @@ Future releases may include the library as a C extension built at
 time of installation.
 
   * ffi (>= 1.0.0)
-  
+
 This is a requirement for MRI only. Both Rubinius and JRuby have FFI support built
 in as a standard component. Do *not* run this gem under MRI with an old 'ffi' gem.
 It will crash randomly and you will be sad.
@@ -182,7 +186,7 @@ To build from git master:
  % cd ffi-rzmq
  % gem build ffi-rzmq.gemspec
  % gem install ffi-rzmq-*.gem
- 
+
 
 NOTE for Windows users!
 In order for this gem to find the libzmq.dll, it *must* be on the Windows PATH. Google
