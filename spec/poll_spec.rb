@@ -250,23 +250,29 @@ module ZMQ
         s = server.accept
 
         client = OpenSSL::SSL::SSLSocket.new(client)
-        server = OpenSSL::SSL::SSLSocket.new(s, ctx)
 
-        t = Thread.new { client.connect }
-        s = server.accept
-        t.join
+        if client.respond_to?(:write_nonblock)
+          server = OpenSSL::SSL::SSLSocket.new(s, ctx)
 
-        @poller.register_readable(s)
-        @poller.register_writable(client)
+          t = Thread.new { client.connect }
+          s = server.accept
+          t.join
 
-        client.write_nonblock("message")
+          @poller.register_readable(s)
+          @poller.register_writable(client)
 
-        @poller.poll.should == 2
-        @poller.readables.should == [s]
-        @poller.writables.should == [client]
+          client.write_nonblock("message")
 
-        msg = s.read_nonblock(7)
-        msg.should == "message"
+          @poller.poll.should == 2
+          @poller.readables.should == [s]
+          @poller.writables.should == [client]
+
+          msg = s.read_nonblock(7)
+          msg.should == "message"
+        else
+          # the runtime doesn't support all of OpenSSL
+          pending
+        end
       end
     end
 
