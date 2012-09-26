@@ -31,7 +31,7 @@ module ZMQ
 
     def <<(poll_item)
       @dirty = true
-      @pollables[poll_item.pollable] = OpenStruct.new(index: size, data: poll_item)
+      @pollables[poll_item.pollable] = OpenStruct.new(:index => size, :data => poll_item)
     end
     alias :push :<<
 
