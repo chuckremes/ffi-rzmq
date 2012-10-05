@@ -19,7 +19,7 @@ module ZMQ
       let(:pollable) { mock('pollable') }
       let(:poller) { Poller.new }
       let(:socket) { FFI::MemoryPointer.new(4) }
-      let(:io) { stub(:fileno => fd) }
+      let(:io) { stub(:posix_fileno => fd) }
       let(:fd) { 1 }
 
       it "returns false when given a nil pollable" do
@@ -40,7 +40,7 @@ module ZMQ
       end
 
       it "returns the registered event value when given a pollable responding to file descriptor (IO, BasicSocket)" do
-        pollable.should_receive(:fileno).and_return(fd)
+        pollable.should_receive(:posix_fileno).and_return(fd)
         poller.register(pollable, ZMQ::POLLIN).should == ZMQ::POLLIN
       end
 
@@ -56,7 +56,7 @@ module ZMQ
       let(:pollable) { mock('pollable') }
       let(:poller) { Poller.new }
       let(:socket) { FFI::MemoryPointer.new(4) }
-      let(:io) { stub(:fileno => fd) }
+      let(:io) { stub(:posix_fileno => fd) }
       let(:fd) { 1 }
 
       it "returns true when deregistered pollable from event" do
@@ -90,7 +90,7 @@ module ZMQ
       end
 
       it "deletes closed pollable responding to fileno (IO, BasicSocket)" do
-        pollable.should_receive(:fileno).and_return(fd)
+        pollable.should_receive(:posix_fileno).and_return(fd)
         poller.register(pollable)
         pollable.should_receive(:closed?).and_return(true)
         poller.deregister(pollable, ZMQ::POLLIN).should be_true
@@ -218,7 +218,7 @@ module ZMQ
         @poller.readables.should == [s]
         @poller.writables.should == [client]
 
-        msg = s.recv_nonblock(7)
+        msg = s.read_nonblock(7)
         msg.should == "message"
       end
 
@@ -251,28 +251,23 @@ module ZMQ
 
         client = OpenSSL::SSL::SSLSocket.new(client)
 
-        if client.respond_to?(:write_nonblock)
-          server = OpenSSL::SSL::SSLSocket.new(s, ctx)
+        server = OpenSSL::SSL::SSLSocket.new(s, ctx)
 
-          t = Thread.new { client.connect }
-          s = server.accept
-          t.join
+        t = Thread.new { client.connect }
+        s = server.accept
+        t.join
 
-          @poller.register_readable(s)
-          @poller.register_writable(client)
+        @poller.register_readable(s)
+        @poller.register_writable(client)
 
-          client.write_nonblock("message")
+        client.write("message")
 
-          @poller.poll.should == 2
-          @poller.readables.should == [s]
-          @poller.writables.should == [client]
+        @poller.poll.should == 2
+        @poller.readables.should == [s]
+        @poller.writables.should == [client]
 
-          msg = s.read_nonblock(7)
-          msg.should == "message"
-        else
-          # the runtime doesn't support all of OpenSSL
-          pending
-        end
+        msg = s.read(7)
+        msg.should == "message"
       end
     end
 

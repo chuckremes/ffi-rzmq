@@ -1,4 +1,5 @@
 require 'forwardable'
+require 'io_extensions'
 
 module ZMQ
   class PollItem
@@ -21,10 +22,10 @@ module ZMQ
       case
       when pollable.respond_to?(:socket)
         item.socket = pollable.socket
-      when pollable.respond_to?(:fileno)
-        item.fd = pollable.fileno
+      when pollable.respond_to?(:posix_fileno)
+        item.fd = pollable.posix_fileno
       when pollable.respond_to?(:io)
-        item.fd = pollable.io.fileno
+        item.fd = pollable.io.posix_fileno
       end
       item
     end
