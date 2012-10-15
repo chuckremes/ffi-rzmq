@@ -1,3 +1,23 @@
+== 0.9.7 / 20121015
+  * BROKE THE API.
+    ZMQ::Poller#register and ZMQ::Poller#deregister don't take fd argument
+    anynmore. ZMQ::Poller#readables and ZMQ::Poller#writables return pollables
+    instead of just fd when pollable is other than ZMQ socket.
+    ZMQ::Poller#register now returns nil instead of false when no pollable
+    or events to register to are given, which is consistent with rest of api.
+
+  * Added support in ZMQ::Poller for pollables responding to fileno and socket.
+    Standard Ruby Sockets and IOs can be now registered in poller to listen for
+    events.
+
+  * Fixed a bug in ZMQ::Poller#deregister where it would raise exception
+    when trying to deregister already closed ZMQ socket. Issue 59.
+
+  * Improved specs to use random inproc socket address to avoid race conditions 
+    between tests under same context.
+
+  * Added continous integration for all supported platforms on Travis-CI.
+
 == 0.9.6 / 20120808
   * Never released 0.9.5 as a gem. It was available via github only.
   
