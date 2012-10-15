@@ -17,3 +17,5 @@ Stefan Kaes, github: skaes
 Dmitry Ustalov, github: eveel
 
 Patrik Sundberg, github: sundbp
+
+Pawel Pacana, github: pawelpacana
