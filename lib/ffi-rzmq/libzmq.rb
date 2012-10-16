@@ -215,10 +215,11 @@ module ZMQ
       attach_function :zmq_msg_get, [:pointer, :int], :int
       @blocking = true
       attach_function :zmq_msg_set, [:pointer, :int, :int], :int
-      
+
       # Monitoring API
-      @blocking = true
-      attach_function :zmq_ctx_set_monitor, [:pointer, :pointer], :int
+      # Comment out zmq_ctx_set_monitor as it's no longer supported by 3.2.1
+      # @blocking = true
+      # attach_function :zmq_ctx_set_monitor, [:pointer, :pointer], :int
 
       # Socket API
       @blocking = true
@@ -233,7 +234,7 @@ module ZMQ
       attach_function :zmq_sendmsg, [:pointer, :pointer, :int], :int
       @blocking = true
       attach_function :zmq_send, [:pointer, :pointer, :size_t, :int], :int
-      
+
       module EventDataLayout
         def self.included(base)
           base.class_eval do
@@ -259,7 +260,7 @@ module ZMQ
 
         def to_s; inspect; end
       end # class EventData
-      
+
     end
   end
 
