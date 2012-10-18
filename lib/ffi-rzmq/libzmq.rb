@@ -218,7 +218,7 @@ module ZMQ
       
       # Monitoring API
       @blocking = true
-      attach_function :zmq_ctx_set_monitor, [:pointer, :pointer], :int
+      attach_function :zmq_socket_monitor, [:pointer, :pointer], :int
 
       # Socket API
       @blocking = true
