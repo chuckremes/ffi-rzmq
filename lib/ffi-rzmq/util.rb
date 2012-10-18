@@ -114,7 +114,7 @@ module ZMQ
         'zmq_ctx_set' == source ||
         'zmq_ctx_get' == source ||
         'zmq_ctx_destory' == source ||
-        'zmq_ctx_set_monitor' == source
+        'zmq_socket_monitor' == source
       end
       
       def self.message_error?(source)
