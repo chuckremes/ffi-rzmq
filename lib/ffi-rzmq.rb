@@ -1,4 +1,3 @@
-
 module ZMQ
 
   # :stopdoc:
@@ -64,9 +63,7 @@ end  # module ZMQ
 # some code is conditionalized based upon what ruby engine we are
 # executing
 
-RBX = defined?(RUBY_ENGINE) && RUBY_ENGINE =~ /rbx/ ? true : false
-
-require 'ffi' unless RBX
+require 'ffi'
 
 # the order of files is important
 #%w(wrapper zmq exceptions context message socket poll_items poll device).each do |file|
