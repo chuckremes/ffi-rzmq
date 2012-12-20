@@ -21,47 +21,6 @@ Rubinius allow for threaded access to Ruby code from outside extensions.
 ZeroMQ is heavily threaded, so until the MRI runtime removes its GIL,
 JRuby and Rubinius will likely be the best environments to run this library.
 
-== Breaking API Changes from 0.8.x to 0.9.0
-
-There has been a major change in API from the 0.8.x series to 0.9.0.
-Previously the Socket#send and Socket#recv methods could raise exceptions
-when there was an error. They also returned true or false depending on
-the success or failure of the operation. The exceptions were also used
-for managing flow control when doing non-blocking send/recv.
-
-Mixing and matching return codes and exceptions is a terrible idea in
-practice. Using them for flow control is an even worse sin. So all of
-the exception code from Socket has been removed.
-
-The Poller and Message class have also had their exceptions removed for
-returning errors on instance methods.
-
-Unfortunately, it isn't possible to indicate that a call to #new has failed
-by returning nil. A call to #new that fails needs to raise an exception to
-indicate failure. (This isn't strictly true; this behavior can be changed
-but it is not a standard Ruby idiom and is therefore a surprising, and
-poor, thing to do.) Classes that formerly raised exceptions during allocation
-now offer a factory method #create that will either return a successfully
-constructed object or nil. Code should check for nil returns before using
-the object.
-
-This is a *breaking* change. I'm sorry but the old API's inconsistency was
-causing too many problems. It now more closely mimics the 0mq C API. IF YOU
-PREFER THE ORIGINAL API WHICH WAS CLOSER TO IDIOMATIC RUBY, IT SHOULD BE
-EASY TO WRAP THESE CLASSES UP TO PROVIDE A MORE IDIOMATIC API. I SUGGEST
-YOU CREATE A PATCH *OR* CREATE A SEPARATE GEM TO WRAP THIS ONE. Sorry for
-shouting but I wanted to make sure this stood out.
-
-All example code has been updated to use the new Ruby API.
-
-== Breaking API Change from 0.9.3 to 0.9.5
-
-The 0mq library functions zmq_send() and zmq_recv() were changed to
-zmq_sendmsg() and zmq_recvmsg() with the 0mq 3.x API change. I have changed
-the binding to always use #sendmsg and #recvmsg. This breaks existing code.
-This should be the last breaking change heading into the 1.0 release of these
-bindings.
-
 == PERFORMANCE:
 
 Check out the latest performance results:
@@ -86,6 +45,8 @@ All features are implemented.
 == BUILD STATUS:
 
 {<img src="https://secure.travis-ci.org/chuckremes/ffi-rzmq.png?branch=master" alt="Build Status" />}[http://travis-ci.org/chuckremes/ffi-rzmq]
+
+{<img src="https://codeclimate.com/badge.png" />}[https://codeclimate.com/github/chuckremes/ffi-rzmq]
 
 == SYNOPSIS:
 
@@ -155,7 +116,7 @@ I highly recommend visiting the Learn Ruby 0mq project for a bunch of good code 
 
 == REQUIREMENTS:
 
-  * 0mq 2.1.x, 3.1.x or later; 2.0.x and 3.0.x are no longer supported
+  * 0mq 2.2.x, 3.2.x or later; 2.0.x, 3.0.x and 3.1.x are no longer supported
 
 The ZeroMQ library must be installed on your system in a well-known location
 like /usr/local/lib. This is the default for new ZeroMQ installs.
@@ -191,13 +152,13 @@ To build from git master:
 NOTE for Windows users!
 In order for this gem to find the libzmq.dll, it *must* be on the Windows PATH. Google
 for "modify windows path" for instructions on how to do that if you are unfamiliar with
-that activity.
+that activity. That DLL also requires that you copy libstdc++-6.dll and libgcc_s_sjlj-1.dll from DevKit MinGW into the same folder that you copied libzmq.dll.
 
 == LICENSE:
 
 (The MIT License)
 
-Copyright (c) 2011 Chuck Remes
+Copyright (c) 2013 Chuck Remes
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
