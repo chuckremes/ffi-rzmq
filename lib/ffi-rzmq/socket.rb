@@ -263,15 +263,19 @@ module ZMQ
     # cause.
     #
     def send_strings parts, flags = 0
-      return -1 if !parts || parts.empty?
-      flags = NonBlocking if dontwait?(flags)
-
-      parts[0..-2].each do |part|
-        rc = send_string part, (flags | ZMQ::SNDMORE)
-        return rc unless Util.resultcode_ok?(rc)
+      if !parts || parts.empty?
+        -1
+      else
+        flags = NonBlocking if dontwait?(flags)
+        rc = nil
+        
+        parts[0..-2].each do |part|
+          rc = send_string(part, (flags | ZMQ::SNDMORE))
+          break unless Util.resultcode_ok?(rc)
+        end
+        
+        Util.resultcode_ok?(rc) ? send_string(parts[-1], flags) : rc
       end
-
-      send_string parts[-1], flags
     end
 
     # Send a sequence of messages as a multipart message out of the +parts+
@@ -289,15 +293,19 @@ module ZMQ
     # cause.
     #
     def sendmsgs parts, flags = 0
-      return -1 if !parts || parts.empty?
-      flags = NonBlocking if dontwait?(flags)
-
-      parts[0..-2].each do |part|
-        rc = sendmsg part, (flags | ZMQ::SNDMORE)
-        return rc unless Util.resultcode_ok?(rc)
+      if !parts || parts.empty?
+        -1
+      else
+        flags = NonBlocking if dontwait?(flags)
+        rc = nil
+        
+        parts[0..-2].each do |part|
+          rc = sendmsg(part, (flags | ZMQ::SNDMORE))
+          break unless Util.resultcode_ok?(rc)
+        end
+        
+        Util.resultcode_ok?(rc) ? sendmsg(parts[-1], flags) : rc
       end
-
-      sendmsg parts[-1], flags
     end
 
     # Sends a message. This will automatically close the +message+ for both successful
