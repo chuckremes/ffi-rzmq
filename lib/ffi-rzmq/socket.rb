@@ -263,19 +263,7 @@ module ZMQ
     # cause.
     #
     def send_strings parts, flags = 0
-      if !parts || parts.empty?
-        -1
-      else
-        flags = NonBlocking if dontwait?(flags)
-        rc = nil
-        
-        parts[0..-2].each do |part|
-          rc = send_string(part, (flags | ZMQ::SNDMORE))
-          break unless Util.resultcode_ok?(rc)
-        end
-        
-        Util.resultcode_ok?(rc) ? send_string(parts[-1], flags) : rc
-      end
+      send_multiple(parts, flags, :send_string)
     end
 
     # Send a sequence of messages as a multipart message out of the +parts+
@@ -293,19 +281,7 @@ module ZMQ
     # cause.
     #
     def sendmsgs parts, flags = 0
-      if !parts || parts.empty?
-        -1
-      else
-        flags = NonBlocking if dontwait?(flags)
-        rc = nil
-        
-        parts[0..-2].each do |part|
-          rc = sendmsg(part, (flags | ZMQ::SNDMORE))
-          break unless Util.resultcode_ok?(rc)
-        end
-        
-        Util.resultcode_ok?(rc) ? sendmsg(parts[-1], flags) : rc
-      end
+      send_multiple(parts, flags, :sendmsg)
     end
 
     # Sends a message. This will automatically close the +message+ for both successful
@@ -452,6 +428,23 @@ module ZMQ
 
 
     private
+    
+    def send_multiple(parts, flags, method_name)
+      if !parts || parts.empty?
+        -1
+      else
+        flags = NonBlocking if dontwait?(flags)
+        rc = nil
+        
+        parts[0..-2].each do |part|
+          rc = send(method_name, part, (flags | ZMQ::SNDMORE))
+          break unless Util.resultcode_ok?(rc)
+        end
+        
+        Util.resultcode_ok?(rc) ? send(method_name, parts[-1], flags) : rc
+      end
+      
+    end
 
     def __getsockopt__ name, array
       # a small optimization so we only have to determine the option
