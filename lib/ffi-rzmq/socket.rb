@@ -473,39 +473,19 @@ module ZMQ
     def sockopt_buffers option_type
       if 1 == option_type
         # int64_t or uint64_t
-        unless @longlong_cache
-          length = FFI::MemoryPointer.new :size_t
-          length.write_int 8
-          @longlong_cache = [FFI::MemoryPointer.new(:int64), length]
-        end
-
-        @longlong_cache
+        @longlong_cache ||= alloc_pointer(:int64, 8)
 
       elsif 0 == option_type
         # int, 0mq assumes int is 4-bytes
-        unless @int_cache
-          length = FFI::MemoryPointer.new :size_t
-          length.write_int 4
-          @int_cache = [FFI::MemoryPointer.new(:int32), length]
-        end
-
-        @int_cache
+        @int_cache ||= alloc_pointer(:int32, 4)
 
       elsif 2 == option_type
-        length = FFI::MemoryPointer.new :size_t
-        # could be a string of up to 255 bytes
-        length.write_int 255
-        [FFI::MemoryPointer.new(255), length]
+        # could be a string of up to 255 bytes, so allocate for worst case
+        alloc_pointer(255, 255)
 
       else
         # uh oh, someone passed in an unknown option; use a slop buffer
-        unless @int_cache
-          length = FFI::MemoryPointer.new :size_t
-          length.write_int 4
-          @int_cache = [FFI::MemoryPointer.new(:int32), length]
-        end
-
-        @int_cache
+        @int_cache ||= alloc_pointer(:int32, 4)
       end
     end
 
@@ -529,6 +509,12 @@ module ZMQ
       (NonBlocking & flags) == NonBlocking
     end
     alias :noblock? :dontwait?
+    
+    def alloc_pointer(kind, length)
+      pointer = FFI::MemoryPointer.new :size_t
+      pointer.write_int(length)
+      [FFI::MemoryPointer.new(kind), pointer]
+    end
   end # module CommonSocketBehavior
 
 
