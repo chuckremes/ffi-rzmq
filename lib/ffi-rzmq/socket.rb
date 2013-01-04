@@ -637,7 +637,9 @@ module ZMQ
       end
 
       def self.close socket
-        Proc.new { LibZMQ.zmq_close socket }
+        Proc.new do
+          LibZMQ.zmq_close(socket) if socket
+        end
       end
     end # class Socket for version2
 
