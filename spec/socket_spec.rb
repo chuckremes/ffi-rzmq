@@ -477,7 +477,7 @@ module ZMQ
               array = []
               rc = socket.getsockopt(ZMQ::FD, array)
               rc.should == 0
-              array[0].should be_a(Fixnum)
+              array[0].should > 0
             end
 
             it "returns a valid FD that is accepted by the system poll() function" do
