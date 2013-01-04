@@ -21,6 +21,9 @@ Rubinius allow for threaded access to Ruby code from outside extensions.
 ZeroMQ is heavily threaded, so until the MRI runtime removes its GIL,
 JRuby and Rubinius will likely be the best environments to run this library.
 
+Please read the History.txt file for a description of all changes, including
+API changes, since the last release!
+
 == PERFORMANCE:
 
 Check out the latest performance results:

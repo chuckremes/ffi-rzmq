@@ -19,3 +19,7 @@ Dmitry Ustalov, github: eveel
 Patrik Sundberg, github: sundbp
 
 Pawel Pacana, github: pawelpacana
+
+Brian Ford, github: brixen
+
+Nilson Santos F. Jr., github: nilsonfsj
