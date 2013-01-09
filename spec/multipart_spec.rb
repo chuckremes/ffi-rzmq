@@ -15,7 +15,6 @@ module ZMQ
 
           @sender = Socket.new(@ctx.pointer, ZMQ::REQ)
           rc = @sender.connect("tcp://127.0.0.1:#{port}")
-          p rc
         end
 
         after(:all) do
