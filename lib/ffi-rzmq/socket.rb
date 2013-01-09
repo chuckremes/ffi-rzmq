@@ -434,7 +434,7 @@ module ZMQ
         -1
       else
         flags = NonBlocking if dontwait?(flags)
-        rc = nil
+        rc = 0
         
         parts[0..-2].each do |part|
           rc = send(method_name, part, (flags | ZMQ::SNDMORE))
