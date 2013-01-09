@@ -5,6 +5,35 @@ module ZMQ
     context "multipart messages" do
       before(:all) { @ctx = Context.new }
       after(:all) { @ctx.terminate }
+      
+      context "using #send_strings" do
+        include APIHelper
+
+        before(:all) do
+          @receiver = Socket.new(@ctx.pointer, ZMQ::REP)
+          port = bind_to_random_tcp_port(@receiver)
+
+          @sender = Socket.new(@ctx.pointer, ZMQ::REQ)
+          rc = @sender.connect("tcp://127.0.0.1:#{port}")
+          p rc
+        end
+
+        after(:all) do
+          @sender.close
+          @receiver.close
+        end
+        
+        it "correctly handles a multipart message array with 1 element" do
+          data = [ "1" ]
+
+          @sender.send_strings(data)
+          sleep 1
+          strings = []
+          rc = @receiver.recv_strings(strings)
+          strings.should == data
+        end
+      end
+
 
       context "without identity" do
         include APIHelper
