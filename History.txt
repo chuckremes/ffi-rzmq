@@ -1,3 +1,6 @@
+== 1.0.0 / 20130109
+	*	Fix for issue #74.
+
 == 0.9.7 / 20121221
   * BROKE THE API.
     ZMQ::Poller#register and ZMQ::Poller#deregister don't take fd argument
