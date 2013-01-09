@@ -244,7 +244,8 @@ module ZMQ
       module EventDataLayout
         def self.included(base)
           base.class_eval do
-            layout :addr,  :string,
+            layout :event, :int,
+            :addr,  :string,
             :field2,    :int
           end
         end
@@ -252,6 +253,8 @@ module ZMQ
 
       class EventData < FFI::Struct
         include EventDataLayout
+
+        def event() self[:event]; end
 
         def addr() self[:addr]; end
         alias :address :addr
@@ -261,7 +264,7 @@ module ZMQ
         alias :interval :fd
 
         def inspect
-          "addr [#{addr}], fd [#{fd}], field2 [#{fd}]"
+          "event [#{event}], addr [#{addr}], fd [#{fd}], field2 [#{fd}]"
         end
 
         def to_s; inspect; end
