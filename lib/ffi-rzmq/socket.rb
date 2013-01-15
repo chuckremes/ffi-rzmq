@@ -703,7 +703,7 @@ module ZMQ
       # Disconnect the socket from the given +endpoint+.
       #
       def disconnect(endpoint)
-        LibZMQ.zmq_disconnect(endpoint)
+        LibZMQ.zmq_disconnect(socket, endpoint)
       end
       
       # Version3 only
@@ -711,7 +711,7 @@ module ZMQ
       # Unbind the socket from the given +endpoint+.
       #
       def unbind(endpoint)
-        LibZMQ.zmq_unbind(endpoint)
+        LibZMQ.zmq_unbind(socket, endpoint)
       end
 
 
