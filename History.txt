@@ -1,5 +1,11 @@
 == 1.0.0 / 20130109
-	*	Fix for issue #74.
+	*	Fix for issue #74 (send_multiple improperly handled single part messages).
+	
+	* Fix for issue #77 (unbind and disconnect).
+	
+	*	Fix for issue #75 (socket monitor events).
+	
+	*	The API is stable. Releasing 1.0.
 
 == 0.9.7 / 20121221
   * BROKE THE API.

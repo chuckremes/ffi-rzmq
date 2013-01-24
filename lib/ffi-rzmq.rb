@@ -8,7 +8,7 @@ module ZMQ
   # Returns the version string for the library.
   #
   def self.version
-    @version ||= File.read(path('version.txt')).strip
+    @version ||= ZMQ::VERSION
   end
 
   # Returns the library path for the module. If any arguments are given,
