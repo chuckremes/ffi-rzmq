@@ -1,4 +1,4 @@
-before_install: sudo apt-get install libzmq
+before_install: sudo apt-get install libzmq-dev
 script: bundle exec rspec
 language: ruby
 rvm:
