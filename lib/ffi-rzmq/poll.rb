@@ -127,7 +127,7 @@ module ZMQ
       @poll_items.delete(pollable)
     end
 
-    def to_s inspect; end
+    def to_s; inspect; end
 
     private
 
