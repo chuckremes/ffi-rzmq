@@ -23,14 +23,6 @@ def version3?
 end
 
 
-SLEEP_SHORT = 0.1
-SLEEP_LONG = 0.3
-
-def delivery_sleep() sleep(SLEEP_SHORT); end
-def connect_sleep() sleep(SLEEP_SHORT); end
-def bind_sleep() sleep(SLEEP_LONG); end
-def thread_startup_sleep() sleep(1.0); end
-
 def connect_to_inproc(socket, endpoint)
   begin
     rc = socket.connect(endpoint)
