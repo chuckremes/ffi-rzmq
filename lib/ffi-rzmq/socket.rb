@@ -731,10 +731,14 @@ module ZMQ
         # integer options
         [RECONNECT_IVL_MAX, RCVHWM, SNDHWM, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, IPV4ONLY,
           ROUTER_BEHAVIOR, TCP_KEEPALIVE, TCP_KEEPALIVE_CNT,
-          TCP_KEEPALIVE_IDLE, TCP_KEEPALIVE_INTVL, TCP_ACCEPT_FILTER].each { |option| @option_lookup[option] = 0 }
-          
+          TCP_KEEPALIVE_IDLE, TCP_KEEPALIVE_INTVL, TCP_ACCEPT_FILTER, MULTICAST_HOPS
+        ].each { |option| @option_lookup[option] = 0 }
+
         # long long options
         [MAXMSGSIZE].each { |option| @option_lookup[option] = 1 }
+
+        # string options
+        [LAST_ENDPOINT].each { |option| @option_lookup[option] = 2 }
       end
 
       # these finalizer-related methods cannot live in the CommonSocketBehavior
