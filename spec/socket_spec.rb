@@ -268,7 +268,17 @@ module ZMQ
             end
           end # context using option ZMQ::IPV4ONLY
 
-
+          context "using option ZMQ::LAST_ENDPOINT" do
+            it "should return last enpoint" do
+              random_port = bind_to_random_tcp_port(socket, max_tries = 500)
+              array = []
+              rc = socket.getsockopt(ZMQ::LAST_ENDPOINT, array)
+              ZMQ::Util.resultcode_ok?(rc).should == true
+              endpoint_regex = %r{\Atcp://(.*):(\d+)\0\z}
+              array[0].should =~ endpoint_regex
+              Integer(array[0][endpoint_regex, 2]).should == random_port
+            end
+          end
         end # version2? if/else block
 
 
