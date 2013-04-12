@@ -9,7 +9,7 @@ function interface). It's a pure ruby wrapper so this gem can be loaded
 and run by any ruby runtime that supports FFI. That's all of them:
 MRI 1.9.x, Rubinius and JRuby.
 
-This single gem supports 0mq 2.x and 3.1.x 0mq APIs. The 0mq project started
+This single gem supports 0mq 2.2.x and 3.2.x 0mq APIs. The 0mq project started
 making backward-incompatible changes to the API with the 3.1.x release.
 The gem auto-configures itself to expose the API conforming to the loaded
 C library. 0mq API 3.0 is *not* supported; the 0mq community voted to
