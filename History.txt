@@ -1,3 +1,10 @@
+== 1.0.1 / 20130318
+	* Fix for issue #77 was not included in 1.0.0 release by mistake.
+	
+	* Add MIR 2.0.0 to travis runs.
+	
+	* Add support for LAST_ENDPOINT and MULTICAST_HOPS to Socket#getsockopt.
+
 == 1.0.0 / 20130109
 	*	Fix for issue #74 (send_multiple improperly handled single part messages).
 	
