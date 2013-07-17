@@ -47,8 +47,8 @@ module ZMQ
       end # each socket_type
 
       it "should set the :socket accessor to the raw socket allocated by libzmq" do
-        socket = mock('socket')
-        socket.stub!(:null? => false)
+        socket = double('socket')
+        socket.stub(:null? => false)
         LibZMQ.should_receive(:zmq_socket).and_return(socket)
 
         sock = Socket.new(@ctx.pointer, ZMQ::REQ)
