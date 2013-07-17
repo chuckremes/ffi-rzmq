@@ -629,16 +629,16 @@ module ZMQ
       # module; they *must* be in the class definition directly
 
       def define_finalizer
-        ObjectSpace.define_finalizer(self, self.class.close(@socket))
+        ObjectSpace.define_finalizer(self, self.class.close(@socket, Process.pid))
       end
 
       def remove_finalizer
         ObjectSpace.undefine_finalizer self
       end
 
-      def self.close socket
+      def self.close socket, pid
         Proc.new do
-          LibZMQ.zmq_close(socket) if socket && !socket.null?
+          LibZMQ.zmq_close(socket) if socket && !socket.nil? && Process.pid == pid
         end
       end
     end # class Socket for version2
@@ -745,15 +745,15 @@ module ZMQ
       # module; they *must* be in the class definition directly
 
       def define_finalizer
-        ObjectSpace.define_finalizer(self, self.class.close(@socket))
+        ObjectSpace.define_finalizer(self, self.class.close(@socket, Process.pid))
       end
 
       def remove_finalizer
         ObjectSpace.undefine_finalizer self
       end
 
-      def self.close socket
-        Proc.new { LibZMQ.zmq_close socket }
+      def self.close socket, pid
+        Proc.new { LibZMQ.zmq_close socket if Process.pid == pid }
       end
     end # Socket for version3
   end # LibZMQ.version3?

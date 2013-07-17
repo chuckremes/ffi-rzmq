@@ -149,15 +149,15 @@ module ZMQ
     private
 
     def define_finalizer
-      ObjectSpace.define_finalizer(self, self.class.close(@context))
+      ObjectSpace.define_finalizer(self, self.class.close(@context, Process.pid))
     end
 
     def remove_finalizer
       ObjectSpace.undefine_finalizer self
     end
 
-    def self.close context
-      Proc.new { LibZMQ.zmq_term context unless context.null? }
+    def self.close context, pid
+      Proc.new { LibZMQ.zmq_term context if !context.null? && Process.pid == pid }
     end
   end
 
