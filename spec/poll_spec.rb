@@ -16,10 +16,10 @@ module ZMQ
 
     context "#register" do
 
-      let(:pollable) { mock('pollable') }
+      let(:pollable) { double('pollable') }
       let(:poller) { Poller.new }
       let(:socket) { FFI::MemoryPointer.new(4) }
-      let(:io) { stub(:posix_fileno => fd) }
+      let(:io) { double(:posix_fileno => fd) }
       let(:fd) { 1 }
 
       it "returns false when given a nil pollable" do
@@ -53,10 +53,10 @@ module ZMQ
 
     context "#deregister" do
 
-      let(:pollable) { mock('pollable') }
+      let(:pollable) { double('pollable') }
       let(:poller) { Poller.new }
       let(:socket) { FFI::MemoryPointer.new(4) }
-      let(:io) { stub(:posix_fileno => fd) }
+      let(:io) { double(:posix_fileno => fd) }
       let(:fd) { 1 }
 
       it "returns true when deregistered pollable from event" do

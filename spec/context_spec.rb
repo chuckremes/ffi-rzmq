@@ -99,7 +99,7 @@ module ZMQ
     context "when allocating a socket" do
       it "should return nil when allocation fails" do
         ctx = Context.new
-        LibZMQ.stub!(:zmq_socket => nil)
+        LibZMQ.stub(:zmq_socket => nil)
         ctx.socket(ZMQ::REQ).should be_nil
       end
     end # context socket

@@ -30,16 +30,6 @@ def connect_to_inproc(socket, endpoint)
 end
 
 module APIHelper
-  def stub_libzmq
-    @err_str_mock = mock("error string")
-
-    LibZMQ.stub!(
-    :zmq_init => 0,
-    :zmq_errno => 0,
-    :zmq_sterror => @err_str_mock
-    )
-  end
-
   def poller_setup
     @helper_poller ||= ZMQ::Poller.new
   end
