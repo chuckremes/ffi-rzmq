@@ -26,14 +26,14 @@ module ZMQ
         lambda do
           s = Socket.new(@ctx.pointer, ZMQ::REQ)
           s.close
-        end.should_not raise_exception(ZMQ::ContextError)
+        end.should_not raise_exception
       end
 
       it "works with a Context instance as the context_ptr" do
         lambda do
           s = Socket.new(@ctx, ZMQ::SUB)
           s.close
-        end.should_not raise_exception(ZMQ::ContextError)
+        end.should_not raise_exception
       end
 
 
