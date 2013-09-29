@@ -30,6 +30,9 @@ Check out the latest performance results:
 
   http://www.zeromq.org/bindings:ruby-ffi
 
+The short version is that the FFI bindings are a few microseconds slower
+than using a C extension.
+
 == FEATURES/PROBLEMS:
 
 This gem needs more tests. This gem has been battle tested by myself
@@ -131,14 +134,13 @@ time of installation.
 
   * ffi (>= 1.0.0)
 
-This is a requirement for MRI only. Both Rubinius and JRuby have FFI support built
+This is a requirement for MRI and Rubinius. JRuby has FFI support built
 in as a standard component. Do *not* run this gem under MRI with an old 'ffi' gem.
 It will crash randomly and you will be sad.
 
 
 == INSTALL:
 
-A full gem has been released to rubygems.org as of release 0.5.0.
 Make sure the ZeroMQ library is already installed on your system.
 
  % gem install ffi-rzmq # should grab the latest release
