@@ -12,9 +12,9 @@ module ZMQ
       inside_gem = File.join(File.dirname(__FILE__), '..', '..', 'ext')
       local_path = FFI::Platform::IS_WINDOWS ? ENV['PATH'].split(';') : ENV['PATH'].split(':')
 
-      ZMQ_LIB_PATHS = [
-        inside_gem, *local_path, '/usr/local/lib', '/opt/local/lib', 
-        '/usr/local/homebrew/lib', '/usr/lib64'
+      # Search for libzmq in the following order...
+      ZMQ_LIB_PATHS = [inside_gem] + local_path + [
+        '/usr/local/lib', '/opt/local/lib', '/usr/local/homebrew/lib', '/usr/lib64'
       ].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
       ffi_lib(ZMQ_LIB_PATHS + %w{libzmq})
     rescue LoadError
