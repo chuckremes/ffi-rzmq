@@ -10,17 +10,15 @@ module ZMQ
       # bias the library discovery to a path inside the gem first, then
       # to the usual system paths
       inside_gem = File.join(File.dirname(__FILE__), '..', '..', 'ext')
-      if FFI::Platform::IS_WINDOWS
-        local_path=ENV['PATH'].split(';')
-      else
-        local_path=ENV['PATH'].split(':')
-      end
+      local_path = FFI::Platform::IS_WINDOWS ? ENV['PATH'].split(';') : ENV['PATH'].split(':')
+
       ZMQ_LIB_PATHS = [
-        inside_gem, '/usr/local/lib', '/opt/local/lib', '/usr/local/homebrew/lib', '/usr/lib64'
+        inside_gem, *local_path, '/usr/local/lib', '/opt/local/lib', 
+        '/usr/local/homebrew/lib', '/usr/lib64'
       ].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
       ffi_lib(ZMQ_LIB_PATHS + %w{libzmq})
     rescue LoadError
-      if ZMQ_LIB_PATHS.push(*local_path).any? {|path|
+      if ZMQ_LIB_PATHS.any? {|path|
         File.file? File.join(path, "libzmq.#{FFI::Platform::LIBSUFFIX}")}
         warn "Unable to load this gem. The libzmq library exists, but cannot be loaded."
         warn "If this is Windows:"
