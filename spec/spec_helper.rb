@@ -22,6 +22,10 @@ def version3?
   ZMQ::LibZMQ.version3?
 end
 
+def jruby?
+  RUBY_PLATFORM =~ /java/
+end
+
 
 def connect_to_inproc(socket, endpoint)
   begin
