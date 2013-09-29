@@ -61,11 +61,13 @@ module ZMQ
         sock.close
       end
 
-      it "should track pid in finalizer so subsequent fork will not segfault" do
-        sock = Socket.new(@ctx.pointer, ZMQ::REQ)
-        pid = fork { }
-        Process.wait(pid)
-        sock.close
+      unless jruby?
+        it "should track pid in finalizer so subsequent fork will not segfault" do
+          sock = Socket.new(@ctx.pointer, ZMQ::REQ)
+          pid = fork { }
+          Process.wait(pid)
+          sock.close
+        end
       end
     end # context initializing
 
