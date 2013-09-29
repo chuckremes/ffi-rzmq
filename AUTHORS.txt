@@ -23,3 +23,7 @@ Pawel Pacana, github: pawelpacana
 Brian Ford, github: brixen
 
 Nilson Santos F. Jr., github: nilsonfsj
+
+Simon Chiang , github: thinkerbot
+
+Harlow Ward, github: harlow
