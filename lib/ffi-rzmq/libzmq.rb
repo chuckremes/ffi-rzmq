@@ -17,9 +17,8 @@ module ZMQ
         '/usr/local/lib', '/opt/local/lib', '/usr/local/homebrew/lib', '/usr/lib64'
       ].map{|path| "#{path}/libzmq.#{FFI::Platform::LIBSUFFIX}"}
       ffi_lib(ZMQ_LIB_PATHS + %w{libzmq})
-    rescue LoadError
-      if ZMQ_LIB_PATHS.any? {|path|
-        File.file? File.join(path, "libzmq.#{FFI::Platform::LIBSUFFIX}")}
+    rescue LoadError => e
+      if ZMQ_LIB_PATHS.any? {|path| File.file?(path) } 
         warn "Unable to load this gem. The libzmq library exists, but cannot be loaded."
         warn "If this is Windows:"
         warn "-  Check that you have MSVC runtime installed or statically linked"
@@ -32,7 +31,7 @@ module ZMQ
         warn "For non-Windows platforms, make sure libzmq is located in this search path:"
         warn ZMQ_LIB_PATHS.inspect
       end
-      raise LoadError, "The libzmq library (or DLL) could not be loaded"
+      raise LoadError, e.message
     end
     # Size_t not working properly on Windows
     find_type(:size_t) rescue typedef(:ulong, :size_t)
