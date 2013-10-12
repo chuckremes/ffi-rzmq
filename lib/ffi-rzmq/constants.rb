@@ -123,7 +123,7 @@ if ZMQ::LibZMQ.version2?
 end # version2?
 
 
-if ZMQ::LibZMQ.version3?
+if ZMQ::LibZMQ.version3? || ZMQ::LibZMQ.version4?
   module ZMQ
     # Socket types
     XPUB = 9
@@ -184,4 +184,4 @@ if ZMQ::LibZMQ.version3?
     # Socket & other errors
     EMFILE = Errno::EMFILE::Errno
   end
-end # version3?
+end # version3? || version4?

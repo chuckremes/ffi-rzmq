@@ -108,7 +108,7 @@ module ZMQ
         ['zmq_msg_init', 'zmq_msg_init_data', 'zmq_msg_copy', 'zmq_msg_move'].include?(source)
       end
       
-    elsif LibZMQ.version3?
+    elsif LibZMQ.version3? || LibZMQ.version4?
       def self.context_error?(source)
         'zmq_ctx_new' == source ||
         'zmq_ctx_set' == source ||

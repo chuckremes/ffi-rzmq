@@ -646,7 +646,7 @@ module ZMQ
   end # LibZMQ.version2?
 
 
-  if LibZMQ.version3?
+  if LibZMQ.version3? || LibZMQ.version4?
     class Socket
       include CommonSocketBehavior
       include IdentitySupport
@@ -756,6 +756,6 @@ module ZMQ
         Proc.new { LibZMQ.zmq_close socket if Process.pid == pid }
       end
     end # Socket for version3
-  end # LibZMQ.version3?
+  end # LibZMQ.version3? || LibZMQ.version4?
 
 end # module ZMQ

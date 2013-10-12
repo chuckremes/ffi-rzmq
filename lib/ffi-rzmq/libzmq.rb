@@ -71,6 +71,8 @@ module ZMQ
 
     def self.version3?() version[:major] == 3 && version[:minor] >= 2 end
 
+    def self.version4?() version[:major] == 4 end
+
     # Context initialization and destruction
     @blocking = true
     attach_function :zmq_init, [:int], :pointer
@@ -274,7 +276,7 @@ module ZMQ
   # Sanity check; print an error and exit if we are trying to load an unsupported
   # version of libzmq.
   #
-  unless LibZMQ.version2? || LibZMQ.version3?
+  unless LibZMQ.version2? || LibZMQ.version3? || LibZMQ.version4?
     hash = LibZMQ.version
     version = "#{hash[:major]}.#{hash[:minor]}.#{hash[:patch]}"
     raise LoadError, "The libzmq version #{version} is incompatible with ffi-rzmq."
