@@ -59,7 +59,7 @@ module ZMQ
 
         define_finalizer
       end
-    elsif LibZMQ.version3?
+    elsif LibZMQ.version3? || LibZMQ.version4?
 
       def self.create(opts = {})
         new(opts) rescue nil

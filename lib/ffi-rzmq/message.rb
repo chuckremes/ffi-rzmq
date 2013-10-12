@@ -199,7 +199,7 @@ module ZMQ
 
   end # class Message
   
-  if LibZMQ.version3?
+  if LibZMQ.version3? || LibZMQ.version4?
     class Message
       # Version3 only
       #
