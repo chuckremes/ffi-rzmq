@@ -190,7 +190,7 @@ module ZMQ
 
   # Attaches to those functions specific to the 3.x API
   #
-  if LibZMQ.version3?
+  if LibZMQ.version3? || LibZMQ.version4?
 
     module LibZMQ
       # New Context API
@@ -218,7 +218,7 @@ module ZMQ
       # Monitoring API
       # zmq_ctx_set_monitor is no longer supported as of version >= 3.2.1
       # replaced by zmq_socket_monitor
-      if LibZMQ.version[:minor] > 2 || (LibZMQ.version[:minor] == 2 && LibZMQ.version[:patch] >= 1)
+      if LibZMQ.version4? || (LibZMQ.version[:minor] > 2 || (LibZMQ.version[:minor] == 2 && LibZMQ.version[:patch] >= 1))
         @blocking = true
         attach_function :zmq_socket_monitor, [:pointer, :pointer, :int], :int
       else
