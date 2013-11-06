@@ -48,12 +48,9 @@ module ZMQ
     # This is really only honored by the MRI implementation but it *is* necessary
     # otherwise the runtime hangs (and requires a kill -9 to terminate)
     #
-    @blocking = true
-    attach_function :zmq_version, [:pointer, :pointer, :pointer], :void
-    @blocking = true
-    attach_function :zmq_errno, [], :int
-    @blocking = true
-    attach_function :zmq_strerror, [:int], :pointer
+    attach_function :zmq_version, [:pointer, :pointer, :pointer], :void, :blocking => true
+    attach_function :zmq_errno, [], :int, :blocking => true
+    attach_function :zmq_strerror, [:int], :pointer, :blocking => true
 
     def self.version
       if @version.nil?
@@ -74,28 +71,18 @@ module ZMQ
     def self.version4?() version[:major] == 4 end
 
     # Context initialization and destruction
-    @blocking = true
-    attach_function :zmq_init, [:int], :pointer
-    @blocking = true
-    attach_function :zmq_term, [:pointer], :int
+    attach_function :zmq_init, [:int], :pointer, :blocking => true
+    attach_function :zmq_term, [:pointer], :int, :blocking => true
 
     # Message API
-    @blocking = true
-    attach_function :zmq_msg_init, [:pointer], :int
-    @blocking = true
-    attach_function :zmq_msg_init_size, [:pointer, :size_t], :int
-    @blocking = true
-    attach_function :zmq_msg_init_data, [:pointer, :pointer, :size_t, :pointer, :pointer], :int
-    @blocking = true
-    attach_function :zmq_msg_close, [:pointer], :int
-    @blocking = true
-    attach_function :zmq_msg_data, [:pointer], :pointer
-    @blocking = true
-    attach_function :zmq_msg_size, [:pointer], :size_t
-    @blocking = true
-    attach_function :zmq_msg_copy, [:pointer, :pointer], :int
-    @blocking = true
-    attach_function :zmq_msg_move, [:pointer, :pointer], :int
+    attach_function :zmq_msg_init, [:pointer], :int, :blocking => true
+    attach_function :zmq_msg_init_size, [:pointer, :size_t], :int, :blocking => true
+    attach_function :zmq_msg_init_data, [:pointer, :pointer, :size_t, :pointer, :pointer], :int, :blocking => true
+    attach_function :zmq_msg_close, [:pointer], :int, :blocking => true
+    attach_function :zmq_msg_data, [:pointer], :pointer, :blocking => true
+    attach_function :zmq_msg_size, [:pointer], :size_t, :blocking => true
+    attach_function :zmq_msg_copy, [:pointer, :pointer], :int, :blocking => true
+    attach_function :zmq_msg_move, [:pointer, :pointer], :int, :blocking => true
 
     # Used for casting pointers back to the struct
     #
@@ -107,26 +94,18 @@ module ZMQ
     end # class Msg
 
     # Socket API
-    @blocking = true
-    attach_function :zmq_socket, [:pointer, :int], :pointer
-    @blocking = true
-    attach_function :zmq_setsockopt, [:pointer, :int, :pointer, :int], :int
-    @blocking = true
-    attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :pointer], :int
-    @blocking = true
-    attach_function :zmq_bind, [:pointer, :string], :int
-    @blocking = true
-    attach_function :zmq_connect, [:pointer, :string], :int
-    @blocking = true
-    attach_function :zmq_close, [:pointer], :int
+    attach_function :zmq_socket, [:pointer, :int], :pointer, :blocking => true
+    attach_function :zmq_setsockopt, [:pointer, :int, :pointer, :int], :int, :blocking => true
+    attach_function :zmq_getsockopt, [:pointer, :int, :pointer, :pointer], :int, :blocking => true
+    attach_function :zmq_bind, [:pointer, :string], :int, :blocking => true
+    attach_function :zmq_connect, [:pointer, :string], :int, :blocking => true
+    attach_function :zmq_close, [:pointer], :int, :blocking => true
 
     # Device API
-    @blocking = true
-    attach_function :zmq_device, [:int, :pointer, :pointer], :int
+    attach_function :zmq_device, [:int, :pointer, :pointer], :int, :blocking => true
 
     # Poll API
-    @blocking = true
-    attach_function :zmq_poll, [:pointer, :int, :long], :int
+    attach_function :zmq_poll, [:pointer, :int, :long], :int, :blocking => true
 
     module PollItemLayout
       def self.included(base)
@@ -180,10 +159,8 @@ module ZMQ
 
     module LibZMQ
       # Socket api
-      @blocking = true
-      attach_function :zmq_recv, [:pointer, :pointer, :int], :int
-      @blocking = true
-      attach_function :zmq_send, [:pointer, :pointer, :int], :int
+      attach_function :zmq_recv, [:pointer, :pointer, :int], :int, :blocking => true
+      attach_function :zmq_send, [:pointer, :pointer, :int], :int, :blocking => true
     end
   end
 
@@ -194,51 +171,34 @@ module ZMQ
 
     module LibZMQ
       # New Context API
-      @blocking = true
-      attach_function :zmq_ctx_new, [], :pointer
-      @blocking = true
-      attach_function :zmq_ctx_destroy, [:pointer], :int
-      @blocking = true
-      attach_function :zmq_ctx_set, [:pointer, :int, :int], :int
-      @blocking = true
-      attach_function :zmq_ctx_get, [:pointer, :int], :int
+      attach_function :zmq_ctx_new, [], :pointer, :blocking => true
+      attach_function :zmq_ctx_destroy, [:pointer], :int, :blocking => true
+      attach_function :zmq_ctx_set, [:pointer, :int, :int], :int, :blocking => true
+      attach_function :zmq_ctx_get, [:pointer, :int], :int, :blocking => true
 
       # Message API
-      @blocking = true
-      attach_function :zmq_msg_send, [:pointer, :pointer, :int], :int
-      @blocking = true
-      attach_function :zmq_msg_recv, [:pointer, :pointer, :int], :int
-      @blocking = true
-      attach_function :zmq_msg_more, [:pointer], :int
-      @blocking = true
-      attach_function :zmq_msg_get, [:pointer, :int], :int
-      @blocking = true
-      attach_function :zmq_msg_set, [:pointer, :int, :int], :int
+      attach_function :zmq_msg_send, [:pointer, :pointer, :int], :int, :blocking => true
+      attach_function :zmq_msg_recv, [:pointer, :pointer, :int], :int, :blocking => true
+      attach_function :zmq_msg_more, [:pointer], :int, :blocking => true
+      attach_function :zmq_msg_get, [:pointer, :int], :int, :blocking => true
+      attach_function :zmq_msg_set, [:pointer, :int, :int], :int, :blocking => true
 
       # Monitoring API
       # zmq_ctx_set_monitor is no longer supported as of version >= 3.2.1
       # replaced by zmq_socket_monitor
       if LibZMQ.version4? || (LibZMQ.version[:minor] > 2 || (LibZMQ.version[:minor] == 2 && LibZMQ.version[:patch] >= 1))
-        @blocking = true
-        attach_function :zmq_socket_monitor, [:pointer, :pointer, :int], :int
+        attach_function :zmq_socket_monitor, [:pointer, :pointer, :int], :int, :blocking => true
       else
-        @blocking = true
-        attach_function :zmq_ctx_set_monitor, [:pointer, :pointer], :int
+        attach_function :zmq_ctx_set_monitor, [:pointer, :pointer], :int, :blocking => true
       end
 
       # Socket API
-      @blocking = true
-      attach_function :zmq_unbind, [:pointer, :string], :int
-      @blocking = true
-      attach_function :zmq_disconnect, [:pointer, :string], :int
-      @blocking = true
-      attach_function :zmq_recvmsg, [:pointer, :pointer, :int], :int
-      @blocking = true
-      attach_function :zmq_recv, [:pointer, :pointer, :size_t, :int], :int
-      @blocking = true
-      attach_function :zmq_sendmsg, [:pointer, :pointer, :int], :int
-      @blocking = true
-      attach_function :zmq_send, [:pointer, :pointer, :size_t, :int], :int
+      attach_function :zmq_unbind, [:pointer, :string], :int, :blocking => true
+      attach_function :zmq_disconnect, [:pointer, :string], :int, :blocking => true
+      attach_function :zmq_recvmsg, [:pointer, :pointer, :int], :int, :blocking => true
+      attach_function :zmq_recv, [:pointer, :pointer, :size_t, :int], :int, :blocking => true
+      attach_function :zmq_sendmsg, [:pointer, :pointer, :int], :int, :blocking => true
+      attach_function :zmq_send, [:pointer, :pointer, :size_t, :int], :int, :blocking => true
 
       module EventDataLayout
         def self.included(base)
