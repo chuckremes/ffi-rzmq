@@ -11,6 +11,8 @@ module ZMQ
       [ZMQ::REQ, ZMQ::REP, ZMQ::DEALER, ZMQ::ROUTER, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR]
     elsif LibZMQ.version3?
       [ZMQ::REQ, ZMQ::REP, ZMQ::DEALER, ZMQ::ROUTER, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR, ZMQ::XPUB, ZMQ::XSUB]
+    elsif LibZMQ.version4?
+      [ZMQ::REQ, ZMQ::REP, ZMQ::DEALER, ZMQ::ROUTER, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR, ZMQ::XPUB, ZMQ::XSUB, ZMQ::STREAM]
     end
 
     context "when initializing" do
@@ -414,7 +416,7 @@ module ZMQ
             array[0].should == value
           end
 
-          if (ZMQ::SUB == socket_type) && version3? || (defined?(ZMQ::XSUB) && ZMQ::XSUB == socket_type)
+          if (ZMQ::SUB == socket_type) && (version3? || version4?) || (defined?(ZMQ::XSUB) && ZMQ::XSUB == socket_type)
             it "should default to a value of 0" do
               value = 0
               array = []
@@ -472,6 +474,99 @@ module ZMQ
             array[0].should == value
           end
         end # context using option ZMQ::BACKLOG
+
+        if version4?
+          context "using option ZMQ::IPV6" do
+            it "turns on IPV6 mode" do
+              value = 1
+              socket.setsockopt ZMQ::IPV6, value
+              array = []
+              rc = socket.getsockopt(ZMQ::IPV6, array)
+              rc.should == 0
+              array[0].should == value
+            end
+          end
+
+          context "using option ZMQ::PLAIN_SERVER" do
+            it "turns on PLAIN security mode" do
+              value = 1
+              socket.setsockopt ZMQ::PLAIN_SERVER, value
+              array = []
+              rc = socket.getsockopt(ZMQ::MECHANISM, array)
+              rc.should == 0
+              array[0].should == ZMQ::PLAIN
+            end
+          end
+
+          context "using option ZMQ::CURVE_SERVER" do
+            it "turns on CURVE security mode" do
+              # If this fails it's probably because ZeroMQ was not built with libsodium
+              socket.setsockopt ZMQ::CURVE_SERVER, 1
+              socket.setsockopt ZMQ::CURVE_PUBLICKEY, "publickey"
+              socket.setsockopt ZMQ::CURVE_SECRETKEY, "secretkey"
+              socket.setsockopt ZMQ::CURVE_SERVERKEY, "serverkey"
+
+              array = []
+              rc = socket.getsockopt(ZMQ::MECHANISM, array)
+              rc.should == 0
+              array[0].should == ZMQ::CURVE
+            end
+          end
+
+          context "using option ZMQ::ZAP_DOMAIN" do
+            it "sets the zap domain" do
+              value = "zap.domain"
+              socket.setsockopt ZMQ::ZAP_DOMAIN, value
+              array = []
+              rc = socket.getsockopt(ZMQ::ZAP_DOMAIN, array)
+              rc.should == 0
+              array[0].should == "#{value}\x00"
+            end
+          end
+
+
+          if [ZMQ::ROUTER, ZMQ::DEALER, ZMQ::REQ].include?(socket_type)
+            context "using option ZMQ::PROBE_ROUTER" do
+              it "enables router probing" do
+                value = 1
+                rc = socket.setsockopt ZMQ::PROBE_ROUTER, value
+                rc.should == 0
+                # No getsockopt
+              end
+            end
+          end
+
+          if socket_type == ZMQ::REQ
+            context "using option ZMQ::REQ_CORRELATE" do
+              it "enables request reply matching" do
+                value = 1
+                rc = socket.setsockopt ZMQ::REQ_CORRELATE, value
+                rc.should == 0
+                # No getsockopt
+              end
+            end
+
+            context "using option ZMQ::REQ_RELAXED" do
+              it "relaxes strict request / reply" do
+                value = 1
+                rc = socket.setsockopt ZMQ::REQ_RELAXED, value
+                rc.should == 0
+              end
+            end
+          end
+
+          context "using option ZMQ::CONFLATE" do
+            it "keeps only last message" do
+              value = 0
+              socket.setsockopt ZMQ::CONFLATE, value
+              array = []
+              rc = socket.getsockopt(ZMQ::CONFLATE, array)
+              rc.should == 0
+              array[0].should == value
+            end
+          end
+
+        end # if version 4
 
       end # context #setsockopt
 
@@ -554,6 +649,7 @@ module ZMQ
             array[0].should == socket_type
           end
         end
+
       end # context #getsockopt
 
     end # each socket_type

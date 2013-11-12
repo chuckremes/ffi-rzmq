@@ -185,3 +185,35 @@ if ZMQ::LibZMQ.version3? || ZMQ::LibZMQ.version4?
     EMFILE = Errno::EMFILE::Errno
   end
 end # version3? || version4?
+
+if ZMQ::LibZMQ.version4?
+  module ZMQ
+    # Socket types
+    STREAM = 11
+
+    # Socket Options
+    IPV6 = 42
+    MECHANISM = 43
+    PLAIN_SERVER = 44
+    PLAIN_USERNAME = 45
+    PLAIN_PASSWORD = 46
+    CURVE_SERVER = 47
+    CURVE_PUBLICKEY = 48
+    CURVE_SECRETKEY = 49
+    CURVE_SERVERKEY = 50
+    PROBE_ROUTER = 51
+    REQ_CORRELATE = 52
+    REQ_RELAXED = 53
+    CONFLATE = 54
+    ZAP_DOMAIN = 55
+
+    # Socket Security Types
+    NULL = 0
+    PLAIN = 1
+    CURVE = 2
+
+    # Socket monitoring
+    EVENT_MONITOR_STOPPED = 1024
+    EVENT_ALL |= EVENT_MONITOR_STOPPED
+  end
+end

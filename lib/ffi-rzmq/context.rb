@@ -105,7 +105,7 @@ module ZMQ
           0
         end
       end
-    elsif LibZMQ.version3?
+    elsif LibZMQ.version3? || LibZMQ.version4?
       def terminate
         unless @context.nil? || @context.null?
           remove_finalizer
