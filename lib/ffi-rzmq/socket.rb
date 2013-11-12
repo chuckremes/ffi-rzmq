@@ -739,6 +739,14 @@ module ZMQ
 
         # string options
         [LAST_ENDPOINT].each { |option| @option_lookup[option] = 2 }
+
+        if LibZMQ.version4?
+          [IPV6, MECHANISM, PLAIN_SERVER, CURVE_SERVER, PROBE_ROUTER,
+           REQ_CORRELATE, REQ_RELAXED, CONFLATE].each { |option| @option_lookup[option] = 0 }
+
+          [ ZAP_DOMAIN, PLAIN_USERNAME, PLAIN_PASSWORD,
+            CURVE_PUBLICKEY, CURVE_SERVERKEY, CURVE_SECRETKEY].each { |option| @option_lookup[option] = 2 }
+        end
       end
 
       # these finalizer-related methods cannot live in the CommonSocketBehavior

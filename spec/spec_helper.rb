@@ -22,6 +22,10 @@ def version3?
   ZMQ::LibZMQ.version3?
 end
 
+def version4?
+  ZMQ::LibZMQ.version4?
+end
+
 def jruby?
   RUBY_PLATFORM =~ /java/
 end
