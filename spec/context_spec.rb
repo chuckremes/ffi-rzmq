@@ -84,14 +84,9 @@ module ZMQ
       
       it "should call the correct library function to terminate the context" do
         ctx = Context.new
-        
-        if LibZMQ.version2?
-          LibZMQ.should_receive(:zmq_term).and_return(0)
-          ctx.terminate
-        else
-          LibZMQ.should_receive(:zmq_ctx_destroy).with(ctx.pointer).and_return(0)
-          ctx.terminate
-        end
+
+        LibZMQ.should_receive(:zmq_ctx_destroy).with(ctx.pointer).and_return(0)
+        ctx.terminate
       end
     end # context terminate
 

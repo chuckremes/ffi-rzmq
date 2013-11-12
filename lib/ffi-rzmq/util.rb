@@ -28,19 +28,6 @@ module ZMQ
       LibZMQ.zmq_strerror(errno).read_string
     end
 
-    # Returns an array of the form [major, minor, patch] to represent the
-    # version of libzmq.
-    #
-    # Class method! Invoke as:  ZMQ::Util.version
-    #
-    def self.version
-      major = FFI::MemoryPointer.new :int
-      minor = FFI::MemoryPointer.new :int
-      patch = FFI::MemoryPointer.new :int
-      LibZMQ.zmq_version major, minor, patch
-      [major.read_int, minor.read_int, patch.read_int]
-    end
-
     # Attempts to bind to a random tcp port on +host+ up to +max_tries+
     # times. Returns the port number upon success or nil upon failure.
     #
@@ -56,7 +43,7 @@ module ZMQ
 
       resultcode_ok?(rc) ? random : nil
     end
-    
+
     # :doc:
     # Called to verify whether there were any errors during
     # operation. If any are found, raise the appropriate #ZeroMQError.
@@ -90,38 +77,26 @@ module ZMQ
 
       else
         raise ZeroMQError.new source, result_code, -1,
-        "Source [#{source}] does not match any zmq_* strings, rc [#{result_code}], errno [#{ZMQ::Util.errno}], error_string [#{ZMQ::Util.error_string}]"
+          "Source [#{source}] does not match any zmq_* strings, rc [#{result_code}], errno [#{ZMQ::Util.errno}], error_string [#{ZMQ::Util.error_string}]"
       end
     end
 
     def self.eagain?
       EAGAIN == ZMQ::Util.errno
     end
-    
-    if LibZMQ.version2?
-      def self.context_error?(source)
-        'zmq_init' == source ||
-        'zmq_socket' == source
-      end
-      
-      def self.message_error?(source)
-        ['zmq_msg_init', 'zmq_msg_init_data', 'zmq_msg_copy', 'zmq_msg_move'].include?(source)
-      end
-      
-    elsif LibZMQ.version3?
-      def self.context_error?(source)
-        'zmq_ctx_new' == source ||
+
+    def self.context_error?(source)
+      'zmq_ctx_new' == source ||
         'zmq_ctx_set' == source ||
         'zmq_ctx_get' == source ||
         'zmq_ctx_destory' == source ||
         'zmq_ctx_set_monitor' == source
-      end
-      
-      def self.message_error?(source)
-        ['zmq_msg_init', 'zmq_msg_init_data', 'zmq_msg_copy', 'zmq_msg_move', 'zmq_msg_close', 'zmq_msg_get',
-          'zmq_msg_more', 'zmq_msg_recv', 'zmq_msg_send', 'zmq_msg_set'].include?(source)
-      end
-    end # if LibZMQ.version...?
+    end
+
+    def self.message_error?(source)
+      ['zmq_msg_init', 'zmq_msg_init_data', 'zmq_msg_copy', 'zmq_msg_move', 'zmq_msg_close', 'zmq_msg_get',
+       'zmq_msg_more', 'zmq_msg_recv', 'zmq_msg_send', 'zmq_msg_set'].include?(source)
+    end
 
   end # module Util
 

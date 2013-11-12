@@ -84,8 +84,8 @@ module ZMQ
   #  puts "value1 is #{message.value1}"
   #
   class Message
-    
-    # Recommended way to create a standard message. A Message object is 
+
+    # Recommended way to create a standard message. A Message object is
     # returned upon success, nil when allocation fails.
     #
     def self.create message = nil
@@ -129,7 +129,7 @@ module ZMQ
       data_buffer.write_string bytes, len
 
       # use libC to call free on the data buffer; earlier versions used an
-      # FFI::Function here that called back into Ruby, but Rubinius won't 
+      # FFI::Function here that called back into Ruby, but Rubinius won't
       # support that and there are issues with the other runtimes too
       LibZMQ.zmq_msg_init_data @pointer, data_buffer, len, LibC::Free, nil
     end
@@ -182,42 +182,36 @@ module ZMQ
     #
     def close
       rc = 0
-      
+
       if @pointer
         rc = LibZMQ.zmq_msg_close @pointer
         @pointer = nil
       end
-      
+
       rc
     end
-    
+
     # cache the msg size so we don't have to recalculate it when creating
     # each new instance
     @msg_size = LibZMQ::Msg.size
-    
+
     def self.msg_size() @msg_size; end
 
   end # class Message
-  
-  if LibZMQ.version3?
-    class Message
-      # Version3 only
-      #
-      def get(property)
-        LibZMQ.zmq_msg_get(@pointer, property)
-      end
-      
-      # Version3 only
-      #
-      # Returns true if this message has additional parts coming.
-      #
-      def more?
-        Util.resultcode_ok?(get(MORE))
-      end
-      
-      def set(property, value)
-        LibZMQ.zmq_msg_set(@pointer, property, value)
-      end
+
+  class Message
+    def get(property)
+      LibZMQ.zmq_msg_get(@pointer, property)
+    end
+
+    # Returns true if this message has additional parts coming.
+    #
+    def more?
+      Util.resultcode_ok?(get(MORE))
+    end
+
+    def set(property, value)
+      LibZMQ.zmq_msg_set(@pointer, property, value)
     end
   end
 
@@ -254,7 +248,7 @@ module ZMQ
     #
     def copy_in_bytes bytes, len
       rc = super(bytes, len)
-      
+
       # make sure we have a way to deallocate this memory if the object goes
       # out of scope
       define_finalizer

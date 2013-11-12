@@ -7,11 +7,8 @@ module ZMQ
   describe Socket do
     include APIHelper
 
-    socket_types = if LibZMQ.version2?
-      [ZMQ::REQ, ZMQ::REP, ZMQ::DEALER, ZMQ::ROUTER, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR]
-    elsif LibZMQ.version3?
+    socket_types =
       [ZMQ::REQ, ZMQ::REP, ZMQ::DEALER, ZMQ::ROUTER, ZMQ::PUB, ZMQ::SUB, ZMQ::PUSH, ZMQ::PULL, ZMQ::PAIR, ZMQ::XPUB, ZMQ::XSUB]
-    end
 
     context "when initializing" do
       before(:all) { @ctx = Context.new }
@@ -173,123 +170,48 @@ module ZMQ
           end
         end # context using option ZMQ::IDENTITY
 
-
-        if version2?
-
-          context "using option ZMQ::HWM" do
-            it "should set the high water mark given a positive value" do
-              hwm = 4
-              socket.setsockopt ZMQ::HWM, hwm
-              array = []
-              rc = socket.getsockopt(ZMQ::HWM, array)
-              rc.should == 0
-              array[0].should == hwm
-            end
-          end # context using option ZMQ::HWM
-
-
-          context "using option ZMQ::SWAP" do
-            it "should set the swap value given a positive value" do
-              swap = 10_000
-              socket.setsockopt ZMQ::SWAP, swap
-              array = []
-              rc = socket.getsockopt(ZMQ::SWAP, array)
-              rc.should == 0
-              array[0].should == swap
-            end
-
-            it "returns -1 given a negative value" do
-              swap = -10_000
-              rc = socket.setsockopt(ZMQ::SWAP, swap)
-              rc.should == -1
-            end
-          end # context using option ZMQ::SWP
-
-
-          context "using option ZMQ::MCAST_LOOP" do
-            it "should enable the multicast loopback given a 1 (true) value" do
-              socket.setsockopt ZMQ::MCAST_LOOP, 1
-              array = []
-              rc = socket.getsockopt(ZMQ::MCAST_LOOP, array)
-              rc.should == 0
-              array[0].should be_true
-            end
-
-            it "should disable the multicast loopback given a 0 (false) value" do
-              socket.setsockopt ZMQ::MCAST_LOOP, 0
-              array = []
-              rc = socket.getsockopt(ZMQ::MCAST_LOOP, array)
-              rc.should == 0
-              array[0].should be_false
-            end
-          end # context using option ZMQ::MCAST_LOOP
-
-
-          context "using option ZMQ::RECOVERY_IVL_MSEC" do
-            it "should set the time interval for saving messages measured in milliseconds given a positive value" do
-              value = 200
-              socket.setsockopt ZMQ::RECOVERY_IVL_MSEC, value
-              array = []
-              rc = socket.getsockopt(ZMQ::RECOVERY_IVL_MSEC, array)
-              rc.should == 0
-              array[0].should == value
-            end
-
-            it "should default to a value of -1" do
-              value = -1
-              array = []
-              rc = socket.getsockopt(ZMQ::RECOVERY_IVL_MSEC, array)
-              rc.should == 0
-              array[0].should == value
-            end
-          end # context using option ZMQ::RECOVERY_IVL_MSEC
-
-        else # version3 or higher
-
-          context "using option ZMQ::IPV4ONLY" do
-            it "should enable use of IPV6 sockets when set to 0" do
-              value = 0
-              socket.setsockopt ZMQ::IPV4ONLY, value
-              array = []
-              rc = socket.getsockopt(ZMQ::IPV4ONLY, array)
-              rc.should == 0
-              array[0].should == value
-            end
-
-            it "should default to a value of 1" do
-              value = 1
-              array = []
-              rc = socket.getsockopt(ZMQ::IPV4ONLY, array)
-              rc.should == 0
-              array[0].should == value
-            end
-
-            it "returns -1 given a negative value" do
-              value = -1
-              rc = socket.setsockopt ZMQ::IPV4ONLY, value
-              rc.should == -1
-            end
-
-            it "returns -1 given a value > 1" do
-              value = 2
-              rc = socket.setsockopt ZMQ::IPV4ONLY, value
-              rc.should == -1
-            end
-          end # context using option ZMQ::IPV4ONLY
-
-          context "using option ZMQ::LAST_ENDPOINT" do
-            it "should return last enpoint" do
-              random_port = bind_to_random_tcp_port(socket, max_tries = 500)
-              array = []
-              rc = socket.getsockopt(ZMQ::LAST_ENDPOINT, array)
-              ZMQ::Util.resultcode_ok?(rc).should == true
-              endpoint_regex = %r{\Atcp://(.*):(\d+)\0\z}
-              array[0].should =~ endpoint_regex
-              Integer(array[0][endpoint_regex, 2]).should == random_port
-            end
+        context "using option ZMQ::IPV4ONLY" do
+          it "should enable use of IPV6 sockets when set to 0" do
+            value = 0
+            socket.setsockopt ZMQ::IPV4ONLY, value
+            array = []
+            rc = socket.getsockopt(ZMQ::IPV4ONLY, array)
+            rc.should == 0
+            array[0].should == value
           end
-        end # version2? if/else block
 
+          it "should default to a value of 1" do
+            value = 1
+            array = []
+            rc = socket.getsockopt(ZMQ::IPV4ONLY, array)
+            rc.should == 0
+            array[0].should == value
+          end
+
+          it "returns -1 given a negative value" do
+            value = -1
+            rc = socket.setsockopt ZMQ::IPV4ONLY, value
+            rc.should == -1
+          end
+
+          it "returns -1 given a value > 1" do
+            value = 2
+            rc = socket.setsockopt ZMQ::IPV4ONLY, value
+            rc.should == -1
+          end
+        end # context using option ZMQ::IPV4ONLY
+
+        context "using option ZMQ::LAST_ENDPOINT" do
+          it "should return last enpoint" do
+            random_port = bind_to_random_tcp_port(socket, max_tries = 500)
+            array = []
+            rc = socket.getsockopt(ZMQ::LAST_ENDPOINT, array)
+            ZMQ::Util.resultcode_ok?(rc).should == true
+            endpoint_regex = %r{\Atcp://(.*):(\d+)\0\z}
+            array[0].should =~ endpoint_regex
+            Integer(array[0][endpoint_regex, 2]).should == random_port
+          end
+        end
 
         context "using option ZMQ::SUBSCRIBE" do
           if ZMQ::SUB == socket_type
@@ -414,7 +336,6 @@ module ZMQ
             array[0].should == value
           end
 
-          if (ZMQ::SUB == socket_type) && version3? || (defined?(ZMQ::XSUB) && ZMQ::XSUB == socket_type)
             it "should default to a value of 0" do
               value = 0
               array = []
@@ -422,15 +343,6 @@ module ZMQ
               rc.should == 0
               array[0].should == value
             end
-          else
-            it "should default to a value of -1" do
-              value = -1
-              array = []
-              rc = socket.getsockopt(ZMQ::LINGER, array)
-              rc.should == 0
-              array[0].should == value
-            end
-          end
         end # context using option ZMQ::LINGER
 
 
@@ -514,8 +426,8 @@ module ZMQ
 
                 class PollFD < FFI::Struct
                   layout :fd,    :int,
-                  :events, :short,
-                  :revents, :short
+                    :events, :short,
+                    :revents, :short
                 end
               end # module LibSocket
 

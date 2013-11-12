@@ -47,20 +47,6 @@ module ZMQ
 
     # Use the factory method Context#create to make contexts.
     #
-    if LibZMQ.version2?
-      def self.create io_threads = 1
-        new(io_threads) rescue nil
-      end
-
-      def initialize io_threads = 1
-        @io_threads = io_threads
-        @context = LibZMQ.zmq_init io_threads
-        ZMQ::Util.error_check 'zmq_init', (@context.nil? || @context.null?) ? -1 : 0
-
-        define_finalizer
-      end
-    elsif LibZMQ.version3?
-
       def self.create(opts = {})
         new(opts) rescue nil
       end
@@ -85,7 +71,6 @@ module ZMQ
 
         define_finalizer
       end
-    end
 
     # Call to release the context and any remaining data associated
     # with past sockets. This will close any sockets that remain
@@ -94,18 +79,6 @@ module ZMQ
     #
     # Returns 0 for success, -1 for failure.
     #
-    if LibZMQ.version2?
-      def terminate
-        unless @context.nil? || @context.null?
-          remove_finalizer
-          rc = LibZMQ.zmq_term @context
-          @context = nil
-          rc
-        else
-          0
-        end
-      end
-    elsif LibZMQ.version3?
       def terminate
         unless @context.nil? || @context.null?
           remove_finalizer
@@ -116,7 +89,6 @@ module ZMQ
           0
         end
       end
-    end
 
     # Short-cut to allocate a socket for a specific context.
     #

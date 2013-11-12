@@ -44,11 +44,11 @@ module ZMQ
 
         poll_it_for_read(@pull) do
           rc = @push.sendmsg sent_message
-          LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
+          rc.should == string.size
         end
         
         rc = @pull.recvmsg received_message, ZMQ::NonBlocking
-        LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
+        rc.should == string.size
         received_message.copy_out_string.should == string
       end
 
@@ -74,7 +74,7 @@ module ZMQ
           threads << Thread.new do
             buffer = ''
             rc = socket.recv_string buffer
-            version2? ? (rc.should == 0) : (rc.should == buffer.size)
+            rc.should == buffer.size
             mutex.synchronize { received << buffer }
             socket.close
           end
@@ -98,7 +98,7 @@ module ZMQ
             buffer = ''
             rc = 0
             mutex.synchronize { rc = @pull.recv_string buffer }
-            version2? ? (rc.should == 0) : (rc.should == buffer.size)
+            rc.should == buffer.size
             mutex.synchronize { received << buffer }
           end
         end

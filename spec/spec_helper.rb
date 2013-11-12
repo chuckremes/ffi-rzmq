@@ -1,11 +1,7 @@
-# To run these specs using rake, make sure the 'bones' and 'bones-extras'
-# gems are installed. Then execute 'rake spec' from the main directory
-# to run all specs.
 
 require File.expand_path(
 File.join(File.dirname(__FILE__), %w[.. lib ffi-rzmq]))
 
-require 'thread' # necessary when testing in MRI 1.8 mode
 Thread.abort_on_exception = true
 
 require 'openssl'
@@ -14,12 +10,8 @@ require 'securerandom'
 
 # define some version guards so we can turn on/off specs based upon
 # the version of the 0mq library that is loaded
-def version2?
-  ZMQ::LibZMQ.version2?
-end
-
-def version3?
-  ZMQ::LibZMQ.version3?
+def version4?
+  ZMQ::LibZMQ.version4?
 end
 
 def jruby?

@@ -428,22 +428,22 @@ module ZMQ
 
 
     private
-    
+
     def send_multiple(parts, flags, method_name)
       if !parts || parts.empty?
         -1
       else
         flags = NonBlocking if dontwait?(flags)
         rc = 0
-        
+
         parts[0..-2].each do |part|
           rc = send(method_name, part, (flags | ZMQ::SNDMORE))
           break unless Util.resultcode_ok?(rc)
         end
-        
+
         Util.resultcode_ok?(rc) ? send(method_name, parts[-1], flags) : rc
       end
-      
+
     end
 
     def __getsockopt__ name, array
@@ -510,7 +510,7 @@ module ZMQ
       (NonBlocking & flags) == NonBlocking
     end
     alias :noblock? :dontwait?
-    
+
     def alloc_pointer(kind, length)
       pointer = FFI::MemoryPointer.new :size_t
       pointer.write_int(length)
@@ -548,214 +548,114 @@ module ZMQ
   end # module IdentitySupport
 
 
-  if LibZMQ.version2?
+  class Socket
+    include CommonSocketBehavior
+    include IdentitySupport
 
-    class Socket
-      # Inclusion order is *important* since later modules may have a call
-      # to #super. We want those calls to go up the chain in a particular
-      # order
-      include CommonSocketBehavior
-      include IdentitySupport
+    # Get the options set on this socket.
+    #
+    # +name+ determines the socket option to request
+    # +array+ should be an empty array; a result of the proper type
+    # (numeric, string, boolean) will be inserted into
+    # the first position.
+    #
+    # Valid +option_name+ values:
+    #  ZMQ::RCVMORE - true or false
+    #  ZMQ::HWM - integer
+    #  ZMQ::SWAP - integer
+    #  ZMQ::AFFINITY - bitmap in an integer
+    #  ZMQ::IDENTITY - string
+    #  ZMQ::RATE - integer
+    #  ZMQ::RECOVERY_IVL - integer
+    #  ZMQ::SNDBUF - integer
+    #  ZMQ::RCVBUF - integer
+    #  ZMQ::FD     - fd in an integer
+    #  ZMQ::EVENTS - bitmap integer
+    #  ZMQ::LINGER - integer measured in milliseconds
+    #  ZMQ::RECONNECT_IVL - integer measured in milliseconds
+    #  ZMQ::BACKLOG - integer
+    #  ZMQ::RECOVER_IVL_MSEC - integer measured in milliseconds
+    #  ZMQ::IPV4ONLY - integer
+    #
+    # Returns 0 when the operation completed successfully.
+    # Returns -1 when this operation failed.
+    #
+    # With a -1 return code, the user must check ZMQ.errno to determine the
+    # cause.
+    #
+    #  # retrieve high water mark
+    #  array = []
+    #  rc = socket.getsockopt(ZMQ::HWM, array)
+    #  hwm = array.first if ZMQ::Util.resultcode_ok?(rc)
+    #
+    def getsockopt name, array
+      rc = __getsockopt__ name, array
 
-      # Get the options set on this socket.
-      #
-      # +name+ determines the socket option to request
-      # +array+ should be an empty array; a result of the proper type
-      # (numeric, string, boolean) will be inserted into
-      # the first position.
-      #
-      # Valid +option_name+ values:
-      #  ZMQ::RCVMORE - true or false
-      #  ZMQ::HWM - integer
-      #  ZMQ::SWAP - integer
-      #  ZMQ::AFFINITY - bitmap in an integer
-      #  ZMQ::IDENTITY - string
-      #  ZMQ::RATE - integer
-      #  ZMQ::RECOVERY_IVL - integer
-      #  ZMQ::MCAST_LOOP - true or false
-      #  ZMQ::SNDBUF - integer
-      #  ZMQ::RCVBUF - integer
-      #  ZMQ::FD     - fd in an integer
-      #  ZMQ::EVENTS - bitmap integer
-      #  ZMQ::LINGER - integer measured in milliseconds
-      #  ZMQ::RECONNECT_IVL - integer measured in milliseconds
-      #  ZMQ::BACKLOG - integer
-      #  ZMQ::RECOVER_IVL_MSEC - integer measured in milliseconds
-      #
-      # Returns 0 when the operation completed successfully.
-      # Returns -1 when this operation failed.
-      #
-      # With a -1 return code, the user must check ZMQ.errno to determine the
-      # cause.
-      #
-      #  # retrieve high water mark
-      #  array = []
-      #  rc = socket.getsockopt(ZMQ::HWM, array)
-      #  hwm = array.first if ZMQ::Util.resultcode_ok?(rc)
-      #
-      def getsockopt name, array
-        rc = __getsockopt__ name, array
-
-        if Util.resultcode_ok?(rc) && (RCVMORE == name || MCAST_LOOP == name)
-          # convert to boolean
-          array[0] = 1 == array[0]
-        end
-
-        rc
+      if Util.resultcode_ok?(rc) && (RCVMORE == name)
+        # convert to boolean
+        array[0] = 1 == array[0]
       end
 
+      rc
+    end
 
-      private
+    # Version3 only
+    #
+    # Disconnect the socket from the given +endpoint+.
+    #
+    def disconnect(endpoint)
+      LibZMQ.zmq_disconnect(socket, endpoint)
+    end
 
-      def __sendmsg__(socket, address, flags)
-        LibZMQ.zmq_send(socket, address, flags)
-      end
-
-      def __recvmsg__(socket, address, flags)
-        LibZMQ.zmq_recv(socket, address, flags)
-      end
-
-      def populate_option_lookup
-        super()
-
-        # integer options
-        [RECONNECT_IVL_MAX].each { |option| @option_lookup[option] = 0 }
-
-        # long long options
-        [HWM, SWAP, RATE, RECOVERY_IVL, RECOVERY_IVL_MSEC, MCAST_LOOP, SNDBUF, RCVBUF].each { |option| @option_lookup[option] = 1 }
-      end
-
-      # these finalizer-related methods cannot live in the CommonSocketBehavior
-      # module; they *must* be in the class definition directly
-
-      def define_finalizer
-        ObjectSpace.define_finalizer(self, self.class.close(@socket, Process.pid))
-      end
-
-      def remove_finalizer
-        ObjectSpace.undefine_finalizer self
-      end
-
-      def self.close socket, pid
-        Proc.new do
-          LibZMQ.zmq_close(socket) if socket && !socket.nil? && Process.pid == pid
-        end
-      end
-    end # class Socket for version2
-
-  end # LibZMQ.version2?
+    # Version3 only
+    #
+    # Unbind the socket from the given +endpoint+.
+    #
+    def unbind(endpoint)
+      LibZMQ.zmq_unbind(socket, endpoint)
+    end
 
 
-  if LibZMQ.version3?
-    class Socket
-      include CommonSocketBehavior
-      include IdentitySupport
+    private
 
-      # Get the options set on this socket.
-      #
-      # +name+ determines the socket option to request
-      # +array+ should be an empty array; a result of the proper type
-      # (numeric, string, boolean) will be inserted into
-      # the first position.
-      #
-      # Valid +option_name+ values:
-      #  ZMQ::RCVMORE - true or false
-      #  ZMQ::HWM - integer
-      #  ZMQ::SWAP - integer
-      #  ZMQ::AFFINITY - bitmap in an integer
-      #  ZMQ::IDENTITY - string
-      #  ZMQ::RATE - integer
-      #  ZMQ::RECOVERY_IVL - integer
-      #  ZMQ::SNDBUF - integer
-      #  ZMQ::RCVBUF - integer
-      #  ZMQ::FD     - fd in an integer
-      #  ZMQ::EVENTS - bitmap integer
-      #  ZMQ::LINGER - integer measured in milliseconds
-      #  ZMQ::RECONNECT_IVL - integer measured in milliseconds
-      #  ZMQ::BACKLOG - integer
-      #  ZMQ::RECOVER_IVL_MSEC - integer measured in milliseconds
-      #  ZMQ::IPV4ONLY - integer
-      #
-      # Returns 0 when the operation completed successfully.
-      # Returns -1 when this operation failed.
-      #
-      # With a -1 return code, the user must check ZMQ.errno to determine the
-      # cause.
-      #
-      #  # retrieve high water mark
-      #  array = []
-      #  rc = socket.getsockopt(ZMQ::HWM, array)
-      #  hwm = array.first if ZMQ::Util.resultcode_ok?(rc)
-      #
-      def getsockopt name, array
-        rc = __getsockopt__ name, array
+    def __sendmsg__(socket, address, flags)
+      LibZMQ.zmq_sendmsg(socket, address, flags)
+    end
 
-        if Util.resultcode_ok?(rc) && (RCVMORE == name)
-          # convert to boolean
-          array[0] = 1 == array[0]
-        end
+    def __recvmsg__(socket, address, flags)
+      LibZMQ.zmq_recvmsg(socket, address, flags)
+    end
 
-        rc
-      end
-      
-      # Version3 only
-      #
-      # Disconnect the socket from the given +endpoint+.
-      #
-      def disconnect(endpoint)
-        LibZMQ.zmq_disconnect(socket, endpoint)
-      end
-      
-      # Version3 only
-      #
-      # Unbind the socket from the given +endpoint+.
-      #
-      def unbind(endpoint)
-        LibZMQ.zmq_unbind(socket, endpoint)
-      end
+    def populate_option_lookup
+      super()
 
+      # integer options
+      [RECONNECT_IVL_MAX, RCVHWM, SNDHWM, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, IPV4ONLY,
+       ROUTER_BEHAVIOR, TCP_KEEPALIVE, TCP_KEEPALIVE_CNT,
+       TCP_KEEPALIVE_IDLE, TCP_KEEPALIVE_INTVL, TCP_ACCEPT_FILTER, MULTICAST_HOPS
+       ].each { |option| @option_lookup[option] = 0 }
 
-      private
+      # long long options
+      [MAXMSGSIZE].each { |option| @option_lookup[option] = 1 }
 
-      def __sendmsg__(socket, address, flags)
-        LibZMQ.zmq_sendmsg(socket, address, flags)
-      end
+      # string options
+      [LAST_ENDPOINT].each { |option| @option_lookup[option] = 2 }
+    end
 
-      def __recvmsg__(socket, address, flags)
-        LibZMQ.zmq_recvmsg(socket, address, flags)
-      end
+    # these finalizer-related methods cannot live in the CommonSocketBehavior
+    # module; they *must* be in the class definition directly
 
-      def populate_option_lookup
-        super()
+    def define_finalizer
+      ObjectSpace.define_finalizer(self, self.class.close(@socket, Process.pid))
+    end
 
-        # integer options
-        [RECONNECT_IVL_MAX, RCVHWM, SNDHWM, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, IPV4ONLY,
-          ROUTER_BEHAVIOR, TCP_KEEPALIVE, TCP_KEEPALIVE_CNT,
-          TCP_KEEPALIVE_IDLE, TCP_KEEPALIVE_INTVL, TCP_ACCEPT_FILTER, MULTICAST_HOPS
-        ].each { |option| @option_lookup[option] = 0 }
+    def remove_finalizer
+      ObjectSpace.undefine_finalizer self
+    end
 
-        # long long options
-        [MAXMSGSIZE].each { |option| @option_lookup[option] = 1 }
-
-        # string options
-        [LAST_ENDPOINT].each { |option| @option_lookup[option] = 2 }
-      end
-
-      # these finalizer-related methods cannot live in the CommonSocketBehavior
-      # module; they *must* be in the class definition directly
-
-      def define_finalizer
-        ObjectSpace.define_finalizer(self, self.class.close(@socket, Process.pid))
-      end
-
-      def remove_finalizer
-        ObjectSpace.undefine_finalizer self
-      end
-
-      def self.close socket, pid
-        Proc.new { LibZMQ.zmq_close socket if Process.pid == pid }
-      end
-    end # Socket for version3
-  end # LibZMQ.version3?
+    def self.close socket, pid
+      Proc.new { LibZMQ.zmq_close socket if Process.pid == pid }
+    end
+  end # Socket
 
 end # module ZMQ

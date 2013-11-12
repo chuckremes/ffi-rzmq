@@ -54,9 +54,9 @@ module ZMQ
         received_message = Message.new
 
         rc = @ping.sendmsg(Message.new(string))
-        LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
+        rc.should == string.size
         rc = @pong.recvmsg received_message
-        LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
+        rc.should == string.size
 
         received_message.copy_out_string.should == string
       end
@@ -67,11 +67,11 @@ module ZMQ
 
         poll_it_for_read(@pong) do
           rc = @ping.sendmsg(Message.new(string), ZMQ::NonBlocking)
-          LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
+          rc.should == string.size
         end
         
         rc = @pong.recvmsg received_message, ZMQ::NonBlocking
-        LibZMQ.version2? ? rc.should == 0 : rc.should == string.size
+        rc.should == string.size
 
         received_message.copy_out_string.should == string
       end

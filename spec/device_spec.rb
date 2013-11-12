@@ -26,7 +26,7 @@ module ZMQ
         front = @ctx.socket(ZMQ::PUSH)
         front.bind(@front_endpoint)
         @mutex.synchronize { @device_thread = true }
-        Device.new(ZMQ::STREAMER, back, front)
+        Device.new(back, front)
         back.close
         front.close
       end
@@ -70,7 +70,7 @@ module ZMQ
 
     it "should raise an ArgumentError when trying to pass non-socket objects into the device" do
       lambda {
-        Device.new(ZMQ::STREAMER, 1,2)
+        Device.new(1,2)
       }.should raise_exception(ArgumentError)
     end
   end

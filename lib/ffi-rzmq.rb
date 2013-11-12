@@ -63,10 +63,9 @@ end  # module ZMQ
 # some code is conditionalized based upon what ruby engine we are
 # executing
 
-require 'ffi'
+require 'ffi-rzmq-core'
 
 # the order of files is important
-#%w(wrapper zmq exceptions context message socket poll_items poll device).each do |file|
-%w(libc libzmq constants util exceptions context message socket poll_items poll_item poll device).each do |file|
+%w(util exceptions context message socket poll_items poll_item poll device).each do |file|
   require ZMQ.libpath(['ffi-rzmq', file])
 end
