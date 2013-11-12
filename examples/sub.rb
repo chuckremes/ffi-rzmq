@@ -5,7 +5,7 @@ require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'ffi-rzmq')
 #  puts "usage: ruby local_throughtput.rb <bind-to> <message-size> <message-count>"
 #  Process.exit
 #end
-p ZMQ::Util.version
+p ZMQ::LibZMQ.version
 
 def assert(rc)
   raise "Last API call failed at #{caller(1)}" unless rc >= 0

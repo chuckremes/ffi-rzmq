@@ -1,17 +1,23 @@
+<<<<<<< HEAD
 == 2.0.0 / 20131001
 	* Split out all of the FFI code to its own gem so other projects can use
 		it without the effort of duplication.
 		
 	*	Support new security API that was added to libzmq.
+=======
+== 1.0.3 / 20131003
+	* Fixes for issues #96 and #97. Thanks to Paul Chechetin (paulche) for 
+	  the issues and patches.
+>>>>>>> 1557a0fb7c24a4fc659d8aab732dc8dbd74bf56e
 
 == 1.0.2 / 20130929
 	* Fix for issue #94. Now includes local_path when searching for a libzmq
 	  to load.
 	
 	* Fix for issue #92. Context and Socket finalizers now track the process'
-		PID to handle a special case when forking a process. Thanks to
-		thinkerbot for the issue and a fix. (Spec is disabled on JRuby since
-		it does not support fork().)
+	  PID to handle a special case when forking a process. Thanks to
+	  thinkerbot for the issue and a fix. (Spec is disabled on JRuby since
+	  it does not support fork().)
 		
 	* Fix a few RSpec deprecation warnings related to expectations on specific
 	  Exception types.

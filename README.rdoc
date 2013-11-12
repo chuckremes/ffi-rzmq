@@ -122,17 +122,15 @@ I highly recommend visiting the Learn Ruby 0mq project for a bunch of good code 
 
 == REQUIREMENTS:
 
-  * 0mq 2.2.x, 3.2.x or later; 2.0.x, 3.0.x and 3.1.x are no longer supported
+  * 0mq 3.2.x, 4.x or later; 2.x, 3.0.x and 3.1.x are no longer supported
 
 The ZeroMQ library must be installed on your system in a well-known location
 like /usr/local/lib. This is the default for new ZeroMQ installs.
 
 If you have installed ZeroMQ using brew, you need to `brew link zeromq` before installing this gem.
 
-Future releases may include the library as a C extension built at
-time of installation.
-
   * ffi (>= 1.0.0)
+	* ffi-rzmq-core
 
 This is a requirement for MRI and Rubinius. JRuby has FFI support built
 in as a standard component. Do *not* run this gem under MRI with an old 'ffi' gem.

@@ -599,16 +599,12 @@ module ZMQ
       rc
     end
 
-    # Version3 only
-    #
     # Disconnect the socket from the given +endpoint+.
     #
     def disconnect(endpoint)
       LibZMQ.zmq_disconnect(socket, endpoint)
     end
 
-    # Version3 only
-    #
     # Unbind the socket from the given +endpoint+.
     #
     def unbind(endpoint)

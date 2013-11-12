@@ -47,30 +47,30 @@ module ZMQ
 
     # Use the factory method Context#create to make contexts.
     #
-      def self.create(opts = {})
-        new(opts) rescue nil
+    def self.create(opts = {})
+      new(opts) rescue nil
+    end
+
+    def initialize(opts = {})
+      if opts.respond_to?(:empty?)
+        @io_threads = opts[:io_threads] || IO_THREADS_DFLT
+        @max_sockets = opts[:max_sockets] || MAX_SOCKETS_DFLT
+      else
+        @io_threads = opts || 1
+        @max_sockets = MAX_SOCKETS_DFLT
       end
 
-      def initialize(opts = {})
-        if opts.respond_to?(:empty?)
-          @io_threads = opts[:io_threads] || IO_THREADS_DFLT
-          @max_sockets = opts[:max_sockets] || MAX_SOCKETS_DFLT
-        else
-          @io_threads = opts || 1
-          @max_sockets = MAX_SOCKETS_DFLT
-        end
+      @context = LibZMQ.zmq_ctx_new
+      ZMQ::Util.error_check 'zmq_ctx_new', (@context.nil? || @context.null?) ? -1 : 0
 
-        @context = LibZMQ.zmq_ctx_new
-        ZMQ::Util.error_check 'zmq_ctx_new', (@context.nil? || @context.null?) ? -1 : 0
+      rc = LibZMQ.zmq_ctx_set(@context, ZMQ::IO_THREADS, @io_threads)
+      ZMQ::Util.error_check 'zmq_ctx_set', rc
 
-        rc = LibZMQ.zmq_ctx_set(@context, ZMQ::IO_THREADS, @io_threads)
-        ZMQ::Util.error_check 'zmq_ctx_set', rc
+      rc = LibZMQ.zmq_ctx_set(@context, ZMQ::MAX_SOCKETS, @max_sockets)
+      ZMQ::Util.error_check 'zmq_ctx_set', rc
 
-        rc = LibZMQ.zmq_ctx_set(@context, ZMQ::MAX_SOCKETS, @max_sockets)
-        ZMQ::Util.error_check 'zmq_ctx_set', rc
-
-        define_finalizer
-      end
+      define_finalizer
+    end
 
     # Call to release the context and any remaining data associated
     # with past sockets. This will close any sockets that remain
@@ -79,16 +79,16 @@ module ZMQ
     #
     # Returns 0 for success, -1 for failure.
     #
-      def terminate
-        unless @context.nil? || @context.null?
-          remove_finalizer
-          rc = LibZMQ.zmq_ctx_destroy(@context)
-          @context = nil
-          rc
-        else
-          0
-        end
+    def terminate
+      unless @context.nil? || @context.null?
+        remove_finalizer
+        rc = LibZMQ.zmq_ctx_destroy(@context)
+        @context = nil
+        rc
+      else
+        0
       end
+    end
 
     # Short-cut to allocate a socket for a specific context.
     #

@@ -27,3 +27,5 @@ Nilson Santos F. Jr., github: nilsonfsj
 Simon Chiang , github: thinkerbot
 
 Harlow Ward, github: harlow
+
+Paul Chechetin, github: paulche
