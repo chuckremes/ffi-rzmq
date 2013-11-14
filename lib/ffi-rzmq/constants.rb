@@ -69,7 +69,7 @@ module ZMQ
   DONTWAIT    = 1
   SNDMORE     = 2
   SNDLABEL    = 4
-  NonBlocking = DONTWAIT
+  DONTWAIT = DONTWAIT
 
   # Message options
   MORE = 1
