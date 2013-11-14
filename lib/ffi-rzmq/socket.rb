@@ -1,8 +1,7 @@
 
 module ZMQ
 
-  module CommonSocketBehavior
-
+  class Socket
     attr_reader :socket, :name
 
     # Allocates a socket of type +type+ for sending and receiving data.
@@ -70,15 +69,15 @@ module ZMQ
 
       context_ptr = context_ptr.pointer if context_ptr.kind_of?(ZMQ::Context)
 
-      unless context_ptr.null?
+      if context_ptr.nil? || context_ptr.null?
+        raise ContextError.new 'zmq_socket', 0, ETERM, "Context pointer was null"
+      else
         @socket = LibZMQ.zmq_socket context_ptr, type
         if @socket && !@socket.null?
           @name = SocketTypeNameMap[type]
         else
           raise ContextError.new 'zmq_socket', 0, ETERM, "Socket pointer was null"
         end
-      else
-        raise ContextError.new 'zmq_socket', 0, ETERM, "Context pointer was null"
       end
 
       @longlong_cache = @int_cache = nil
@@ -215,13 +214,13 @@ module ZMQ
     #
     # +flags+ may take two values:
     # * 0 (default) - blocking operation
-    # * ZMQ::NonBlocking - non-blocking operation
+    # * ZMQ::DONTWAIT - non-blocking operation
     # * ZMQ::SNDMORE - this message is part of a multi-part message
     #
     # Returns 0 when the message was successfully enqueued.
     # Returns -1 under two conditions.
     # 1. The message could not be enqueued
-    # 2. When +flags+ is set with ZMQ::NonBlocking and the socket returned EAGAIN.
+    # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
     #
     # With a -1 return code, the user must check ZMQ.errno to determine the
     # cause.
@@ -233,12 +232,12 @@ module ZMQ
     # Helper method to make a new #Message instance out of the +string+ passed
     # in for transmission.
     #
-    # +flags+ may be ZMQ::NonBlocking and ZMQ::SNDMORE.
+    # +flags+ may be ZMQ::DONTWAIT and ZMQ::SNDMORE.
     #
     # Returns 0 when the message was successfully enqueued.
     # Returns -1 under two conditions.
     # 1. The message could not be enqueued
-    # 2. When +flags+ is set with ZMQ::NonBlocking and the socket returned EAGAIN.
+    # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
     #
     # With a -1 return code, the user must check ZMQ.errno to determine the
     # cause.
@@ -252,12 +251,12 @@ module ZMQ
     # passed in for transmission. Every element of +parts+ should be
     # a String.
     #
-    # +flags+ may be ZMQ::NonBlocking.
+    # +flags+ may be ZMQ::DONTWAIT.
     #
     # Returns 0 when the messages were successfully enqueued.
     # Returns -1 under two conditions.
     # 1. A message could not be enqueued
-    # 2. When +flags+ is set with ZMQ::NonBlocking and the socket returned EAGAIN.
+    # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
     #
     # With a -1 return code, the user must check ZMQ.errno to determine the
     # cause.
@@ -270,12 +269,12 @@ module ZMQ
     # passed in for transmission. Every element of +parts+ should be
     # a Message (or subclass).
     #
-    # +flags+ may be ZMQ::NonBlocking.
+    # +flags+ may be ZMQ::DONTWAIT.
     #
     # Returns 0 when the messages were successfully enqueued.
     # Returns -1 under two conditions.
     # 1. A message could not be enqueued
-    # 2. When +flags+ is set with ZMQ::NonBlocking and the socket returned EAGAIN.
+    # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
     #
     # With a -1 return code, the user must check ZMQ.errno to determine the
     # cause.
@@ -290,7 +289,7 @@ module ZMQ
     # Returns 0 when the message was successfully enqueued.
     # Returns -1 under two conditions.
     # 1. The message could not be enqueued
-    # 2. When +flags+ is set with ZMQ::NonBlocking and the socket returned EAGAIN.
+    # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
     #
     # With a -1 return code, the user must check ZMQ.errno to determine the
     # cause.
@@ -305,12 +304,12 @@ module ZMQ
     #
     # +flags+ may take two values:
     #  0 (default) - blocking operation
-    #  ZMQ::NonBlocking - non-blocking operation
+    #  ZMQ::DONTWAIT - non-blocking operation
     #
     # Returns 0 when the message was successfully dequeued.
     # Returns -1 under two conditions.
     # 1. The message could not be dequeued
-    # 2. When +flags+ is set with ZMQ::NonBlocking and the socket returned EAGAIN.
+    # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
     #
     # With a -1 return code, the user must check ZMQ.errno to determine the
     # cause.
@@ -326,12 +325,12 @@ module ZMQ
     # Helper method to make a new #Message instance and convert its payload
     # to a string.
     #
-    # +flags+ may be ZMQ::NonBlocking.
+    # +flags+ may be ZMQ::DONTWAIT.
     #
     # Returns 0 when the message was successfully dequeued.
     # Returns -1 under two conditions.
     # 1. The message could not be dequeued
-    # 2. When +flags+ is set with ZMQ::NonBlocking and the socket returned EAGAIN.
+    # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
     #
     # With a -1 return code, the user must check ZMQ.errno to determine the
     # cause.
@@ -349,7 +348,7 @@ module ZMQ
 
     # Receive a multipart message as a list of strings.
     #
-    # +flag+ may be ZMQ::NonBlocking. Any other flag will be
+    # +flag+ may be ZMQ::DONTWAIT. Any other flag will be
     # removed.
     #
     def recv_strings list, flag = 0
@@ -369,11 +368,11 @@ module ZMQ
     # Receive a multipart message as an array of objects
     # (by default these are instances of Message).
     #
-    # +flag+ may be ZMQ::NonBlocking. Any other flag will be
+    # +flag+ may be ZMQ::DONTWAIT. Any other flag will be
     # removed.
     #
     def recvmsgs list, flag = 0
-      flag = NonBlocking if dontwait?(flag)
+      flag = DONTWAIT if dontwait?(flag)
 
       message = @receiver_klass.new
       rc = recvmsg message, flag
@@ -426,132 +425,6 @@ module ZMQ
       rc
     end
 
-
-    private
-
-    def send_multiple(parts, flags, method_name)
-      if !parts || parts.empty?
-        -1
-      else
-        flags = NonBlocking if dontwait?(flags)
-        rc = 0
-
-        parts[0..-2].each do |part|
-          rc = send(method_name, part, (flags | ZMQ::SNDMORE))
-          break unless Util.resultcode_ok?(rc)
-        end
-
-        Util.resultcode_ok?(rc) ? send(method_name, parts[-1], flags) : rc
-      end
-
-    end
-
-    def __getsockopt__ name, array
-      # a small optimization so we only have to determine the option
-      # type a single time; gives approx 5% speedup to do it this way.
-      option_type = @option_lookup[name]
-
-      value, length = sockopt_buffers option_type
-
-      rc = LibZMQ.zmq_getsockopt @socket, name, value, length
-
-      if Util.resultcode_ok?(rc)
-        array[0] = if 1 == option_type
-          value.read_long_long
-        elsif 0 == option_type
-          value.read_int
-        elsif 2 == option_type
-          value.read_string(length.read_int)
-        end
-      end
-
-      rc
-    end
-
-    # Calls to ZMQ.getsockopt require us to pass in some pointers. We can cache and save those buffers
-    # for subsequent calls. This is a big perf win for calling RCVMORE which happens quite often.
-    # Cannot save the buffer for the IDENTITY.
-    def sockopt_buffers option_type
-      if 1 == option_type
-        # int64_t or uint64_t
-        @longlong_cache ||= alloc_pointer(:int64, 8)
-
-      elsif 0 == option_type
-        # int, 0mq assumes int is 4-bytes
-        @int_cache ||= alloc_pointer(:int32, 4)
-
-      elsif 2 == option_type
-        # could be a string of up to 255 bytes, so allocate for worst case
-        alloc_pointer(255, 255)
-
-      else
-        # uh oh, someone passed in an unknown option; use a slop buffer
-        @int_cache ||= alloc_pointer(:int32, 4)
-      end
-    end
-
-    def populate_option_lookup
-      # integer options
-      [EVENTS, LINGER, RCVTIMEO, SNDTIMEO, RECONNECT_IVL, FD, TYPE, BACKLOG].each { |option| @option_lookup[option] = 0 }
-
-      # long long options
-      [RCVMORE, AFFINITY].each { |option| @option_lookup[option] = 1 }
-
-      # string options
-      [SUBSCRIBE, UNSUBSCRIBE].each { |option| @option_lookup[option] = 2 }
-    end
-
-    def release_cache
-      @longlong_cache = nil
-      @int_cache = nil
-    end
-
-    def dontwait?(flags)
-      (NonBlocking & flags) == NonBlocking
-    end
-    alias :noblock? :dontwait?
-
-    def alloc_pointer(kind, length)
-      pointer = FFI::MemoryPointer.new :size_t
-      pointer.write_int(length)
-      [FFI::MemoryPointer.new(kind), pointer]
-    end
-  end # module CommonSocketBehavior
-
-
-  module IdentitySupport
-
-    # Convenience method for getting the value of the socket IDENTITY.
-    #
-    def identity
-      array = []
-      getsockopt IDENTITY, array
-      array.at(0)
-    end
-
-    # Convenience method for setting the value of the socket IDENTITY.
-    #
-    def identity=(value)
-      setsockopt IDENTITY, value.to_s
-    end
-
-
-    private
-
-    def populate_option_lookup
-      super()
-
-      # string options
-      [IDENTITY].each { |option| @option_lookup[option] = 2 }
-    end
-
-  end # module IdentitySupport
-
-
-  class Socket
-    include CommonSocketBehavior
-    include IdentitySupport
-
     # Get the options set on this socket.
     #
     # +name+ determines the socket option to request
@@ -599,6 +472,20 @@ module ZMQ
       rc
     end
 
+    # Convenience method for getting the value of the socket IDENTITY.
+    #
+    def identity
+      array = []
+      getsockopt IDENTITY, array
+      array.at(0)
+    end
+
+    # Convenience method for setting the value of the socket IDENTITY.
+    #
+    def identity=(value)
+      setsockopt IDENTITY, value.to_s
+    end
+
     # Disconnect the socket from the given +endpoint+.
     #
     def disconnect(endpoint)
@@ -614,6 +501,82 @@ module ZMQ
 
     private
 
+    def send_multiple(parts, flags, method_name)
+      if !parts || parts.empty?
+        -1
+      else
+        flags = DONTWAIT if dontwait?(flags)
+        rc = 0
+
+        parts[0..-2].each do |part|
+          rc = send(method_name, part, (flags | ZMQ::SNDMORE))
+          break unless Util.resultcode_ok?(rc)
+        end
+
+        Util.resultcode_ok?(rc) ? send(method_name, parts[-1], flags) : rc
+      end
+    end
+
+    def __getsockopt__ name, array
+      # a small optimization so we only have to determine the option
+      # type a single time; gives approx 5% speedup to do it this way.
+      option_type = @option_lookup[name]
+
+      value, length = sockopt_buffers option_type
+
+      rc = LibZMQ.zmq_getsockopt @socket, name, value, length
+
+      if Util.resultcode_ok?(rc)
+        array[0] = if 1 == option_type
+          value.read_long_long
+        elsif 0 == option_type
+          value.read_int
+        elsif 2 == option_type
+          value.read_string(length.read_int)
+        end
+      end
+
+      rc
+    end
+
+    # Calls to ZMQ.getsockopt require us to pass in some pointers. We can cache and save those buffers
+    # for subsequent calls. This is a big perf win for calling RCVMORE which happens quite often.
+    # Cannot save the buffer for the IDENTITY.
+    def sockopt_buffers option_type
+      if 1 == option_type
+        # int64_t or uint64_t
+        @longlong_cache ||= alloc_pointer(:int64, 8)
+
+      elsif 0 == option_type
+        # int, 0mq assumes int is 4-bytes
+        @int_cache ||= alloc_pointer(:int32, 4)
+
+      elsif 2 == option_type
+        # could be a string of up to 255 bytes, so allocate for worst case
+        alloc_pointer(255, 255)
+
+      else
+        # uh oh, someone passed in an unknown option; return nil
+        @int_cache ||= alloc_pointer(:int32, 4)
+      end
+    end
+
+    def release_cache
+      @longlong_cache = nil
+      @int_cache = nil
+    end
+
+    def dontwait?(flags)
+      (DONTWAIT & flags) == DONTWAIT
+    end
+    alias :noblock? :dontwait?
+
+    def alloc_pointer(kind, length)
+      pointer = FFI::MemoryPointer.new :size_t
+      pointer.write_int(length)
+      [FFI::MemoryPointer.new(kind), pointer]
+    end
+
     def __sendmsg__(socket, address, flags)
       LibZMQ.zmq_sendmsg(socket, address, flags)
     end
@@ -623,19 +586,11 @@ module ZMQ
     end
 
     def populate_option_lookup
-      super()
+      IntegerSocketOptions.each { |option| @option_lookup[option] = 0 }
 
-      # integer options
-      [RECONNECT_IVL_MAX, RCVHWM, SNDHWM, RATE, RECOVERY_IVL, SNDBUF, RCVBUF, IPV4ONLY,
-       ROUTER_BEHAVIOR, TCP_KEEPALIVE, TCP_KEEPALIVE_CNT,
-       TCP_KEEPALIVE_IDLE, TCP_KEEPALIVE_INTVL, TCP_ACCEPT_FILTER, MULTICAST_HOPS
-       ].each { |option| @option_lookup[option] = 0 }
+      LongLongSocketOptions.each { |option| @option_lookup[option] = 1 }
 
-      # long long options
-      [MAXMSGSIZE].each { |option| @option_lookup[option] = 1 }
-
-      # string options
-      [LAST_ENDPOINT].each { |option| @option_lookup[option] = 2 }
+      StringSocketOptions.each { |option| @option_lookup[option] = 2 }
     end
 
     # these finalizer-related methods cannot live in the CommonSocketBehavior
