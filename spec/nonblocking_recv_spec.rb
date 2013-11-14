@@ -12,19 +12,19 @@ module ZMQ
 
       it "returns -1 when there are no messages to read" do
         array = []
-        rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
+        rc = @receiver.recvmsgs(array, ZMQ::DONTWAIT)
         Util.resultcode_ok?(rc).should be_false
       end
 
       it "gets EAGAIN when there are no messages to read" do
         array = []
-        rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
+        rc = @receiver.recvmsgs(array, ZMQ::DONTWAIT)
         ZMQ::Util.errno.should == ZMQ::EAGAIN
       end
 
       it "returns the given array unmodified when there are no messages to read" do
         array = []
-        rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
+        rc = @receiver.recvmsgs(array, ZMQ::DONTWAIT)
         array.size.should be_zero
       end
 
@@ -39,7 +39,7 @@ module ZMQ
         end
         
         array = []
-        rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
+        rc = @receiver.recvmsgs(array, ZMQ::DONTWAIT)
         Util.resultcode_ok?(rc).should be_true
         array.size.should == 1
       end
@@ -52,7 +52,7 @@ module ZMQ
         end
 
         array = []
-        rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
+        rc = @receiver.recvmsgs(array, ZMQ::DONTWAIT)
         Util.resultcode_ok?(rc).should be_true
         array.size.should == 10
       end
@@ -68,7 +68,7 @@ module ZMQ
         end
 
         array = []
-        rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
+        rc = @receiver.recvmsgs(array, ZMQ::DONTWAIT)
         Util.resultcode_ok?(rc).should be_true
         array.size.should == 1 + 1 # extra 1 for envelope
       end
@@ -81,7 +81,7 @@ module ZMQ
         end
 
         array = []
-        rc = @receiver.recvmsgs(array, ZMQ::NonBlocking)
+        rc = @receiver.recvmsgs(array, ZMQ::DONTWAIT)
         Util.resultcode_ok?(rc).should be_true
         array.size.should == 10 + 1 # add 1 for the envelope
       end

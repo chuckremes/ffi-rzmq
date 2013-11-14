@@ -66,11 +66,11 @@ module ZMQ
         received_message = Message.new
 
         poll_it_for_read(@pong) do
-          rc = @ping.sendmsg(Message.new(string), ZMQ::NonBlocking)
+          rc = @ping.sendmsg(Message.new(string), ZMQ::DONTWAIT)
           rc.should == string.size
         end
         
-        rc = @pong.recvmsg received_message, ZMQ::NonBlocking
+        rc = @pong.recvmsg received_message, ZMQ::DONTWAIT
         rc.should == string.size
 
         received_message.copy_out_string.should == string

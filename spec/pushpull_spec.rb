@@ -47,7 +47,7 @@ module ZMQ
           rc.should == string.size
         end
         
-        rc = @pull.recvmsg received_message, ZMQ::NonBlocking
+        rc = @pull.recvmsg received_message, ZMQ::DONTWAIT
         rc.should == string.size
         received_message.copy_out_string.should == string
       end
@@ -71,15 +71,16 @@ module ZMQ
         sockets << @pull
 
         sockets.each do |socket|
-          threads << Thread.new do
+          thr = Thread.new do
             buffer = ''
             rc = socket.recv_string buffer
             rc.should == buffer.size
             mutex.synchronize { received << buffer }
             socket.close
           end
+          threads << thr
         end
-
+        
         count.times { @push.send_string(string) }
 
         threads.each {|t| t.join}

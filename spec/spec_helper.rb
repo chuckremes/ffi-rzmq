@@ -27,7 +27,7 @@ end
 
 module APIHelper
   def poller_setup
-    @helper_poller ||= ZMQ::Poller.new
+    @helper_poller = ZMQ::Poller.new
   end
 
   def poller_register_socket(socket)

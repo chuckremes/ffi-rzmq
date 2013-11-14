@@ -5,7 +5,7 @@ module ZMQ
   describe Device do
     include APIHelper
 
-    before(:all) do
+    before(:each) do
       @ctx = Context.new
       poller_setup
       @front_endpoint = "inproc://device_front_test"
@@ -13,7 +13,7 @@ module ZMQ
       @mutex = Mutex.new
     end
 
-    after(:all) do
+    after(:each) do
       @ctx.terminate
     end
 
@@ -26,7 +26,9 @@ module ZMQ
         front = @ctx.socket(ZMQ::PUSH)
         front.bind(@front_endpoint)
         @mutex.synchronize { @device_thread = true }
+        puts "create streamer device and running..."
         Device.new(back, front)
+        puts "device exited"
         back.close
         front.close
       end
@@ -34,12 +36,11 @@ module ZMQ
     
     def wait_for_device
       loop do
-        can_break = false
-        @mutex.synchronize do
-          can_break = true if @device_thread
-        end
+        can_break = @mutex.synchronize { @device_thread }
+        
         break if can_break
       end
+      puts "broke out of wait_for_device loop"
     end
 
     it "should create a device without error given valid opts" do
@@ -61,7 +62,7 @@ module ZMQ
       end
 
       res = ''
-      rc = puller.recv_string(res, ZMQ::NonBlocking)
+      rc = puller.recv_string(res, ZMQ::DONTWAIT)
       res.should == "hello"
 
       pusher.close

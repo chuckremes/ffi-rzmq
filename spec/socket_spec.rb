@@ -337,7 +337,7 @@ module ZMQ
           end
 
             it "should default to a value of 0" do
-              value = 0
+              value = [SUB, XSUB].include?(socket_type) ? 0 : -1
               array = []
               rc = socket.getsockopt(ZMQ::LINGER, array)
               rc.should == 0
@@ -369,7 +369,8 @@ module ZMQ
         context "using option ZMQ::BACKLOG" do
           it "should set the maximum number of pending socket connections given a positive value" do
             value = 200
-            socket.setsockopt ZMQ::BACKLOG, value
+            rc = socket.setsockopt ZMQ::BACKLOG, value
+            rc.should == 0
             array = []
             rc = socket.getsockopt(ZMQ::BACKLOG, array)
             rc.should == 0
