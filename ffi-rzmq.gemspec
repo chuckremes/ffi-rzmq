@@ -11,8 +11,7 @@ Gem::Specification.new do |s|
   s.summary     = %q{This gem wraps the ZeroMQ (0mq) networking library using Ruby FFI (foreign function interface).}
   s.description = %q{This gem wraps the ZeroMQ networking library using the ruby FFI (foreign
 function interface). It's a pure ruby wrapper so this gem can be loaded
-and run by any ruby runtime that supports FFI. That's all of the major ones -
-MRI, Rubinius and JRuby.}
+and run by any ruby runtime that supports FFI. That's all of the major ones - MRI, Rubinius and JRuby.}
 
   s.license = 'MIT'
   s.rubyforge_project = "ffi-rzmq"
