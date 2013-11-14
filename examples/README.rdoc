@@ -4,13 +4,11 @@
 
 1. lib dir
 
-All of the examples assume the lib directory containing the gem sources is two directories up from the location of the example.
+All of the examples assume the lib directory containing the gem sources is one directory up from the location of the example.
 
 2. Installed libzmq library
 
 The ZeroMQ C libraries need to be downloaded, compiled and installed separately from the gem. Please see http://www.zeromq.org/area:download for links to the downloadable files along with some simple installation instructions. Also, be sure to check the FAQ if you run into problems with compiling.
-
-This gem auto-configures itself to conform to the API for 0mq 2.1.x and 3.1.x. The 0mq project started making backward-incompatible changes with the 3.x branch. Rather than create separate gems, this one handles all of them.
 
 It is possible to install the libzmq* files directly into the gem in the ext/ directory. This directory is checked for loadable libraries first before it falls back to checking the system paths.
 

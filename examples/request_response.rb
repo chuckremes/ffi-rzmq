@@ -1,6 +1,5 @@
 
-require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'ffi-rzmq')
-
+require File.join(File.dirname(__FILE__), '..', 'lib', 'ffi-rzmq')
 
 def assert(rc)
   raise "Last API call failed at #{caller(1)}" unless rc >= 0

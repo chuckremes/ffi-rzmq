@@ -1,5 +1,5 @@
 
-require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'ffi-rzmq')
+require File.join(File.dirname(__FILE__), '..', 'lib', 'ffi-rzmq')
 
 if ARGV.length < 3
   puts "usage: ruby local_lat.rb <connect-to> <message-size> <roundtrip-count>"
@@ -38,7 +38,7 @@ start_time = Time.now
 
 # kick it off
 message = ZMQ::Message.new("a" * message_size)
-assert(s1.sendmsg(message, ZMQ::NonBlocking))
+assert(s1.sendmsg(message, ZMQ::DONTWAIT))
 
 i = roundtrip_count
 
@@ -49,8 +49,8 @@ until i.zero?
 
   poller.readables.each do |socket|
     received_message = ''
-    assert(socket.recv_string(received_message, ZMQ::NonBlocking))
-    assert(socket.sendmsg(ZMQ::Message.new(received_message), ZMQ::NonBlocking))
+    assert(socket.recv_string(received_message, ZMQ::DONTWAIT))
+    assert(socket.sendmsg(ZMQ::Message.new(received_message), ZMQ::DONTWAIT))
   end
 end
 

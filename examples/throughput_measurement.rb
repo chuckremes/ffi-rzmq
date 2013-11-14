@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'ffi-rzmq')
+require File.join(File.dirname(__FILE__), '..', 'lib', 'ffi-rzmq')
 require 'thread'
 
 # Within a single process, we start up five threads. Main thread has a PUB (publisher)

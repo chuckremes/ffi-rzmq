@@ -1,5 +1,5 @@
 
-require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'ffi-rzmq')
+require File.join(File.dirname(__FILE__), '..', 'lib', 'ffi-rzmq')
 
 if ARGV.length != 3
   puts "usage: ruby local_throughtput.rb <bind-to> <message-size> <message-count>"

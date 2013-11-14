@@ -1,6 +1,5 @@
 
-require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'ffi-rzmq')
-
+require File.join(File.dirname(__FILE__), '..', 'lib', 'ffi-rzmq')
 
 # Within a single process, we start up two threads. One thread has a REQ (request)
 # socket and the second thread has a REP (reply) socket. We measure the

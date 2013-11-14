@@ -1,5 +1,5 @@
 
-require File.join(File.dirname(__FILE__), '..', '..', 'lib', 'ffi-rzmq')
+require File.join(File.dirname(__FILE__), '..', 'lib', 'ffi-rzmq')
 
 if ARGV.length != 3
   puts "usage: ruby remote_throughput.rb <connect-to> <message-size> <message-count>"
@@ -27,9 +27,10 @@ end
 #assert(s.setsockopt(ZMQ::SNDHWM, 0))
 assert(s.connect(connect_to))
 
-# the sleep gives the downstream SUB socket a chance to register its
+# give the downstream SUB socket a chance to register its
 # subscription filters with this PUB socket
-sleep 1
+puts "Hit any key to start publishing"
+STDIN.gets
 
 contents = "#{'0'*message_size}"
 
