@@ -117,7 +117,7 @@ module ZMQ
     # Returns 0 when the operation completed successfully.
     # Returns -1 when this operation failed.
     #
-    # With a -1 return code, the user must check ZMQ.errno to determine the
+    # With a -1 return code, the user must check ZMQ::Util.errno to determine the
     # cause.
     #
     #  rc = socket.setsockopt(ZMQ::LINGER, 1_000)
@@ -192,7 +192,7 @@ module ZMQ
     # depending upon the value of the socket option ZMQ::LINGER.
     #
     # Returns 0 upon success *or* when the socket has already been closed.
-    # Returns -1 when the operation fails. Check ZMQ.errno for the error code.
+    # Returns -1 when the operation fails. Check ZMQ::Util.errno for the error code.
     #
     #  rc = socket.close
     #  puts("Given socket was invalid!") unless 0 == rc
@@ -222,7 +222,7 @@ module ZMQ
     # 1. The message could not be enqueued
     # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
     #
-    # With a -1 return code, the user must check ZMQ.errno to determine the
+    # With a -1 return code, the user must check ZMQ::Util.errno to determine the
     # cause.
     #
     def sendmsg message, flags = 0
@@ -239,7 +239,7 @@ module ZMQ
     # 1. The message could not be enqueued
     # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
     #
-    # With a -1 return code, the user must check ZMQ.errno to determine the
+    # With a -1 return code, the user must check ZMQ::Util.errno to determine the
     # cause.
     #
     def send_string string, flags = 0
@@ -258,7 +258,7 @@ module ZMQ
     # 1. A message could not be enqueued
     # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
     #
-    # With a -1 return code, the user must check ZMQ.errno to determine the
+    # With a -1 return code, the user must check ZMQ::Util.errno to determine the
     # cause.
     #
     def send_strings parts, flags = 0
@@ -276,7 +276,7 @@ module ZMQ
     # 1. A message could not be enqueued
     # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
     #
-    # With a -1 return code, the user must check ZMQ.errno to determine the
+    # With a -1 return code, the user must check ZMQ::Util.errno to determine the
     # cause.
     #
     def sendmsgs parts, flags = 0
@@ -291,7 +291,7 @@ module ZMQ
     # 1. The message could not be enqueued
     # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
     #
-    # With a -1 return code, the user must check ZMQ.errno to determine the
+    # With a -1 return code, the user must check ZMQ::Util.errno to determine the
     # cause.
     #
     def send_and_close message, flags = 0
@@ -311,7 +311,7 @@ module ZMQ
     # 1. The message could not be dequeued
     # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
     #
-    # With a -1 return code, the user must check ZMQ.errno to determine the
+    # With a -1 return code, the user must check ZMQ::Util.errno to determine the
     # cause.
     #
     # The application code is responsible for handling the +message+ object lifecycle
@@ -332,7 +332,7 @@ module ZMQ
     # 1. The message could not be dequeued
     # 2. When +flags+ is set with ZMQ::DONTWAIT and the socket returned EAGAIN.
     #
-    # With a -1 return code, the user must check ZMQ.errno to determine the
+    # With a -1 return code, the user must check ZMQ::Util.errno to determine the
     # cause.
     #
     # The application code is responsible for handling the +message+ object lifecycle
@@ -453,7 +453,7 @@ module ZMQ
     # Returns 0 when the operation completed successfully.
     # Returns -1 when this operation failed.
     #
-    # With a -1 return code, the user must check ZMQ.errno to determine the
+    # With a -1 return code, the user must check ZMQ::Util.errno to determine the
     # cause.
     #
     #  # retrieve high water mark
