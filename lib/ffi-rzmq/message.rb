@@ -193,7 +193,7 @@ module ZMQ
 
     # cache the msg size so we don't have to recalculate it when creating
     # each new instance
-    @msg_size = LibZMQ::Msg.size
+    @msg_size = LibZMQ::Message.size
 
     def self.msg_size() @msg_size; end
 
@@ -290,7 +290,7 @@ module ZMQ
     # cache the msg size so we don't have to recalculate it when creating
     # each new instance
     # need to do this again because ivars are not inheritable
-    @msg_size = LibZMQ::Msg.size
+    @msg_size = LibZMQ::Message.size
 
   end # class ManagedMessage
 
