@@ -21,7 +21,7 @@ and run by any ruby runtime that supports FFI. That's all of the major ones - MR
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
 
-  s.add_runtime_dependency "ffi-rzmq-core", ["~> 1.0"]
+  s.add_runtime_dependency "ffi-rzmq-core", [">= 1.0.1"]
   s.add_development_dependency "rspec", ["~> 2.14"]
   s.add_development_dependency "rake"
 end
