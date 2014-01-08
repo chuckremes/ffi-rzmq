@@ -29,3 +29,7 @@ Simon Chiang , github: thinkerbot
 Harlow Ward, github: harlow
 
 Paul Chechetin, github: paulche
+
+Michael Zaccari, github: mzaccari
+
+Jason Roelofs, github: jasonroelofs

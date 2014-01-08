@@ -1,14 +1,25 @@
-<<<<<<< HEAD
-== 2.0.0 / 20131001
+
+== 2.0.0 / 20140108
 	* Split out all of the FFI code to its own gem so other projects can use
 		it without the effort of duplication.
 		
-	*	Support new security API that was added to libzmq.
-=======
+	*	Support libzmq 4 API and its new security API . Thanks to Devin 
+	  Christensen (devin-c) and Jason Roelofs (jasonroelofs) for related
+	  patches.
+	
+	* Minor documentation fixes. Thanks to Michael Zaccari (mzaccari) for
+	  the fix.
+	
+	* Improved the readability of any FFI code (now moved to ffi-rzmq-core
+	  project). Thanks to Stephen von Takach (stakach) for the patch.
+	
+	* Updated AUTHORS.txt
+	
+
+
 == 1.0.3 / 20131003
 	* Fixes for issues #96 and #97. Thanks to Paul Chechetin (paulche) for 
 	  the issues and patches.
->>>>>>> 1557a0fb7c24a4fc659d8aab732dc8dbd74bf56e
 
 == 1.0.2 / 20130929
 	* Fix for issue #94. Now includes local_path when searching for a libzmq
