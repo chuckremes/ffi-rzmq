@@ -13,6 +13,9 @@ module ZMQ
     end
   end # call ZeroMQError
 
+  class NotSupportedError < ZeroMQError
+  end
+
 
   class ContextError < ZeroMQError
     # True when the exception was raised due to the library
