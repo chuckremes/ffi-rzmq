@@ -5,6 +5,23 @@ module ZMQ
   #
   class Util
 
+    # Generate and return a CURVE public/private keypair
+    #
+    # Raises an error if ZeroMQ is not configured for CURVE connections.
+    # Install libsodium if this is the case.
+    def self.curve_keypair
+      public_key = FFI::MemoryPointer.from_string(' ' * 41)
+      private_key = FFI::MemoryPointer.from_string(' ' * 41)
+      rc = LibZMQ.zmq_curve_keypair public_key, private_key
+
+      if rc < 0
+        raise NotSupportedError.new "zmq_curve_keypair" , rc, ZMQ::Util.errno,
+          "Rebuild zeromq with libsodium to enable CURVE security options."
+      end
+
+      [public_key.read_string, private_key.read_string]
+    end
+
     # Returns true when +rc+ is greater than or equal to 0, false otherwise.
     #
     # We use the >= test because zmq_poll() returns the number of sockets

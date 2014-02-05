@@ -1,3 +1,8 @@
+== 2.0.1 / 20140122
+  * Fix setsockopt with string parameters for options that have very strict
+    requirements (like CURVE_SECRETKEY) (37aed3c)
+
+  * Provide a wrapper for zmq_curve_keypair for ZeroMQ4
 
 == 2.0.0 / 20140108
 	* Split out all of the FFI code to its own gem so other projects can use

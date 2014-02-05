@@ -135,15 +135,14 @@ module ZMQ
         pointer.write_int value
 
       elsif 2 == @option_lookup[name]
+        # Strings are treated as pointers by FFI so we'll just pass it through
         length ||= value.size
+        pointer = value
 
-        # note: not checking errno for failed memory allocations :(
-        pointer = LibC.malloc length
-        pointer.write_string value
       end
 
       rc = LibZMQ.zmq_setsockopt @socket, name, pointer, length
-      LibC.free(pointer) unless pointer.nil? || pointer.null?
+      LibC.free(pointer) unless pointer.is_a?(String) || pointer.nil? || pointer.null?
       rc
     end
 
