@@ -56,7 +56,7 @@ All features are implemented.
 
 == SYNOPSIS:
 
-0mq API v2 client code:
+0mq API v3.2-4 client code:
 
   require 'rubygems'
   require 'ffi-rzmq'
@@ -71,19 +71,20 @@ All features are implemented.
   roundtrip_count = ARGV[2].to_i
 
   ctx = ZMQ::Context.new
-  s = ctx.socket ZMQ::REP
-  rc = s.setsockopt(ZMQ::HWM, 100)
-  rc = s.bind(bind_to)
+  s   = ctx.socket ZMQ::REP
+  rc  = s.setsockopt(ZMQ::SNDHWM, 100)
+  rc  = s.setsockopt(ZMQ::RCVHWM, 100)
+  rc  = s.bind(bind_to)
 
-  msg = ""
   roundtrip_count.times do
-    rc = s.recv_string msg
+    msg = ""
+    rc  = s.recv_string msg
     raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
-    rc = s.send_string msg, 0
+    rc  = s.send_string msg, 0
   end
 
 
-0mq API v2 server code:
+0mq API v3.2-4 server code:
 
   require 'rubygems'
   require 'ffi-rzmq'
@@ -98,19 +99,21 @@ All features are implemented.
   roundtrip_count = ARGV[2].to_i
 
   ctx = ZMQ::Context.new
-  s = ctx.socket ZMQ::REQ
-  rc = s.connect(connect_to)
+  s   = ctx.socket ZMQ::REQ
+  rc  = s.connect(connect_to)
 
   msg = "#{ '3' * message_size }"
 
-  start_time = Time.now
+  time_start = Time.now
 
-  msg = ""
   roundtrip_count.times do
     rc = s.send_string msg, 0
     rc = s.recv_string msg
     raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
   end
+
+  time_end = Time.now
+  puts "Time #{( time_end - time_start )}"
 
 == Better Examples
 
