@@ -9,11 +9,18 @@ function interface). It's a pure ruby wrapper so this gem can be loaded
 and run by any ruby runtime that supports FFI. That's all of them:
 MRI 1.9.x, Rubinius and JRuby.
 
-This single gem supports 0mq 2.2.x and 3.2.x 0mq APIs. The 0mq project started
+The Ruby API provided by this gem is *NOT* very Ruby-like. It very closely
+tracks the libzmq C API. However, the contributors to this project have
+done all of the hard work to wrap up all of libzmq and make it accessible
+from Ruby. If you want it to be more Ruby-like (e.g. raise Exceptions instead
+of returning integer codes) then *wrap this library* with your own and release
+it as a gem. We will all be grateful!
+
+This single gem supports 0mq 3.2.x and 4.x APIs. The 0mq project started
 making backward-incompatible changes to the API with the 3.1.x release.
 The gem auto-configures itself to expose the API conforming to the loaded
-C library. 0mq API 3.0 is *not* supported; the 0mq community voted to
-abandon it.
+C library. 0mq 2.x is no longer supported. 0mq API 3.0 is *not* supported; 
+the 0mq community voted to abandon it.
 
 The impetus behind this library was to provide support for ZeroMQ in
 JRuby which has native threads. Unlike MRI, which has a GIL, JRuby and
@@ -36,7 +43,7 @@ than using a C extension.
 == FEATURES/PROBLEMS:
 
 This gem needs more tests. This gem has been battle tested by myself
-and others for over a year, so I am fairly confident that it is solid.
+and others for years, so I am fairly confident that it is solid.
 However, it is inevitable that there will be bugs, so please open
 issues for them here or fork this project, fix them, and send me a pull
 request.
@@ -56,61 +63,108 @@ All features are implemented.
 
 == SYNOPSIS:
 
-0mq API v2 client code:
+Client code:
 
   require 'rubygems'
   require 'ffi-rzmq'
 
   if ARGV.length < 3
-    puts "usage: local_lat <connect-to> <message-size> <roundtrip-count>"
+    puts "usage: ruby local_lat.rb <connect-to> <message-size> <roundtrip-count>"
     exit
   end
-
+  
   bind_to = ARGV[0]
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
-
-  ctx = ZMQ::Context.new
-  s = ctx.socket ZMQ::REP
-  rc = s.setsockopt(ZMQ::HWM, 100)
-  rc = s.bind(bind_to)
-
-  msg = ""
-  roundtrip_count.times do
-    rc = s.recv_string msg
-    raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
-    rc = s.send_string msg, 0
+  
+  def assert(rc)
+    raise "Last API call failed at #{caller(1)}" unless rc >= 0
   end
+  
+  begin
+    ctx = ZMQ::Context.new
+    s = ctx.socket(ZMQ::REP)
+  rescue ContextError => e
+    STDERR.puts "Failed to allocate context or socket!"
+    raise
+  end
+  
+  assert(s.setsockopt(ZMQ::LINGER, 100))
+  assert(s.setsockopt(ZMQ::RCVHWM, 100))
+  assert(s.setsockopt(ZMQ::SNDHWM, 100))
+  
+  assert(s.bind(bind_to))
+  
+  roundtrip_count.times do
+    string = ''
+    assert(s.recv_string(string, 0))
+  
+    raise "Message size doesn't match, expected [#{message_size}] but received [#{string.size}]" if message_size != string.size
+  
+    assert(s.send_string(string, 0))
+  end
+  
+  assert(s.close)
+  
+  ctx.terminate
 
 
-0mq API v2 server code:
+Server code:
 
   require 'rubygems'
   require 'ffi-rzmq'
 
   if ARGV.length < 3
-    puts "usage: remote_lat <connect-to> <message-size> <roundtrip-count>"
+    puts "usage: ruby remote_lat.rb <connect-to> <message-size> <roundtrip-count>"
     exit
   end
-
+  
+  def assert(rc)
+    raise "Last API call failed at #{caller(1)}" unless rc >= 0
+  end
+  
   connect_to = ARGV[0]
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
-
-  ctx = ZMQ::Context.new
-  s = ctx.socket ZMQ::REQ
-  rc = s.connect(connect_to)
-
+  
+  begin
+    ctx = ZMQ::Context.new
+    s = ctx.socket(ZMQ::REQ)
+  rescue ContextError => e
+    STDERR.puts "Failed to allocate context or socket!"
+    raise
+  end
+  
+  assert(s.setsockopt(ZMQ::LINGER, 100))
+  assert(s.connect(connect_to))
+  
   msg = "#{ '3' * message_size }"
-
+  
   start_time = Time.now
-
-  msg = ""
+  
   roundtrip_count.times do
-    rc = s.send_string msg, 0
-    rc = s.recv_string msg
+    assert(s.send_string(msg, 0))
+  
+    msg = ''
+    assert(s.recv_string(msg, 0))
+  
     raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
   end
+  
+  end_time = Time.now
+  elapsed_secs = (end_time.to_f - start_time.to_f)
+  elapsed_usecs = elapsed_secs * 1000000
+  latency = elapsed_usecs / roundtrip_count / 2
+  
+  puts "message size: %i [B]" % message_size
+  puts "roundtrip count: %i" % roundtrip_count
+  puts "throughput (msgs/s): %i" % (roundtrip_count / elapsed_secs)
+  puts "mean latency: %.3f [us]" % latency
+  
+  assert(s.close)
+  
+  ctx.terminate
+
 
 == Better Examples
 
@@ -139,7 +193,7 @@ It will crash randomly and you will be sad.
 
 == INSTALL:
 
-Make sure the ZeroMQ library is already installed on your system.
+Make sure the ZeroMQ library is already installed on your system. We recommend 'brew' or 'macports' to get it.
 
  % gem install ffi-rzmq # should grab the latest release
 

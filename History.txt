@@ -1,3 +1,9 @@
+== 2.0.2 
+
+  * Updated README to make it clearer which versions of libzmq are supported.
+  
+  * Updated README with local_lat/remote_lat example from examples dir.
+
 == 2.0.1 / 20140122
   * Fix setsockopt with string parameters for options that have very strict
     requirements (like CURVE_SECRETKEY) (37aed3c)
