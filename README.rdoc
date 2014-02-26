@@ -63,7 +63,7 @@ All features are implemented.
 
 == SYNOPSIS:
 
-Client code:
+0mq API v3.2-4 client code:
 
   require 'rubygems'
   require 'ffi-rzmq'
@@ -76,40 +76,21 @@ Client code:
   bind_to = ARGV[0]
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
-  
-  def assert(rc)
-    raise "Last API call failed at #{caller(1)}" unless rc >= 0
-  end
-  
-  begin
-    ctx = ZMQ::Context.new
-    s = ctx.socket(ZMQ::REP)
-  rescue ContextError => e
-    STDERR.puts "Failed to allocate context or socket!"
-    raise
-  end
-  
-  assert(s.setsockopt(ZMQ::LINGER, 100))
-  assert(s.setsockopt(ZMQ::RCVHWM, 100))
-  assert(s.setsockopt(ZMQ::SNDHWM, 100))
-  
-  assert(s.bind(bind_to))
-  
+
+  ctx = ZMQ::Context.new
+  s   = ctx.socket ZMQ::REP
+  rc  = s.setsockopt(ZMQ::SNDHWM, 100)
+  rc  = s.setsockopt(ZMQ::RCVHWM, 100)
+  rc  = s.bind(bind_to)
+
   roundtrip_count.times do
-    string = ''
-    assert(s.recv_string(string, 0))
-  
-    raise "Message size doesn't match, expected [#{message_size}] but received [#{string.size}]" if message_size != string.size
-  
-    assert(s.send_string(string, 0))
+    msg = ""
+    rc  = s.recv_string msg
+    raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
+    rc  = s.send_string msg, 0
   end
-  
-  assert(s.close)
-  
-  ctx.terminate
 
-
-Server code:
+0mq API v3.2-4 server code:
 
   require 'rubygems'
   require 'ffi-rzmq'
@@ -126,22 +107,15 @@ Server code:
   connect_to = ARGV[0]
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
-  
-  begin
-    ctx = ZMQ::Context.new
-    s = ctx.socket(ZMQ::REQ)
-  rescue ContextError => e
-    STDERR.puts "Failed to allocate context or socket!"
-    raise
-  end
-  
-  assert(s.setsockopt(ZMQ::LINGER, 100))
-  assert(s.connect(connect_to))
-  
+
+  ctx = ZMQ::Context.new
+  s   = ctx.socket ZMQ::REQ
+  rc  = s.connect(connect_to)
+
   msg = "#{ '3' * message_size }"
-  
-  start_time = Time.now
-  
+
+  time_start = Time.now
+
   roundtrip_count.times do
     assert(s.send_string(msg, 0))
   
@@ -150,21 +124,9 @@ Server code:
   
     raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
   end
-  
-  end_time = Time.now
-  elapsed_secs = (end_time.to_f - start_time.to_f)
-  elapsed_usecs = elapsed_secs * 1000000
-  latency = elapsed_usecs / roundtrip_count / 2
-  
-  puts "message size: %i [B]" % message_size
-  puts "roundtrip count: %i" % roundtrip_count
-  puts "throughput (msgs/s): %i" % (roundtrip_count / elapsed_secs)
-  puts "mean latency: %.3f [us]" % latency
-  
-  assert(s.close)
-  
-  ctx.terminate
 
+  time_end = Time.now
+  puts "Time #{( time_end - time_start )}"
 
 == Better Examples
 
