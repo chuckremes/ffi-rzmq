@@ -63,16 +63,16 @@ module ZMQ
 
       res = ''
       rc = puller.recv_string(res, ZMQ::DONTWAIT)
-      res.should == "hello"
+      expect(res).to eq("hello")
 
       pusher.close
       puller.close
     end
 
     it "should raise an ArgumentError when trying to pass non-socket objects into the device" do
-      lambda {
+      expect {
         Device.new(1,2)
-      }.should raise_exception(ArgumentError)
+      }.to raise_exception(ArgumentError)
     end
   end
 end

@@ -40,25 +40,25 @@ module ZMQ
 
       it "should receive an exact string copy of the string message sent" do
         rc, received_message = send_ping(string)
-        received_message.should == string
+        expect(received_message).to eq(string)
       end
       
       it "should generate a EFSM error when sending via the REQ socket twice in a row without an intervening receive operation" do
         send_ping(string)
         rc = @ping.send_string(string)
-        rc.should == -1
-        Util.errno.should == ZMQ::EFSM
+        expect(rc).to eq(-1)
+        expect(Util.errno).to eq(ZMQ::EFSM)
       end
 
       it "should receive an exact copy of the sent message using Message objects directly" do
         received_message = Message.new
 
         rc = @ping.sendmsg(Message.new(string))
-        rc.should == string.size
+        expect(rc).to eq(string.size)
         rc = @pong.recvmsg received_message
-        rc.should == string.size
+        expect(rc).to eq(string.size)
 
-        received_message.copy_out_string.should == string
+        expect(received_message.copy_out_string).to eq(string)
       end
 
       it "should receive an exact copy of the sent message using Message objects directly in non-blocking mode" do
@@ -67,13 +67,13 @@ module ZMQ
 
         poll_it_for_read(@pong) do
           rc = @ping.sendmsg(Message.new(string), ZMQ::DONTWAIT)
-          rc.should == string.size
+          expect(rc).to eq(string.size)
         end
         
         rc = @pong.recvmsg received_message, ZMQ::DONTWAIT
-        rc.should == string.size
+        expect(rc).to eq(string.size)
 
-        received_message.copy_out_string.should == string
+        expect(received_message.copy_out_string).to eq(string)
       end
 
     end # context ping-pong

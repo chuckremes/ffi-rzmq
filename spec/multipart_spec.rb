@@ -29,7 +29,7 @@ module ZMQ
           sleep 1
           strings = []
           rc = @receiver.recv_strings(strings)
-          strings.should == data
+          expect(strings).to eq(data)
         end
       end
 
@@ -56,12 +56,12 @@ module ZMQ
           @req.send_strings(req_data)
           strings = []
           rc = @rep.recv_strings(strings)
-          strings.should == req_data
+          expect(strings).to eq(req_data)
 
           @rep.send_strings(rep_data)
           strings = []
           rc = @req.recv_strings(strings)
-          strings.should == rep_data
+          expect(strings).to eq(rep_data)
         end
 
         it "should be delivered between REQ and REP returning an array of messages" do
@@ -71,14 +71,14 @@ module ZMQ
           messages = []
           rc = @rep.recvmsgs(messages)
           messages.each_with_index do |message, index|
-            message.copy_out_string.should == req_data[index]
+            expect(message.copy_out_string).to eq(req_data[index])
           end
 
           @rep.send_strings(rep_data)
           messages = []
           rc = @req.recvmsgs(messages)
           messages.each_with_index do |message, index|
-            message.copy_out_string.should == rep_data[index]
+            expect(message.copy_out_string).to eq(rep_data[index])
           end
         end
       end
@@ -106,12 +106,12 @@ module ZMQ
             @req.send_string(req_data)
             strings = []
             rc = @rep.recv_strings(strings)
-            strings.should == [ @req.identity, "", "hello" ]
+            expect(strings).to eq([ @req.identity, "", "hello" ])
 
             @rep.send_strings(rep_data)
             string = ''
             rc = @req.recv_string(string)
-            string.should == rep_data.last
+            expect(string).to eq(rep_data.last)
           end
 
           it "should be delivered between REQ and REP returning an array of messages with an empty string as the envelope delimiter" do
@@ -120,14 +120,14 @@ module ZMQ
             @req.send_string(req_data)
             msgs = []
             rc = @rep.recvmsgs(msgs)
-            msgs[0].copy_out_string.should == @req.identity
-            msgs[1].copy_out_string.should == ""
-            msgs[2].copy_out_string.should == "hello"
+            expect(msgs[0].copy_out_string).to eq(@req.identity)
+            expect(msgs[1].copy_out_string).to eq("")
+            expect(msgs[2].copy_out_string).to eq("hello")
 
             @rep.send_strings(rep_data)
             msgs = []
             rc = @req.recvmsgs(msgs)
-            msgs[0].copy_out_string.should == rep_data.last
+            expect(msgs[0].copy_out_string).to eq(rep_data.last)
           end
         end
 

@@ -13,19 +13,19 @@ module ZMQ
       it "returns -1 when there are no messages to read" do
         array = []
         rc = @receiver.recvmsgs(array, ZMQ::DONTWAIT)
-        Util.resultcode_ok?(rc).should be_false
+        expect(Util.resultcode_ok?(rc)).to eq(false)
       end
 
       it "gets EAGAIN when there are no messages to read" do
         array = []
         rc = @receiver.recvmsgs(array, ZMQ::DONTWAIT)
-        ZMQ::Util.errno.should == ZMQ::EAGAIN
+        expect(ZMQ::Util.errno).to eq(ZMQ::EAGAIN)
       end
 
       it "returns the given array unmodified when there are no messages to read" do
         array = []
         rc = @receiver.recvmsgs(array, ZMQ::DONTWAIT)
-        array.size.should be_zero
+        expect(array.size).to eq(0)
       end
 
     end
@@ -35,26 +35,26 @@ module ZMQ
       it "read the single message and returns a successful result code" do
         poll_it_for_read(@receiver) do
           rc = @sender.send_string('test')
-          Util.resultcode_ok?(rc).should be_true
+          expect(Util.resultcode_ok?(rc)).to eq(true)
         end
         
         array = []
         rc = @receiver.recvmsgs(array, ZMQ::DONTWAIT)
-        Util.resultcode_ok?(rc).should be_true
-        array.size.should == 1
+        expect(Util.resultcode_ok?(rc)).to eq(true)
+        expect(array.size).to eq(1)
       end
 
       it "read all message parts transmitted and returns a successful result code" do
         poll_it_for_read(@receiver) do
           strings = Array.new(10, 'test')
           rc = @sender.send_strings(strings)
-          Util.resultcode_ok?(rc).should be_true
+          expect(Util.resultcode_ok?(rc)).to eq(true)
         end
 
         array = []
         rc = @receiver.recvmsgs(array, ZMQ::DONTWAIT)
-        Util.resultcode_ok?(rc).should be_true
-        array.size.should == 10
+        expect(Util.resultcode_ok?(rc)).to eq(true)
+        expect(array.size).to eq(10)
       end
 
     end
@@ -64,26 +64,26 @@ module ZMQ
       it "read the single message and returns a successful result code" do
         poll_it_for_read(@receiver) do
           rc = @sender.send_string('test')
-          Util.resultcode_ok?(rc).should be_true
+          expect(Util.resultcode_ok?(rc)).to eq(true)
         end
 
         array = []
         rc = @receiver.recvmsgs(array, ZMQ::DONTWAIT)
-        Util.resultcode_ok?(rc).should be_true
-        array.size.should == 1 + 1 # extra 1 for envelope
+        expect(Util.resultcode_ok?(rc)).to eq(true)
+        expect(array.size).to eq(1 + 1) # extra 1 for envelope
       end
 
       it "read all message parts transmitted and returns a successful result code" do
         poll_it_for_read(@receiver) do
           strings = Array.new(10, 'test')
           rc = @sender.send_strings(strings)
-          Util.resultcode_ok?(rc).should be_true
+          expect(Util.resultcode_ok?(rc)).to eq(true)
         end
 
         array = []
         rc = @receiver.recvmsgs(array, ZMQ::DONTWAIT)
-        Util.resultcode_ok?(rc).should be_true
-        array.size.should == 10 + 1 # add 1 for the envelope
+        expect(Util.resultcode_ok?(rc)).to eq(true)
+        expect(array.size).to eq(10 + 1) # add 1 for the envelope
       end
 
     end

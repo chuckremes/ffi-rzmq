@@ -11,31 +11,31 @@ module ZMQ
       include APIHelper
 
       it "should return nil for negative io threads" do
-        Context.create(-1).should be_nil
+        expect(Context.create(-1)).to eq(nil)
       end
       
       it "should default to requesting 1 i/o thread when no argument is passed" do
         ctx = Context.create
-        ctx.io_threads.should == 1
+        expect(ctx.io_threads).to eq(1)
       end
 
       it "should set the :pointer accessor to non-nil" do
         ctx = Context.create
-        ctx.pointer.should_not be_nil
+        expect(ctx.pointer).not_to be_nil
       end
 
       it "should set the :context accessor to non-nil" do
         ctx = Context.create
-        ctx.context.should_not be_nil
+        expect(ctx.context).not_to be_nil
       end
 
       it "should set the :pointer and :context accessors to the same value" do
         ctx = Context.create
-        ctx.pointer.should == ctx.context
+        expect(ctx.pointer).to eq(ctx.context)
       end
       
       it "should define a finalizer on this object" do
-        ObjectSpace.should_receive(:define_finalizer)
+        expect(ObjectSpace).to receive(:define_finalizer)
         ctx = Context.create
       end
     end # context initializing
@@ -45,31 +45,31 @@ module ZMQ
       include APIHelper
 
       it "should raise a ContextError exception for negative io threads" do
-        lambda { Context.new(-1) }.should raise_exception(ZMQ::ContextError)
+        expect { Context.new(-1) }.to raise_exception(ZMQ::ContextError)
       end
       
       it "should default to requesting 1 i/o thread when no argument is passed" do
         ctx = Context.new
-        ctx.io_threads.should == 1
+        expect(ctx.io_threads).to eq(1)
       end
 
       it "should set the :pointer accessor to non-nil" do
         ctx = Context.new
-        ctx.pointer.should_not be_nil
+        expect(ctx.pointer).not_to be_nil
       end
 
       it "should set the :context accessor to non-nil" do
         ctx = Context.new
-        ctx.context.should_not be_nil
+        expect(ctx.context).not_to be_nil
       end
 
       it "should set the :pointer and :context accessors to the same value" do
         ctx = Context.new
-        ctx.pointer.should == ctx.context
+        expect(ctx.pointer).to eq(ctx.context)
       end
       
       it "should define a finalizer on this object" do
-        ObjectSpace.should_receive(:define_finalizer)
+        expect(ObjectSpace).to receive(:define_finalizer)
         Context.new 1
       end
     end # context initializing
@@ -79,13 +79,13 @@ module ZMQ
       it "should set the context to nil when terminating the library's context" do
         ctx = Context.new # can't use a shared context here because we are terminating it!
         ctx.terminate
-        ctx.pointer.should be_nil
+        expect(ctx.pointer).to be_nil
       end
       
       it "should call the correct library function to terminate the context" do
         ctx = Context.new
 
-        LibZMQ.should_receive(:zmq_ctx_destroy).with(ctx.pointer).and_return(0)
+        expect(LibZMQ).to receive(:zmq_ctx_destroy).with(ctx.pointer).and_return(0)
         ctx.terminate
       end
     end # context terminate
@@ -94,8 +94,8 @@ module ZMQ
     context "when allocating a socket" do
       it "should return nil when allocation fails" do
         ctx = Context.new
-        LibZMQ.stub(:zmq_socket => nil)
-        ctx.socket(ZMQ::REQ).should be_nil
+        allow(LibZMQ).to receive(:zmq_socket).and_return(nil)
+        expect(ctx.socket(ZMQ::REQ)).to be_nil
       end
     end # context socket
 

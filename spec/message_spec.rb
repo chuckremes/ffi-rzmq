@@ -9,12 +9,12 @@ module ZMQ
     context "when initializing with an argument" do
 
       it "calls zmq_msg_init_data()" do
-        LibZMQ.should_receive(:zmq_msg_init_data)
+        expect(LibZMQ).to receive(:zmq_msg_init_data)
         message = Message.new "text"
       end
 
       it "should *not* define a finalizer on this object" do
-        ObjectSpace.should_not_receive(:define_finalizer)
+        expect(ObjectSpace).not_to receive(:define_finalizer)
         Message.new "text"
       end
     end # context initializing with arg
@@ -22,12 +22,12 @@ module ZMQ
     context "when initializing *without* an argument" do
 
       it "calls zmq_msg_init()" do
-        LibZMQ.should_receive(:zmq_msg_init).and_return(0)
+        expect(LibZMQ).to receive(:zmq_msg_init).and_return(0)
         message = Message.new
       end
 
       it "should *not* define a finalizer on this object" do
-        ObjectSpace.should_not_receive(:define_finalizer)
+        expect(ObjectSpace).not_to receive(:define_finalizer)
         Message.new "text"
       end
     end # context initializing with arg
@@ -37,14 +37,14 @@ module ZMQ
       it "calls zmq_msg_init_data()" do
         message = Message.new "text"
 
-        LibZMQ.should_receive(:zmq_msg_init_data)
+        expect(LibZMQ).to receive(:zmq_msg_init_data)
         message.copy_in_string("new text")
       end
 
       it "correctly finds the length of binary data by ignoring encoding" do
         message = Message.new
         message.copy_in_string("\x83\x6e\x04\x00\x00\x44\xd1\x81")
-        message.size.should == 8
+        expect(message.size).to eq(8)
       end
     end
 
@@ -54,7 +54,7 @@ module ZMQ
         message = Message.new "text"
         copy = Message.new
 
-        LibZMQ.should_receive(:zmq_msg_copy)
+        expect(LibZMQ).to receive(:zmq_msg_copy)
         copy.copy(message)
       end
     end # context copy
@@ -65,7 +65,7 @@ module ZMQ
         message = Message.new "text"
         copy = Message.new
 
-        LibZMQ.should_receive(:zmq_msg_move)
+        expect(LibZMQ).to receive(:zmq_msg_move)
         copy.move(message)
       end
     end # context move
@@ -75,7 +75,7 @@ module ZMQ
       it "calls zmq_msg_size()" do
         message = Message.new "text"
 
-        LibZMQ.should_receive(:zmq_msg_size)
+        expect(LibZMQ).to receive(:zmq_msg_size)
         message.size
       end
     end # context size
@@ -85,7 +85,7 @@ module ZMQ
       it "calls zmq_msg_data()" do
         message = Message.new "text"
 
-        LibZMQ.should_receive(:zmq_msg_data)
+        expect(LibZMQ).to receive(:zmq_msg_data)
         message.data
       end
     end # context data
@@ -95,7 +95,7 @@ module ZMQ
       it "calls zmq_msg_close() the first time" do
         message = Message.new "text"
 
-        LibZMQ.should_receive(:zmq_msg_close)
+        expect(LibZMQ).to receive(:zmq_msg_close)
         message.close
       end
 
@@ -103,7 +103,7 @@ module ZMQ
         message = Message.new "text"
         message.close
 
-        LibZMQ.should_not_receive(:zmq_msg_close)
+        expect(LibZMQ).not_to receive(:zmq_msg_close)
         message.close
       end
     end # context close
@@ -116,7 +116,7 @@ module ZMQ
     context "when initializing with an argument" do
 
       it "should define a finalizer on this object" do
-        ObjectSpace.should_receive(:define_finalizer)
+        expect(ObjectSpace).to receive(:define_finalizer)
         ManagedMessage.new "text"
       end
     end # context initializing

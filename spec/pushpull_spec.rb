@@ -35,7 +35,7 @@ module ZMQ
         received = ''
         rc = @pull.recv_string received
         assert_ok(rc)
-        received.should == string
+        expect(received).to eq(string)
       end
 
       it "should receive an exact string copy of the message sent when receiving in non-blocking mode and using Message objects directly" do
@@ -44,12 +44,12 @@ module ZMQ
 
         poll_it_for_read(@pull) do
           rc = @push.sendmsg sent_message
-          rc.should == string.size
+          expect(rc).to eq(string.size)
         end
         
         rc = @pull.recvmsg received_message, ZMQ::DONTWAIT
-        rc.should == string.size
-        received_message.copy_out_string.should == string
+        expect(rc).to eq(string.size)
+        expect(received_message.copy_out_string).to eq(string)
       end
 
 
@@ -74,7 +74,7 @@ module ZMQ
           thr = Thread.new do
             buffer = ''
             rc = socket.recv_string buffer
-            rc.should == buffer.size
+            expect(rc).to eq(buffer.size)
             mutex.synchronize { received << buffer }
             socket.close
           end
@@ -85,7 +85,7 @@ module ZMQ
 
         threads.each {|t| t.join}
 
-        received.find_all {|r| r == string}.length.should == count
+        expect(received.find_all {|r| r == string}.length).to eq(count)
       end
 
       it "should receive a single message for each message sent when using a single shared socket protected by a mutex" do
@@ -99,7 +99,7 @@ module ZMQ
             buffer = ''
             rc = 0
             mutex.synchronize { rc = @pull.recv_string buffer }
-            rc.should == buffer.size
+            expect(rc).to eq(buffer.size)
             mutex.synchronize { received << buffer }
           end
         end
@@ -108,7 +108,7 @@ module ZMQ
 
         threads.each {|t| t.join}
 
-        received.find_all {|r| r == string}.length.should == count
+        expect(received.find_all {|r| r == string}.length).to eq(count)
       end
 
     end # @context ping-pong

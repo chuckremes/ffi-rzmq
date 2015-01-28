@@ -16,21 +16,21 @@ module ZMQ
 
 
       it "should raise an error for a nil context" do
-        lambda { Socket.new(FFI::Pointer.new(0), ZMQ::REQ) }.should raise_exception(ZMQ::ContextError)
+        expect { Socket.new(FFI::Pointer.new(0), ZMQ::REQ) }.to raise_exception(ZMQ::ContextError)
       end
 
       it "works with a Context#pointer as the context_ptr" do
-        lambda do
+        expect do
           s = Socket.new(@ctx.pointer, ZMQ::REQ)
           s.close
-        end.should_not raise_exception
+        end.not_to raise_exception
       end
 
       it "works with a Context instance as the context_ptr" do
-        lambda do
+        expect do
           s = Socket.new(@ctx, ZMQ::SUB)
           s.close
-        end.should_not raise_exception
+        end.not_to raise_exception
       end
 
 
@@ -38,22 +38,22 @@ module ZMQ
 
         it "should not raise an error for a [#{ZMQ::SocketTypeNameMap[socket_type]}] socket type" do
           sock = nil
-          lambda { sock = Socket.new(@ctx.pointer, socket_type) }.should_not raise_error
+          expect { sock = Socket.new(@ctx.pointer, socket_type) }.not_to raise_error
           sock.close
         end
       end # each socket_type
 
       it "should set the :socket accessor to the raw socket allocated by libzmq" do
         socket = double('socket')
-        socket.stub(:null? => false)
-        LibZMQ.should_receive(:zmq_socket).and_return(socket)
+        allow(socket).to receive(:null?).and_return(false)
+        expect(LibZMQ).to receive(:zmq_socket).and_return(socket)
 
         sock = Socket.new(@ctx.pointer, ZMQ::REQ)
-        sock.socket.should == socket
+        expect(sock.socket).to eq(socket)
       end
 
       it "should define a finalizer on this object" do
-        ObjectSpace.should_receive(:define_finalizer).at_least(1)
+        expect(ObjectSpace).to receive(:define_finalizer).at_least(1)
         sock = Socket.new(@ctx.pointer, ZMQ::REQ)
         sock.close
       end
@@ -77,7 +77,7 @@ module ZMQ
         sock = Socket.new @ctx.pointer, ZMQ::REQ
         raw_socket = sock.socket
 
-        LibZMQ.should_receive(:close).with(raw_socket)
+        expect(LibZMQ).to receive(:close).with(raw_socket)
         sock.close
         sock.close
         LibZMQ.close raw_socket # *really close it otherwise the context will block indefinitely
@@ -94,7 +94,7 @@ module ZMQ
         sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         sock.identity = ('a' * 256)
-        sock.identity.should == ''
+        expect(sock.identity).to eq('')
         sock.close
       end
 
@@ -102,7 +102,7 @@ module ZMQ
         sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         sock.identity = ''
-        sock.identity.should == ''
+        expect(sock.identity).to eq('')
         sock.close
       end
 
@@ -110,7 +110,7 @@ module ZMQ
         sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         sock.identity = 'a'
-        sock.identity.should == 'a'
+        expect(sock.identity).to eq('a')
         sock.close
       end
 
@@ -118,7 +118,7 @@ module ZMQ
         sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         sock.identity = ('a' * 255)
-        sock.identity.should == ('a' * 255)
+        expect(sock.identity).to eq('a' * 255)
         sock.close
       end
 
@@ -126,7 +126,7 @@ module ZMQ
         sock = Socket.new @ctx.pointer, ZMQ::REQ
 
         sock.identity = 7
-        sock.identity.should == '7'
+        expect(sock.identity).to eq('7')
         sock.close
       end
     end # context identity=
@@ -157,8 +157,8 @@ module ZMQ
 
               array = []
               rc = socket.getsockopt(ZMQ::IDENTITY, array)
-              rc.should == 0
-              array[0].should == identity
+              expect(rc).to eq(0)
+              expect(array[0]).to eq(identity)
             end
           end
 
@@ -166,7 +166,7 @@ module ZMQ
             identity = 'a' * 256
             array = []
             rc = socket.setsockopt(ZMQ::IDENTITY, identity)
-            rc.should == -1
+            expect(rc).to eq(-1)
           end
         end # context using option ZMQ::IDENTITY
 
@@ -176,28 +176,28 @@ module ZMQ
             socket.setsockopt ZMQ::IPV4ONLY, value
             array = []
             rc = socket.getsockopt(ZMQ::IPV4ONLY, array)
-            rc.should == 0
-            array[0].should == value
+            expect(rc).to eq(0)
+            expect(array[0]).to eq(value)
           end
 
           it "should default to a value of 1" do
             value = 1
             array = []
             rc = socket.getsockopt(ZMQ::IPV4ONLY, array)
-            rc.should == 0
-            array[0].should == value
+            expect(rc).to eq(0)
+            expect(array[0]).to eq(value)
           end
 
           it "returns -1 given a negative value" do
             value = -1
             rc = socket.setsockopt ZMQ::IPV4ONLY, value
-            rc.should == -1
+            expect(rc).to eq(-1)
           end
 
           it "returns -1 given a value > 1" do
             value = 2
             rc = socket.setsockopt ZMQ::IPV4ONLY, value
-            rc.should == -1
+            expect(rc).to eq(-1)
           end
         end # context using option ZMQ::IPV4ONLY
 
@@ -206,10 +206,10 @@ module ZMQ
             random_port = bind_to_random_tcp_port(socket, max_tries = 500)
             array = []
             rc = socket.getsockopt(ZMQ::LAST_ENDPOINT, array)
-            ZMQ::Util.resultcode_ok?(rc).should == true
+            expect(ZMQ::Util.resultcode_ok?(rc)).to eq(true)
             endpoint_regex = %r{\Atcp://(.*):(\d+)\0\z}
-            array[0].should =~ endpoint_regex
-            Integer(array[0][endpoint_regex, 2]).should == random_port
+            expect(array[0]).to match(endpoint_regex)
+            expect(Integer(array[0][endpoint_regex, 2])).to eq(random_port)
           end
         end
 
@@ -217,12 +217,12 @@ module ZMQ
           if ZMQ::SUB == socket_type
             it "returns 0 for a SUB socket" do
               rc = socket.setsockopt(ZMQ::SUBSCRIBE, "topic.string")
-              rc.should == 0
+              expect(rc).to eq(0)
             end
           else
             it "returns -1 for non-SUB sockets" do
               rc = socket.setsockopt(ZMQ::SUBSCRIBE, "topic.string")
-              rc.should == -1
+              expect(rc).to eq(-1)
             end
           end
         end # context using option ZMQ::SUBSCRIBE
@@ -233,13 +233,13 @@ module ZMQ
             it "returns 0 given a topic string that was previously subscribed" do
               socket.setsockopt ZMQ::SUBSCRIBE, "topic.string"
               rc = socket.setsockopt(ZMQ::UNSUBSCRIBE, "topic.string")
-              rc.should == 0
+              expect(rc).to eq(0)
             end
 
           else
             it "returns -1 for non-SUB sockets" do
               rc = socket.setsockopt(ZMQ::UNSUBSCRIBE, "topic.string")
-              rc.should == -1
+              expect(rc).to eq(-1)
             end
           end
         end # context using option ZMQ::UNSUBSCRIBE
@@ -251,8 +251,8 @@ module ZMQ
             socket.setsockopt ZMQ::AFFINITY, affinity
             array = []
             rc = socket.getsockopt(ZMQ::AFFINITY, array)
-            rc.should == 0
-            array[0].should == affinity
+            expect(rc).to eq(0)
+            expect(array[0]).to eq(affinity)
           end
         end # context using option ZMQ::AFFINITY
 
@@ -263,14 +263,14 @@ module ZMQ
             socket.setsockopt ZMQ::RATE, rate
             array = []
             rc = socket.getsockopt(ZMQ::RATE, array)
-            rc.should == 0
-            array[0].should == rate
+            expect(rc).to eq(0)
+            expect(array[0]).to eq(rate)
           end
 
           it "returns -1 given a negative value" do
             rate = -200
             rc = socket.setsockopt ZMQ::RATE, rate
-            rc.should == -1
+            expect(rc).to eq(-1)
           end
         end # context using option ZMQ::RATE
 
@@ -281,14 +281,14 @@ module ZMQ
             socket.setsockopt ZMQ::RECOVERY_IVL, rate
             array = []
             rc = socket.getsockopt(ZMQ::RECOVERY_IVL, array)
-            rc.should == 0
-            array[0].should == rate
+            expect(rc).to eq(0)
+            expect(array[0]).to eq(rate)
           end
 
           it "returns -1 given a negative value" do
             rate = -200
             rc = socket.setsockopt ZMQ::RECOVERY_IVL, rate
-            rc.should == -1
+            expect(rc).to eq(-1)
           end
         end # context using option ZMQ::RECOVERY_IVL
 
@@ -299,8 +299,8 @@ module ZMQ
             socket.setsockopt ZMQ::SNDBUF, size
             array = []
             rc = socket.getsockopt(ZMQ::SNDBUF, array)
-            rc.should == 0
-            array[0].should == size
+            expect(rc).to eq(0)
+            expect(array[0]).to eq(size)
           end
         end # context using option ZMQ::SNDBUF
 
@@ -311,8 +311,8 @@ module ZMQ
             socket.setsockopt ZMQ::RCVBUF, size
             array = []
             rc = socket.getsockopt(ZMQ::RCVBUF, array)
-            rc.should == 0
-            array[0].should == size
+            expect(rc).to eq(0)
+            expect(array[0]).to eq(size)
           end
         end # context using option ZMQ::RCVBUF
 
@@ -323,8 +323,8 @@ module ZMQ
             socket.setsockopt ZMQ::LINGER, value
             array = []
             rc = socket.getsockopt(ZMQ::LINGER, array)
-            rc.should == 0
-            array[0].should == value
+            expect(rc).to eq(0)
+            expect(array[0]).to eq(value)
           end
 
           it "should set the socket message linger option to 0 for dropping packets" do
@@ -332,16 +332,16 @@ module ZMQ
             socket.setsockopt ZMQ::LINGER, value
             array = []
             rc = socket.getsockopt(ZMQ::LINGER, array)
-            rc.should == 0
-            array[0].should == value
+            expect(rc).to eq(0)
+            expect(array[0]).to eq(value)
           end
 
             it "should default to a value of 0" do
               value = [SUB, XSUB].include?(socket_type) ? 0 : -1
               array = []
               rc = socket.getsockopt(ZMQ::LINGER, array)
-              rc.should == 0
-              array[0].should == value
+              expect(rc).to eq(0)
+              expect(array[0]).to eq(value)
             end
         end # context using option ZMQ::LINGER
 
@@ -352,16 +352,16 @@ module ZMQ
             socket.setsockopt ZMQ::RECONNECT_IVL, value
             array = []
             rc = socket.getsockopt(ZMQ::RECONNECT_IVL, array)
-            rc.should == 0
-            array[0].should == value
+            expect(rc).to eq(0)
+            expect(array[0]).to eq(value)
           end
 
           it "should default to a value of 100" do
             value = 100
             array = []
             rc = socket.getsockopt(ZMQ::RECONNECT_IVL, array)
-            rc.should == 0
-            array[0].should == value
+            expect(rc).to eq(0)
+            expect(array[0]).to eq(value)
           end
         end # context using option ZMQ::RECONNECT_IVL
 
@@ -370,19 +370,19 @@ module ZMQ
           it "should set the maximum number of pending socket connections given a positive value" do
             value = 200
             rc = socket.setsockopt ZMQ::BACKLOG, value
-            rc.should == 0
+            expect(rc).to eq(0)
             array = []
             rc = socket.getsockopt(ZMQ::BACKLOG, array)
-            rc.should == 0
-            array[0].should == value
+            expect(rc).to eq(0)
+            expect(array[0]).to eq(value)
           end
 
           it "should default to a value of 100" do
             value = 100
             array = []
             rc = socket.getsockopt(ZMQ::BACKLOG, array)
-            rc.should == 0
-            array[0].should == value
+            expect(rc).to eq(0)
+            expect(array[0]).to eq(value)
           end
         end # context using option ZMQ::BACKLOG
 
@@ -408,8 +408,8 @@ module ZMQ
             it "should return an FD as a positive integer" do
               array = []
               rc = socket.getsockopt(ZMQ::FD, array)
-              rc.should == 0
-              array[0].should > 0
+              expect(rc).to eq(0)
+              expect(array[0]).to be > 0
             end
 
             it "returns a valid FD that is accepted by the system poll() function" do
@@ -434,7 +434,7 @@ module ZMQ
 
               array = []
               rc = socket.getsockopt(ZMQ::FD, array)
-              rc.should be_zero
+              expect(rc).to eq(0)
               fd = array[0]
 
               # setup the BSD poll_fd struct
@@ -444,7 +444,7 @@ module ZMQ
               pollfd[:revents] = 0
 
               rc = LibSocket.poll(pollfd, 1, 0)
-              rc.should be_zero
+              expect(rc).to eq(0)
             end
           end
 
@@ -454,8 +454,8 @@ module ZMQ
           it "should return a mask of events as a Fixnum" do
             array = []
             rc = socket.getsockopt(ZMQ::EVENTS, array)
-            rc.should == 0
-            array[0].should be_a(Fixnum)
+            expect(rc).to eq(0)
+            expect(array[0]).to be_a(Fixnum)
           end
         end
 
@@ -463,8 +463,8 @@ module ZMQ
           it "should return the socket type" do
             array = []
             rc = socket.getsockopt(ZMQ::TYPE, array)
-            rc.should == 0
-            array[0].should == socket_type
+            expect(rc).to eq(0)
+            expect(array[0]).to eq(socket_type)
           end
         end
       end # context #getsockopt
@@ -479,29 +479,29 @@ module ZMQ
         it "SUB socket that received a message always has POLLIN set" do
           events = []
           rc = @sub.getsockopt(ZMQ::EVENTS, events)
-          rc.should == 0
-          events[0].should == ZMQ::POLLIN
+          expect(rc).to eq(0)
+          expect(events[0]).to eq ZMQ::POLLIN
         end
 
         it "PUB socket always has POLLOUT set" do
           events = []
           rc = @pub.getsockopt(ZMQ::EVENTS, events)
-          rc.should == 0
-          events[0].should == ZMQ::POLLOUT
+          expect(rc).to eq(0)
+          expect(events[0]).to eq ZMQ::POLLOUT
         end
 
         it "PUB socket never has POLLIN set" do
           events = []
           rc = @pub.getsockopt(ZMQ::EVENTS, events)
-          rc.should == 0
-          events[0].should_not == ZMQ::POLLIN
+          expect(rc).to eq(0)
+          expect(events[0]).not_to eq ZMQ::POLLIN
         end
 
         it "SUB socket never has POLLOUT set" do
           events = []
           rc = @sub.getsockopt(ZMQ::EVENTS, events)
-          rc.should == 0
-          events[0].should_not == ZMQ::POLLOUT
+          expect(rc).to eq(0)
+          expect(events[0]).not_to eq ZMQ::POLLOUT
         end
       end # shared example for pubsub
 
@@ -514,7 +514,7 @@ module ZMQ
           endpoint = "inproc://socket_test"
           @sub = @ctx.socket ZMQ::SUB
           rc = @sub.setsockopt ZMQ::SUBSCRIBE, ''
-          rc.should == 0
+          expect(rc).to eq(0)
 
           @pub = @ctx.socket ZMQ::PUB
           @sub.bind(endpoint)

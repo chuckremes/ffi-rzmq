@@ -8,7 +8,7 @@ module ZMQ
       include APIHelper
 
       it "should allocate a PollItems instance" do
-        PollItems.should_receive(:new)
+        expect(PollItems).to receive(:new)
         Poller.new
       end
 
@@ -23,30 +23,30 @@ module ZMQ
       let(:fd) { 1 }
 
       it "returns false when given a nil pollable" do
-        poller.register(nil, ZMQ::POLLIN).should be_false
+        expect(poller.register(nil, ZMQ::POLLIN)).to be_falsy
       end
 
       it "returns false when given 0 for +events+ (e.g. no registration)" do
-        poller.register(pollable, 0).should be_false
+        expect(poller.register(pollable, 0)).to be_falsy
       end
 
       it "returns the default registered event value when given a valid pollable" do
-        poller.register(pollable).should == (ZMQ::POLLIN | ZMQ::POLLOUT)
+        expect(poller.register(pollable)).to eq(ZMQ::POLLIN | ZMQ::POLLOUT)
       end
 
       it "returns the registered event value when given a pollable responding to socket (ZMQ::Socket)" do
-        pollable.should_receive(:socket).and_return(socket)
-        poller.register(pollable, ZMQ::POLLIN).should == ZMQ::POLLIN
+        expect(pollable).to receive(:socket).and_return(socket)
+        expect(poller.register(pollable, ZMQ::POLLIN)).to eq ZMQ::POLLIN
       end
 
       it "returns the registered event value when given a pollable responding to file descriptor (IO, BasicSocket)" do
-        pollable.should_receive(:posix_fileno).and_return(fd)
-        poller.register(pollable, ZMQ::POLLIN).should == ZMQ::POLLIN
+        expect(pollable).to receive(:posix_fileno).and_return(fd)
+        expect(poller.register(pollable, ZMQ::POLLIN)).to eq(ZMQ::POLLIN)
       end
 
       it "returns the registered event value when given a pollable responding to io (SSLSocket)" do
-        pollable.should_receive(:io).and_return(io)
-        poller.register(pollable, ZMQ::POLLIN).should == ZMQ::POLLIN
+        expect(pollable).to receive(:io).and_return(io)
+        expect(poller.register(pollable, ZMQ::POLLIN)).to eq(ZMQ::POLLIN)
       end
 
     end
@@ -60,49 +60,49 @@ module ZMQ
       let(:fd) { 1 }
 
       it "returns true when deregistered pollable from event" do
-        pollable.should_receive(:socket).at_least(:once).and_return(socket)
+        expect(pollable).to  receive(:socket).at_least(:once).and_return(socket)
         poller.register(pollable)
-        poller.deregister(pollable, ZMQ::POLLIN).should be_true
+        expect(poller.deregister(pollable, ZMQ::POLLIN)).to eq(true)
       end
 
       it "returns false when pollable not registered" do
-        poller.deregister(pollable, ZMQ::POLLIN).should be_false
+        expect(poller.deregister(pollable, ZMQ::POLLIN)).to eq(false)
       end
 
       it "returns false when pollable not registered for deregistered event" do
-        pollable.should_receive(:socket).at_least(:once).and_return(socket)
+        expect(pollable).to receive(:socket).at_least(:once).and_return(socket)
         poller.register(pollable, ZMQ::POLLOUT)
-        poller.deregister(pollable, ZMQ::POLLIN).should be_false
+        expect(poller.deregister(pollable, ZMQ::POLLIN)).to eq(false)
       end
 
       it "deletes pollable when no events left" do
         poller.register(pollable, ZMQ::POLLIN)
-        poller.deregister(pollable, ZMQ::POLLIN).should be_true
-        poller.size.should == 0
+        expect(poller.deregister(pollable, ZMQ::POLLIN)).to eq(true)
+        expect(poller.size).to eq 0
       end
 
       it "deletes closed pollable responding to socket (ZMQ::Socket)" do
-        pollable.should_receive(:socket).and_return(socket)
+        expect(pollable).to receive(:socket).and_return(socket)
         poller.register(pollable)
-        pollable.should_receive(:socket).and_return(nil)
-        poller.deregister(pollable, ZMQ::POLLIN).should be_true
-        poller.size.should == 0
+        expect(pollable).to receive(:socket).and_return(nil)
+        expect(poller.deregister(pollable, ZMQ::POLLIN)).to eq(true)
+        expect(poller.size).to eq 0
       end
 
       it "deletes closed pollable responding to fileno (IO, BasicSocket)" do
-        pollable.should_receive(:posix_fileno).and_return(fd)
+        expect(pollable).to receive(:posix_fileno).and_return(fd)
         poller.register(pollable)
-        pollable.should_receive(:closed?).and_return(true)
-        poller.deregister(pollable, ZMQ::POLLIN).should be_true
-        poller.size.should == 0
+        expect(pollable).to receive(:closed?).and_return(true)
+        expect(poller.deregister(pollable, ZMQ::POLLIN)).to eq(true)
+        expect(poller.size).to eq 0
       end
 
       it "deletes closed pollable responding to io (SSLSocket)" do
-        pollable.should_receive(:io).at_least(:once).and_return(io)
+        expect(pollable).to receive(:io).at_least(:once).and_return(io)
         poller.register(pollable)
-        io.should_receive(:closed?).and_return(true)
-        poller.deregister(pollable, ZMQ::POLLIN).should be_true
-        poller.size.should == 0
+        expect(io).to receive(:closed?).and_return(true)
+        expect(poller.deregister(pollable, ZMQ::POLLIN)).to eq(true)
+        expect(poller.size).to eq 0
       end
 
     end
@@ -123,7 +123,7 @@ module ZMQ
       end
 
       it "should return false for an unregistered socket (i.e. not found)" do
-        @poller.delete(@socket).should be_false
+        expect(@poller.delete(@socket)).to eq(false)
       end
 
       it "returns true for a sucessfully deleted socket when only 1 is registered" do
@@ -131,7 +131,7 @@ module ZMQ
         socket1.setsockopt(LINGER, 0)
 
         @poller.register socket1
-        @poller.delete(socket1).should be_true
+        expect(@poller.delete(socket1)).to eq(true)
         socket1.close
       end
 
@@ -143,7 +143,7 @@ module ZMQ
 
         @poller.register socket1
         @poller.register socket2
-        @poller.delete(socket2).should be_true
+        expect(@poller.delete(socket2)).to eq(true)
         socket1.close
         socket2.close
       end
@@ -154,7 +154,7 @@ module ZMQ
 
         @poller.register socket1
         socket1.close
-        @poller.delete(socket1).should be_true
+        expect(@poller.delete(socket1)).to eq(true)
       end
 
     end
@@ -177,12 +177,12 @@ module ZMQ
       after(:each) { @sockets.each(&:close) }
 
       it "returns 0 when there are no sockets to poll" do
-        @poller.poll(100).should be_zero
+        expect(@poller.poll(100)).to eq 0
       end
 
       it "returns 0 when there is a single socket to poll and no events" do
         @poller.register(@sockets.first, 0)
-        @poller.poll(100).should be_zero
+        expect(@poller.poll(100)).to eq 0
       end
 
       it "returns 1 when there is a read event on a socket" do
@@ -190,7 +190,7 @@ module ZMQ
         @poller.register_readable(last)
 
         first.send_string('test')
-        @poller.poll(1000).should == 1
+        expect(@poller.poll(1000)).to eq 1
       end
 
       it "returns 1 when there is a read event on one socket and the second socket has been removed from polling" do
@@ -200,7 +200,7 @@ module ZMQ
 
         first.send_string('test')
         @poller.deregister_writable(first)
-        @poller.poll(1000).should == 1
+        expect(@poller.poll(1000)).to eq 1
       end
 
       it "works with BasiSocket" do
@@ -214,12 +214,12 @@ module ZMQ
 
         client.send("message", 0)
 
-        @poller.poll.should == 2
-        @poller.readables.should == [s]
-        @poller.writables.should == [client]
+        expect(@poller.poll).to eq 2
+        expect(@poller.readables).to eq [s]
+        expect(@poller.writables).to eq [client]
 
         msg = s.read_nonblock(7)
-        msg.should == "message"
+        expect(msg).to eq "message"
       end
 
       it "works with IO objects" do
@@ -229,12 +229,12 @@ module ZMQ
 
         w.write("message")
 
-        @poller.poll.should == 2
-        @poller.readables.should == [r]
-        @poller.writables.should == [w]
+        expect(@poller.poll).to eq 2
+        expect(@poller.readables).to eq [r]
+        expect(@poller.writables).to eq [w]
 
         msg = r.read(7)
-        msg.should == "message"
+        expect(msg).to eq "message"
       end
 
       it "works with SSLSocket" do
@@ -262,12 +262,12 @@ module ZMQ
 
         client.write("message")
 
-        @poller.poll.should == 2
-        @poller.readables.should == [s]
-        @poller.writables.should == [client]
+        expect(@poller.poll).to eq 2
+        expect(@poller.readables).to eq [s]
+        expect(@poller.writables).to eq [client]
 
         msg = s.read(7)
-        msg.should == "message"
+        expect(msg).to eq "message"
       end
     end
 
