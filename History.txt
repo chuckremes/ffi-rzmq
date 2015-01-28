@@ -1,3 +1,6 @@
+== 2.0.4
+  * Screwed up the release managment. Had wrong version in version.rb. Fixed.
+  
 == 2.0.3
   * Updated specs to use RSpec 3.x syntax. Never again... if they change it
     then I'm dumping rspec.
