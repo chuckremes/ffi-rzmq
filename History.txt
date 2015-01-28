@@ -1,3 +1,15 @@
+== 2.0.3
+  * Updated specs to use RSpec 3.x syntax. Never again... if they change it
+    then I'm dumping rspec.
+    
+  * Now loading version.rb during startup so that ZMQ::VERSION returns a string.
+  
+  * Modified README to point most people to the Ruby gem that wraps the CZMQ
+    library. It's a much higher-level library that makes writing zeromq apps
+    very easy. This gem is for writing low-level code which most people don't
+    want or need to do. This gem is going into maintenance mode only.
+  
+
 == 2.0.2 
 
   * Updated README to make it clearer which versions of libzmq are supported.

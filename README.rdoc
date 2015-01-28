@@ -2,6 +2,22 @@ ffi-rzmq
     by Chuck Remes
     http://www.zeromq.org/bindings:ruby-ffi
 
+== FUTURE SUPPORT
+
+Most people writing Zeromq applications in Ruby should be using the rbczmq
+project. It wraps the CZMQ binding which is a much higher-level library
+for writing Zeromq code. Find the Ruby gem here:
+
+    http://github.com/methodmissing/rbczmq
+    
+Few projects need to write the low-level zeromq code that this gem allows.
+With the release of ffi-rzmq 2.0.3, this library is going into permanent 
+maintenance mode. As new versions of libzmq are released, interested parties
+should send pull requests to this project or its related project
+ffi-rzmq-core to support new features.
+
+The original README text follows...
+
 == DESCRIPTION:
 
 This gem wraps the ZeroMQ networking library using the ruby FFI (foreign
