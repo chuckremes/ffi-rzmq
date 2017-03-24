@@ -66,6 +66,7 @@ end  # module ZMQ
 require 'ffi-rzmq-core'
 
 # the order of files is important
+require ZMQ.libpath(['.', "io_extensions"])
 %w(util exceptions context message socket poll_items poll_item poll device version).each do |file|
   require ZMQ.libpath(['ffi-rzmq', file])
 end

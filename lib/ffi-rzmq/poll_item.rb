@@ -1,5 +1,4 @@
 require 'forwardable'
-require 'io_extensions'
 
 module ZMQ
   class PollItem
