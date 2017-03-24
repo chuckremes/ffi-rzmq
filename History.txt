@@ -1,3 +1,15 @@
+== 2.0.5
+  * Fix issue #123. Bundled gems were a bit outdated so upgraded to latest
+    rspec gem.
+
+  * Fix issue #124. Newer releases of libzmq are not exporting all symbols
+    to the global namespace so some lazy loading performed by FFI was
+	failing. Now force all symbols into global namespace.
+
+  * Fix "::Fixnum has been deprecated" warnings from MRI 2.4.x+.
+
+  * Force ffi-rzmq-core 1.0.6 or later as dependency.
+
 == 2.0.4
   * Screwed up the release managment. Had wrong version in version.rb. Fixed.
   
