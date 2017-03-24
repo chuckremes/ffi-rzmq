@@ -11,6 +11,7 @@ cd libsodium
 ./autogen.sh
 ./configure && make check
 sudo make install
+cd ..
 
 BASE="zeromq-4.1.6"
 TARBALL="${BASE}.tar.gz"
