@@ -16,7 +16,7 @@ cd ..
 VERSION="4.2.2"
 BASE="zeromq-${VERSION}"
 TARBALL="${BASE}.tar.gz"
-wget https://github.com/zeromq/zeromq4-2/releases/download/v$VERSION/$TARBALL
+wget https://github.com/zeromq/libzmq/releases/download/v$VERSION/$TARBALL
 tar -xvf $TARBALL
 cd $BASE
 ./autogen.sh
