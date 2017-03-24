@@ -1,9 +1,4 @@
-before_install: 
-  - sudo apt-get -qq update
-  - sudo apt-get install -y libzmq5-dev
-install:
-  - bundle install
-script: bundle exec rspec
+script: ./travis_build_script.sh
 language: ruby
 rvm:
   - 2.4.0
