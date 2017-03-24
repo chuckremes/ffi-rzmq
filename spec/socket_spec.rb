@@ -451,11 +451,11 @@ module ZMQ
         end # posix platform
 
         context "using option ZMQ::EVENTS" do
-          it "should return a mask of events as a Fixnum" do
+          it "should return a mask of events as an Integer" do
             array = []
             rc = socket.getsockopt(ZMQ::EVENTS, array)
             expect(rc).to eq(0)
-            expect(array[0]).to be_a(Fixnum)
+            expect(array[0]).to be_a(Integer)
           end
         end
 
