@@ -85,7 +85,7 @@ module ZMQ
       it "should call the correct library function to terminate the context" do
         ctx = Context.new
 
-        expect(LibZMQ).to receive(:zmq_ctx_destroy).with(ctx.pointer).and_return(0)
+        expect(LibZMQ).to receive(:zmq_ctx_term).with(ctx.pointer).and_return(0)
         ctx.terminate
       end
     end # context terminate

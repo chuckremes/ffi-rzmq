@@ -82,7 +82,7 @@ module ZMQ
     def terminate
       unless @context.nil? || @context.null?
         remove_finalizer
-        rc = LibZMQ.zmq_ctx_destroy(@context)
+        rc = LibZMQ.zmq_ctx_term(@context)
         @context = nil
         rc
       else
@@ -129,7 +129,7 @@ module ZMQ
     end
 
     def self.close context, pid
-      Proc.new { LibZMQ.zmq_term context if !context.null? && Process.pid == pid }
+      Proc.new { LibZMQ.zmq_ctx_term context if !context.null? && Process.pid == pid }
     end
   end
 
