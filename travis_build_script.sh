@@ -12,7 +12,7 @@ cd libsodium
 ./configure && make check
 sudo make install
 
-wget http://download.zeromq.org/zeromq-4.2.2.tar.gz
+wget https://github.com/zeromq/zeromq4-1/releases/download/v4.1.6/zeromq-4.1.6.tar.gz
 tar -xvf zeromq-4.2.2.tar.gz
 cd zeromq-4.2.2
 ./autogen.sh
