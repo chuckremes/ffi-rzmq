@@ -13,9 +13,10 @@ cd libsodium
 sudo make install
 cd ..
 
-BASE="zeromq-4.1.6"
+VERSION="4.2.2"
+BASE="zeromq-${VERSION}"
 TARBALL="${BASE}.tar.gz"
-wget https://github.com/zeromq/zeromq4-1/releases/download/v4.1.6/$TARBALL
+wget https://github.com/zeromq/zeromq4-2/releases/download/v$VERSION/$TARBALL
 tar -xvf $TARBALL
 cd $BASE
 ./autogen.sh
