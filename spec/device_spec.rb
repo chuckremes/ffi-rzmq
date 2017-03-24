@@ -26,9 +26,9 @@ module ZMQ
         front = @ctx.socket(ZMQ::PUSH)
         front.bind(@front_endpoint)
         @mutex.synchronize { @device_thread = true }
-        puts "create streamer device and running..."
+        puts "create streamer device and running..." if $DEBUG
         Device.new(back, front)
-        puts "device exited"
+        puts "device exited" if $DEBUG
         back.close
         front.close
       end
@@ -40,7 +40,7 @@ module ZMQ
         
         break if can_break
       end
-      puts "broke out of wait_for_device loop"
+      puts "broke out of wait_for_device loop" if $DEBUG
     end
 
     it "should create a device without error given valid opts" do
