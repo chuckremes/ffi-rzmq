@@ -1,4 +1,3 @@
-
 module ZMQ
 
   # General utility methods.
@@ -29,7 +28,7 @@ module ZMQ
     # it succeeded.
     #
     def self.resultcode_ok? rc
-      rc >= 0
+      (rc || 0) >= 0
     end
 
     # Returns the +errno+ as set by the libzmq library.
