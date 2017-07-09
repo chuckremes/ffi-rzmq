@@ -69,6 +69,14 @@ on that gem to load and run this code, then this project also no longer
 supports MRI 1.8.x. I recommend JRuby for the best performance and
 stability.
 
+The `Socket` and `Context` classes have finalizers which will
+be called by the garbage collector when there are no more references.
+However, these finalizers should not be relied upon to orderly close
+your sockets and then the context. Finalizers run in a non-determinant
+order, so the `Context` finalizer may run first which will hang the
+program. To avoid this, make sure to close all sockets before the
+program exits.
+
 All features are implemented.
 
 == BUILD STATUS:
