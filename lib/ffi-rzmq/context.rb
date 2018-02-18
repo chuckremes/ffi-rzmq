@@ -85,6 +85,8 @@ module ZMQ
         rc = LibZMQ.zmq_ctx_term(@context)
         @context = nil
         rc || 0
+      else
+        0
       end
     end
 
