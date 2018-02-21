@@ -84,7 +84,7 @@ module ZMQ
         remove_finalizer
         rc = LibZMQ.zmq_ctx_term(@context)
         @context = nil
-        rc
+        rc || 0
       else
         0
       end
