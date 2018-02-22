@@ -1,3 +1,12 @@
+== 2.0.6
+  * Fix for uncaught exception. Strange case... somehow calling
+    `zmq_ctx_term` was returning nil, so when checking the result code it
+    would fail. No overrides a nil value with 0 so check passes.
+
+  * Update some JRuby-specific code to fetch a file descriptor value. API
+    changed from earlier versions, so code is updated to use new API. All
+    specs pass.
+
 == 2.0.5
   * Fix issue #123. Bundled gems were a bit outdated so upgraded to latest
     rspec gem.
