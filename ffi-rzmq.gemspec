@@ -22,6 +22,6 @@ and run by any ruby runtime that supports FFI. That's all of the major ones - MR
   s.require_paths = ["lib"]
 
   s.add_runtime_dependency "ffi-rzmq-core", [">= 1.0.6"]
-  s.add_development_dependency "rspec", ["~> 3.5"]
+  s.add_development_dependency "rspec", ["~> 3.7"]
   s.add_development_dependency "rake"
 end
