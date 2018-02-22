@@ -10,7 +10,7 @@ class IO
       when STDERR, $stderr
         2
       else
-        JRuby.reference(self).getOpenFile.getMainStream.getDescriptor.getChannel.getFDVal
+        JRuby.reference(self).getOpenFile().getFileno
       end
     end
   else
