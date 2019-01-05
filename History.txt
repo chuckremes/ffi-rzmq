@@ -1,3 +1,16 @@
+== 2.0.7
+  * Fix Issue #130
+    Fix to better support Zeromq 3.x users when performing context termination.
+    Support library ffi-rzmq-core was updated to handle this support, so
+    we now have a minimum dependency of ffi-rzmq-core 1.0.7 on this gem.
+
+  * Fix Issue #131
+    Update the OpenSSL key and certificate files. Original files were 1024 bits
+    but this causes problems on some modern Linux (e.g. Debian) which complains
+    about the key length. Updated to 4096 bits. Copied the key and cert
+    generation scripts from the Debian repository with attribution. Thanks to
+    @boutil for the helper script and the bug report.
+
 == 2.0.6
   * Fix for uncaught exception. Strange case... somehow calling
     `zmq_ctx_term` was returning nil, so when checking the result code it
