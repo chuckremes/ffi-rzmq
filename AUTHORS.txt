@@ -33,3 +33,5 @@ Paul Chechetin, github: paulche
 Michael Zaccari, github: mzaccari
 
 Jason Roelofs, github: jasonroelofs
+
+Cédric Boutillier, github: boutil
