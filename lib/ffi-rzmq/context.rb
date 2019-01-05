@@ -82,7 +82,7 @@ module ZMQ
     def terminate
       unless @context.nil? || @context.null?
         remove_finalizer
-        rc = LibZMQ.zmq_ctx_term(@context)
+        rc = LibZMQ.terminate_context(@context)
         @context = nil
         rc || 0
       else
