@@ -1,6 +1,6 @@
-ffi-rzmq
-    by Chuck Remes
-    http://www.zeromq.org/bindings:ruby-ffi
+= ffi-rzmq
+by Chuck Remes
+http://www.zeromq.org/bindings:ruby-ffi
 
 == FUTURE SUPPORT
 
@@ -9,9 +9,9 @@ project. It wraps the CZMQ binding which is a much higher-level library
 for writing Zeromq code. Find the Ruby gem here:
 
     http://github.com/methodmissing/rbczmq
-    
+
 Few projects need to write the low-level zeromq code that this gem allows.
-With the release of ffi-rzmq 2.0.3, this library is going into permanent 
+With the release of ffi-rzmq 2.0.3, this library is going into permanent
 maintenance mode. As new versions of libzmq are released, interested parties
 should send pull requests to this project or its related project
 ffi-rzmq-core to support new features.
@@ -35,7 +35,7 @@ it as a gem. We will all be grateful!
 This single gem supports 0mq 3.2.x and 4.x APIs. The 0mq project started
 making backward-incompatible changes to the API with the 3.1.x release.
 The gem auto-configures itself to expose the API conforming to the loaded
-C library. 0mq 2.x is no longer supported. 0mq API 3.0 is *not* supported; 
+C library. 0mq 2.x is no longer supported. 0mq API 3.0 is *not* supported;
 the 0mq community voted to abandon it.
 
 The impetus behind this library was to provide support for ZeroMQ in
@@ -96,7 +96,7 @@ All features are implemented.
     puts "usage: ruby local_lat.rb <connect-to> <message-size> <roundtrip-count>"
     exit
   end
-  
+
   bind_to = ARGV[0]
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
@@ -123,11 +123,11 @@ All features are implemented.
     puts "usage: ruby remote_lat.rb <connect-to> <message-size> <roundtrip-count>"
     exit
   end
-  
+
   def assert(rc)
     raise "Last API call failed at #{caller(1)}" unless rc >= 0
   end
-  
+
   connect_to = ARGV[0]
   message_size = ARGV[1].to_i
   roundtrip_count = ARGV[2].to_i
@@ -142,10 +142,10 @@ All features are implemented.
 
   roundtrip_count.times do
     assert(s.send_string(msg, 0))
-  
+
     msg = ''
     assert(s.recv_string(msg, 0))
-  
+
     raise "Message size doesn't match, expected [#{message_size}] but received [#{msg.size}]" if message_size != msg.size
   end
 
