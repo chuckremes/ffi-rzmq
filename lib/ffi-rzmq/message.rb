@@ -126,7 +126,7 @@ module ZMQ
     def copy_in_bytes bytes, len
       data_buffer = LibC.malloc len
       # writes the exact number of bytes, no null byte to terminate string
-      data_buffer.write_string bytes, len
+      data_buffer.put_bytes 0, bytes, 0, len
 
       # use libC to call free on the data buffer; earlier versions used an
       # FFI::Function here that called back into Ruby, but Rubinius won't
