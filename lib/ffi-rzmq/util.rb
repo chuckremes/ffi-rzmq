@@ -106,7 +106,7 @@ module ZMQ
       'zmq_ctx_new' == source ||
         'zmq_ctx_set' == source ||
         'zmq_ctx_get' == source ||
-        'zmq_ctx_destory' == source ||
+        'zmq_ctx_destroy' == source ||
         'zmq_ctx_set_monitor' == source
     end
 
